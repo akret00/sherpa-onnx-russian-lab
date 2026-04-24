@@ -1,0 +1,13 @@
+.venv/
+.obsidian/
+*.pyc
+__pycache__/
+.pytest_cache/
+.vscode/
+media/
+docs/
+src/
+examples/
+scripts/
+_*
+docker*
