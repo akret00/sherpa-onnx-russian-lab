@@ -1,0 +1,43 @@
+# ==========================================
+# РЕСУРСЫ: Пути к моделям
+# ==========================================
+work:
+  vad_model_name: "silero"
+  embed_model_name: "3dspeaker"
+  # Должен быть только один незакомментированный параметр "asr_model_name"
+  asr_model_name: "giga-am-v3"
+  # asr_model_name: "qwen3-0.6b"
+  # asr_model_name: "qwen3-1.7b"
+models:
+  # Распознавание речи
+  asr:
+    giga-am-v3:
+      asr_type: "nemo_ctc"
+      model: "models/asr/gigaam-v3-onnx/model.int8.onnx"
+      tokens: "models/asr/gigaam-v3-onnx/tokens.txt"
+    qwen3-0.6b:
+      asr_type: "qwen3"
+      conv_frontend: "models/asr/qwen3-asr-0.6b/conv_frontend.onnx"
+      encoder: "models/asr/qwen3-asr-0.6b/encoder.int8.onnx"
+      decoder: "models/asr/qwen3-asr-0.6b/decoder.int8.onnx"
+      tokenizer_dir: "models/asr/qwen3-asr-0.6b/tokenizer"
+    qwen3-1.7b:
+      asr_type: "qwen3"
+      conv_frontend: "models/asr/qwen3-asr-1.7b/conv_frontend.onnx"
+      encoder: "models/asr/qwen3-asr-1.7b/encoder.int8.onnx"
+      decoder: "models/asr/qwen3-asr-1.7b/decoder.int8.onnx"
+      tokenizer_dir: "models/asr/qwen3-asr-1.7b/tokenizer"
+
+  # Детекция активности (VAD)
+  vad:
+    silero:
+      model: "models/vad/silero_vad.onnx"
+      sample_rate: 16000
+
+  # Диаризация (Сегментация и Эмбеддинги)
+  segmentation:
+    pyannote:
+      model: "models/diarization/segmentation-model.onnx"
+  embedding:
+    3dspeaker:
+      model: "/models/diarization/3dspeaker_speech_eres2net_base_sv_zh-cn_3dspeaker_16k.onnx"
