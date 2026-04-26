@@ -149,3 +149,5 @@ python ./src/asr_vad.py --input test.wav --num-threads 1
 
 ---
 *Найдете ошибку, есть вопросы или идея? Пишите в Issues, буду рад обсудить!*
+
+Лицензия: [MIT](LICENSE).
