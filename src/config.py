@@ -19,9 +19,9 @@ class Config:
         self._asr_model_name = self._data['work']['asr_model_name']
 
     # @property
-    def get_main(self):
-        """Возвращает базовые настройки"""
-        return self._data.get("main", {})
+    def get_work(self):
+        """Возвращает настройки рабочих моделей"""
+        return self._data.get("work", {})
 
     # @property
     def get_models(self):

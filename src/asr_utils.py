@@ -3,18 +3,6 @@ import numpy as np
 import sherpa_onnx
 import config
 
-def read_exactly(stream, n: int) -> bytes:
-    """Read exactly n bytes unless EOF."""
-    chunks = []
-    got = 0
-    while got < n:
-        b = stream.read(n - got)
-        if not b:
-            break
-        chunks.append(b)
-        got += len(b)
-    return b"".join(chunks)
-
 def compute_embedding(extractor: sherpa_onnx.SpeakerEmbeddingExtractor, samples_f32: np.ndarray) -> np.ndarray:
     stream = extractor.create_stream()
     stream.accept_waveform(sample_rate=config.SR, waveform=samples_f32)

@@ -1,5 +1,6 @@
 """Управляет подпроцессом ffmpeg"""
 import subprocess
+import numpy as np
 import config
 
 def make_ffmpeg_proc_for_file(path: str):
@@ -45,3 +46,27 @@ def close_ffmpeg_proc(proc: subprocess.Popen):
     except subprocess.TimeoutExpired:
         proc.kill()
         proc.wait()
+
+def read_exactly(stream, n: int) -> bytes:
+    """Read exactly n bytes unless EOF."""
+    chunks = []
+    got = 0
+    while got < n:
+        b = stream.read(n - got)
+        if not b:
+            break
+        chunks.append(b)
+        got += len(b)
+    return b"".join(chunks)
+
+def read_samples(proc, window_size):
+    """Читаем из потока подпроцесса данные"""
+    window_bytes = window_size * 2  # s16le
+
+    # Пробуем прочитать полный блок данных (0.032 секунды аудио)
+    b = read_exactly(proc.stdout, window_bytes)
+
+    # Получаем блок данных в pcm16 формате
+    pcm16 = np.frombuffer(b, dtype=np.int16)
+    samples = pcm16.astype(np.float32) / 32768.0  # [-1, 1]
+    return samples
