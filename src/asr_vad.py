@@ -11,30 +11,7 @@ import model_utils
 import ffmpeg_utils
 import asr_utils
 import args_utils
-
-def process_vad_segments(vad, recognizer):
-    """
-    Извлекает все завершённые фразы из VAD, распознаёт их и выводит текст в stdout.
-    Args:
-        vad: экземпляр VAD с накопленными сегментами
-        recognizer: экземпляр ASR-распознавателя
-        sample_rate: частота дискретизации аудио (Гц)
-    """
-    # Пока VAD не пустой, то есть содержит законченные фразы
-    while not vad.empty():
-        # IMPORTANT: grab data BEFORE vad.pop()
-        # Извлекаем данные для очередной законченной фразы
-        start_sample = vad.front.start
-        seg = np.array(vad.front.samples, dtype=np.float32)
-        vad.pop()
-
-        # Распознаем (ASR) полученный из VAD сегмент
-        text = asr_utils.decode_asr(recognizer, seg)
-
-        t0 = start_sample / SR
-        t1 = (start_sample + len(seg)) / SR
-        if text:
-            print(f"[{t0:10.3f}-{t1:10.3f}]: {text}")
+import vad_utils
 
 def main():
     """Основная функция"""
@@ -95,13 +72,13 @@ def main():
             # После извлечения фразы из VAD методом vad.pop(), VAD становится пустым,
             # и vad.empty() == True
             vad.accept_waveform(samples)
-            process_vad_segments(vad, recognizer)
+            vad_utils.process_vad_segments(vad, recognizer)
 
         # Проталкиваем в VAD последнюю неоконченную фразу 1 секундой тишины (нулевые данные)
         zeros = np.zeros(window_size, dtype=np.float32)
         for _ in range(int(SR / window_size) + 2):
             vad.accept_waveform(zeros)
-            process_vad_segments(vad, recognizer)
+            vad_utils.process_vad_segments(vad, recognizer)
 
         # Засекаем время окончания распознавания
         end_time = time.perf_counter()

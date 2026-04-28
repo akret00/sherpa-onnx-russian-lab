@@ -1,5 +1,5 @@
 # Sherpa-ONNX Russian Lab
-Сборник практических экспериментов по распознаванию (ASR), диаризации и синтезу (TTS) русской речи на базе библиотеки [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) для Python.
+Сборник практических экспериментов по распознаванию (ASR, speech-to-text), VAD (voice activity detection), диаризации (speaker diarization) и синтезу (TTS, text-to-speech) русской речи на базе библиотеки [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) для Python.
 
 > **Личный полигон для тестов**: код предоставляется "как есть", без идеальной архитектуры и поддержки.
 
@@ -30,8 +30,8 @@
 
 ## Используемые модели ONNX:
 - **ASR (Речь в текст)**: 
-	  - `nemo-ctc-punct-giga-am-v3-russian-int8` (высокая скорость для русского языка и отличная пунктуация)
-	  - `qwen3-asr-0.6B-int8` (многоязычность)
+	- `nemo-ctc-punct-giga-am-v3-russian-int8` (высокая скорость для русского языка и отличная пунктуация)
+	- `qwen3-asr-0.6B-int8` (многоязычность)
 - **VAD (Определение голосовой активности)**:
 	- `silero_vad.onnx`
 - **Speaker ID (Эмбеддинги)**:

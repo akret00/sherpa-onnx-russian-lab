@@ -1,3 +1,4 @@
+"""Модуль с функциями для работы ASR"""
 import numpy as np
 import sherpa_onnx
 import config
