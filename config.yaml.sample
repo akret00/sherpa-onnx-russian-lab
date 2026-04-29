@@ -39,5 +39,16 @@ models:
     pyannote:
       model: "models/diarization/segmentation-model.onnx"
   embedding:
+    wespeaker:
+      # model: "/models/diarization/wespeaker_en_voxceleb_CAM++_LM.onnx"
+      # model: "/models/diarization/wespeaker_en_voxceleb_resnet34_LM.onnx"
+      model: "/models/diarization/wespeaker_en_voxceleb_resnet152_LM.onnx"
+    nemo:
+      # model: "/models/diarization/nemo_en_speakerverification_speakernet.onnx"
+      # model: "/models/diarization/nemo_en_titanet_small.onnx"
+      model: "/models/diarization/nemo_en_titanet_large.onnx"
     3dspeaker:
-      model: "/models/diarization/3dspeaker_speech_eres2net_base_sv_zh-cn_3dspeaker_16k.onnx"
+      # model: "/models/diarization/3dspeaker_speech_campplus_sv_en_voxceleb_16k.onnx"
+      model: "/models/diarization/3dspeaker_speech_eres2net_sv_en_voxceleb_16k.onnx"
+      # model: "/models/diarization/3dspeaker_speech_eres2net_base_sv_zh-cn_3dspeaker_16k.onnx"
+      # model: "/models/diarization/3dspeaker_speech_eres2netv2_sv_zh-cn_16k-common.onnx"
