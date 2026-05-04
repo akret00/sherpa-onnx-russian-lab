@@ -10,9 +10,11 @@ scripts/
 src/examples/
 src/ai*
 src/sp*
+src/benchmark
 /tests
 docker*
 config.yaml
 pytest.ini
 *_manual.md
+*_draft.md
 *.wav
