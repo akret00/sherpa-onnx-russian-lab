@@ -13,8 +13,8 @@ models:
   asr:
     giga-am-v3:
       asr_type: "nemo_ctc"
-      model: "models/asr/gigaam-v3-onnx/model.int8.onnx"
-      tokens: "models/asr/gigaam-v3-onnx/tokens.txt"
+      model: "models/asr/giga-am-v3/model.int8.onnx"
+      tokens: "models/asr/giga-am-v3/tokens.txt"
     qwen3-0.6b:
       asr_type: "qwen3"
       conv_frontend: "models/asr/qwen3-asr-0.6b/conv_frontend.onnx"

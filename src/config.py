@@ -2,16 +2,29 @@
 Модуль загрузки конфигурации
 """
 from pathlib import Path
+import os
 import yaml
 
 # Частота дискретизации
 SR = 16000
 
+# Определяем корень проекта относительно этого файла
+# .parent — это папка src/, второй .parent — корень проекта
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Определяем пути к ресурсам
+CONFIG_PATH = BASE_DIR / "config.yaml"
+BIN_DIR = BASE_DIR / "bin" # Путь для portable варианта ffmpeg
+DEFAULT_OUTPUT_DIR = BASE_DIR / "results"
+
+if BIN_DIR.is_dir() and str(BIN_DIR) not in os.environ["PATH"]:
+    # Добавляем в начало PATH
+    os.environ["PATH"] = str(BIN_DIR) + os.pathsep + os.environ["PATH"]
+
 class Config:
     """Класс загрузчика конфигурации"""
     def __init__(self):
-        config_path = Path(__file__).parent.parent / "config.yaml"
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
             self._data = yaml.safe_load(f)
         # Определяем рабочие модели
         self._vad_model_name = self._data['work']['vad_model_name']
