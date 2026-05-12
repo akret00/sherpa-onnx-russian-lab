@@ -8,9 +8,10 @@ setlocal enabledelayedexpansion
 :: ============================================================
 :: Этот скрипт:
 ::   1. Проверяет наличие PowerShell
-::   2. Запускает win_asr_setup.ps1 (обновление файлов проекта)
-::   3. win_asr_setup.ps1 сам вызовет win_asr_init.ps1 (установка окружения)
-::   4. Проверяет код возврата и сообщает пользователю о результате
+::   2. Скачивает win_asr_setup.ps1 с GitHub при отсутствии
+::   3. Запускает win_asr_setup.ps1 (обновление файлов проекта)
+::   4. win_asr_setup.ps1 сам вызовет win_asr_init.ps1 (установка окружения)
+::   5. Проверяет код возврата и сообщает пользователю о результате
 :: ============================================================
 
 title Установка распознавания речи
@@ -23,7 +24,7 @@ echo.
 :: ----------------------------------------------------------
 :: Шаг 1. Проверка наличия PowerShell
 :: ----------------------------------------------------------
-echo [1/2] Проверка наличия PowerShell...
+echo [1/3] Проверка наличия PowerShell...
 where powershell >nul 2>&1
 if %errorlevel% neq 0 (
     echo.
@@ -43,21 +44,53 @@ echo.
 :: ----------------------------------------------------------
 :: Шаг 2. Проверка наличия файла win_asr_setup.ps1
 :: ----------------------------------------------------------
+echo [2/3] Проверка наличия скрипта win_asr_setup.ps1...
+
 if not exist "%~dp0win_asr_setup.ps1" (
-    echo [ОШИБКА] Файл win_asr_setup.ps1 не найден в папке скрипта.
-    echo Убедитесь, что вы поместили оба файла в одну папку:
-    echo   - win_asr_setup.bat
-    echo   - win_asr_setup.ps1
     echo.
-    echo Нажмите любую клавишу для выхода...
-    pause >nul
-    exit /b 2
+    echo Скрипт win_asr_setup.ps1 не найден в папке запуска.
+    echo Выполняется загрузка с GitHub...
+    echo.
+    
+    :: Пытаемся скачать через curl (доступен в Windows 10/11)
+    curl -L -o "%~dp0win_asr_setup.ps1" "https://raw.githubusercontent.com/akret00/sherpa-onnx-russian-lab/refs/heads/main/win_asr_setup.ps1" 2>nul
+    
+    if not exist "%~dp0win_asr_setup.ps1" (
+        :: Если curl не сработал, пробуем через PowerShell
+        echo Загрузка через curl не удалась, пробуем PowerShell...
+        powershell -Command "Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/akret00/sherpa-onnx-russian-lab/refs/heads/main/win_asr_setup.ps1' -OutFile '%~dp0win_asr_setup.ps1'" 2>nul
+    )
+    
+    :: Проверяем, успешно ли скачался файл
+    if exist "%~dp0win_asr_setup.ps1" (
+        echo.
+        echo [УСПЕХ] Файл win_asr_setup.ps1 успешно загружен с GitHub.
+        echo.
+    ) else (
+        echo.
+        echo [ОШИБКА] Не удалось загрузить win_asr_setup.ps1 с GitHub.
+        echo.
+        echo Возможные причины:
+        echo   - Отсутствует подключение к интернету
+        echo   - Брандмауэр или антивирус блокирует соединение
+        echo   - Сервер GitHub недоступен
+        echo.
+        echo Вы можете вручную скачать файл и поместить его в папку:
+        echo %~dp0
+        echo.
+        echo Нажмите любую клавишу для выхода...
+        pause >nul
+        exit /b 2
+    )
+) else (
+    echo Файл win_asr_setup.ps1 найден локально.
+    echo.
 )
 
 :: ----------------------------------------------------------
 :: Шаг 3. Запуск PowerShell-скрипта обновления
 :: ----------------------------------------------------------
-echo [2/2] Запуск обновления и установки...
+echo [3/3] Запуск обновления и установки...
 echo.
 echo Пожалуйста, подождите. Это может занять несколько минут.
 echo Не закрывайте это окно и окно PowerShell.

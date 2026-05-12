@@ -4,8 +4,10 @@
 Вручную:
 - Создаёт папку проекта (например, C:\Users\Имя\asr_project\) и переходит в неё.
 - Скачивает в корень папки проекта два файла из репозитория (https://github.com/akret00/sherpa-onnx-russian-lab):
-	- win_asr_setup.bat
-	- win_asr_setup.ps1
+	- win_asr_setup.bat через браузер или через PowerShell командой:
+		`Invoke-WebRequest -Uri "https://raw.githubusercontent.com/akret00/sherpa-onnx-russian-lab/refs/heads/main/win_asr_setup.bat" -OutFile "win_asr_setup.bat"`
+	- win_asr_setup.ps1 через браузер или через PowerShell командой:
+		`Invoke-WebRequest -Uri "https://raw.githubusercontent.com/akret00/sherpa-onnx-russian-lab/refs/heads/main/win_asr_setup.ps1" -OutFile "win_asr_setup.ps1"`
 - Запускает win_asr_setup.bat. Этот bat-файл:
 ## Файл win_asr_setup.bat
 - Проверяет наличие PowerShell.
@@ -36,6 +38,12 @@
 - win_asr_setup.ps1 завершается:
 	Если всё успешно — выводит "Обновление завершено. Нажмите любую клавишу...".
 	Если была ошибка — выводит "Обновление прервано с ошибкой. Нажмите любую клавишу...".
+## Файл win_asr_init.bat
+- Проверяет наличие PowerShell.
+- Запускает PowerShell с политикой Bypass: 
+	powershell -ExecutionPolicy Bypass -File "win_asr_init.ps1"
+- После завершения PowerShell проверяет код возврата (%errorlevel%).
+	Если код не 0 — выводит "Нажмите любую клавишу..." и ждёт.
 ## Файл win_asr_init.ps1
 Скрипт выполняет инициализацию окружения и загрузку всех необходимых компонентов
 для работы проекта. Все компоненты устанавливаются локально в папку проекта 
@@ -52,6 +60,8 @@
 	- Выводим инструкцию: "Пожалуйста, установите его вручную, а затем запустите скрипт установки заново. Сейчас откроется сайт Microsoft."
 	- Открываем ссылку https://aka.ms/vc14/vc_redist.x64.exe в браузере.
 	- Ждём нажатия клавиши и завершаем скрипт с кодом `9`.
+	- Примечание: скачать ссылку можно командой в PowerShell: 
+		`Invoke-WebRequest -Uri "https://aka.ms/vc14/vc_redist.x64.exe" -OutFile "vc_redist.x64.exe"`
 ### 3. Установка портативного Python в папку bin\python
 - Удаляем папку `tmp` со всем содержимым, если она есть.
 - Проверяем, существует ли файл "bin\python\python.exe".

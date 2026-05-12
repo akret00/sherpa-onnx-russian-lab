@@ -298,22 +298,15 @@ Write-Host "============================================================"
 Write-Host ""
 
 try {
-    $process = Start-Process powershell `
-        -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$initScriptPath`"" `
-        -Wait `
-        -PassThru `
-        -ErrorAction Stop
+    # Запускаем скрипт в ТЕКУЩЕМ процессе PowerShell
+    # Все переменные, функции и окружение останутся доступны
+    & $initScriptPath
     
-    $exitCode = $process.ExitCode
-    
-    if ($exitCode -eq 0) {
-        Exit-WithPause -Message "Обновление успешно завершено!`nТеперь можно запустить ярлык `"Распознать аудио`" на рабочем столе." -ExitCode 0
-    }
-    else {
-        Exit-WithPause -Message "Обновление прервано с ошибкой на этапе инициализации.`nКод ошибки: $exitCode`n`nПроверьте сообщения в окне PowerShell выше.`nВы можете запустить скрипт повторно — установка продолжится с того места, где остановилась." -ExitCode $exitCode
-    }
+    # Если скрипт выполнился без ошибок (не вызвал exit с кодом ошибки)
+    Exit-WithPause -Message "Обновление успешно завершено!`nТеперь можно запустить ярлык `"Распознать аудио`" на рабочем столе." -ExitCode 0
 }
 catch {
-    $ExitCode = 6  # Новый код ошибки: не удалось запустить скрипт инициализации
-    Exit-WithPause -Message "Обновление прервано: не удалось запустить скрипт инициализации.`nПричина: $($_.Exception.Message)" -ExitCode $ExitCode
+    # Этот catch теперь действительно работает!
+    # Ловит ЛЮБЫЕ ошибки из win_asr_init.ps1
+    Exit-WithPause -Message "Обновление прервано с ошибкой на этапе инициализации.`nПричина: $($_.Exception.Message)`n`nПроверьте сообщения выше. Вы можете запустить скрипт повторно." -ExitCode 6
 }
