@@ -31,7 +31,7 @@ models:
   # Детекция активности (VAD)
   vad:
     silero:
-      model: "models/vad/silero_vad.onnx"
+      model: "models/vad/silero/silero_vad.onnx"
       sample_rate: 16000
 
   # Диаризация (Сегментация и Эмбеддинги)

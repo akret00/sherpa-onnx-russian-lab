@@ -333,7 +333,8 @@ else {
 python314.zip
 .
 Lib
-Lib\site-packages
+Lib/site-packages
+../../src
 import site
 "@
     
