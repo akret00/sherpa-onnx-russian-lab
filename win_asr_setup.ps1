@@ -235,9 +235,31 @@ try {
         }
         
         $destination = Join-Path $ProjectRoot $_.Name
+        
         try {
-            Copy-Item -Path $_.FullName -Destination $destination -Recurse -Force -ErrorAction Stop
-            Write-Host "  Обновлён: $($_.Name)"
+            # Если это файл — просто копируем с перезаписью
+            if (-not $_.PSIsContainer) {
+                Copy-Item -Path $_.FullName -Destination $destination -Force -ErrorAction Stop
+                Write-Host "  Обновлён файл: $($_.Name)"
+            }
+            # Если это папка
+            else {
+                # Если целевая папка уже существует, нужно копировать её СОДЕРЖИМОЕ,
+                # а не саму папку внутрь существующей
+                if (Test-Path $destination) {
+                    # Получаем все элементы внутри исходной папки
+                    Get-ChildItem -Path $_.FullName -Force | ForEach-Object {
+                        $childDestination = Join-Path $destination $_.Name
+                        Copy-Item -Path $_.FullName -Destination $childDestination -Recurse -Force -ErrorAction Stop
+                    }
+                    Write-Host "  Обновлена папка: $($_.Name) (слияние содержимого)"
+                }
+                else {
+                    # Если папки нет — копируем целиком как обычно
+                    Copy-Item -Path $_.FullName -Destination $destination -Recurse -Force -ErrorAction Stop
+                    Write-Host "  Создана папка: $($_.Name)"
+                }
+            }
         }
         catch {
             throw $_
@@ -306,7 +328,6 @@ try {
     Exit-WithPause -Message "Обновление успешно завершено!`nТеперь можно запустить ярлык `"Распознать аудио`" на рабочем столе." -ExitCode 0
 }
 catch {
-    # Этот catch теперь действительно работает!
     # Ловит ЛЮБЫЕ ошибки из win_asr_init.ps1
     Exit-WithPause -Message "Обновление прервано с ошибкой на этапе инициализации.`nПричина: $($_.Exception.Message)`n`nПроверьте сообщения выше. Вы можете запустить скрипт повторно." -ExitCode 6
 }
