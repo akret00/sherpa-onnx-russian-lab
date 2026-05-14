@@ -94,7 +94,10 @@ def main():
 
                     if text:
                         print(f"[{t_start:10.3f}-{t_end:10.3f}]: {text}")
-                        f.write(f"[{t_start:10.3f}-{t_end:10.3f}]: {text}" + "\n")
+                        if args.no_timestamps:
+                            f.write(f"{text}" + "\n")
+                        else:
+                            f.write(f"[{t_start:10.3f}-{t_end:10.3f}]: {text}" + "\n")
 
             # Проталкиваем в VAD последнюю неоконченную фразу 1 секундой тишины (нулевые данные)
             zeros = np.zeros(window_size, dtype=np.float32)
@@ -106,7 +109,10 @@ def main():
 
                     if text:
                         print(f"[{t_start:10.3f}-{t_end:10.3f}]: {text}")
-                        f.write(f"[{t_start:10.3f}-{t_end:10.3f}]: {text}" + "\n")
+                        if args.no_timestamps:
+                            f.write(f"{text}" + "\n")
+                        else:
+                            f.write(f"[{t_start:10.3f}-{t_end:10.3f}]: {text}" + "\n")
 
             # Засекаем время окончания распознавания
             end_time = time.perf_counter()
