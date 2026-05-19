@@ -130,7 +130,7 @@ echo.
 
 :: Запускаем Python-скрипт
 :: Кавычки вокруг путей обязательны для поддержки пробелов и кириллицы
-"%PYTHON_EXE%" "%ASR_SCRIPT%" --input "%INPUT_FILE%" --output-dir "%OUTPUT_DIR%"
+"%PYTHON_EXE%" "%ASR_SCRIPT%" --input "%INPUT_FILE%" --output-dir "%OUTPUT_DIR%" --no-timestamps
 
 :: Сохраняем код возврата Python-скрипта
 set "EXIT_CODE=%errorlevel%"

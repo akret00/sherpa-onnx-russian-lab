@@ -2,14 +2,12 @@
 Описание процесса установки проекта на Windows:
 ## Пользователь
 Вручную:
-- Создаёт папку проекта (например, C:\Users\Имя\asr_project\) и переходит в неё.
-- Скачивает в корень папки проекта два файла из репозитория (https://github.com/akret00/sherpa-onnx-russian-lab):
-	- win_asr_setup.bat через браузер или через PowerShell командой:
-		`Invoke-WebRequest -Uri "https://raw.githubusercontent.com/akret00/sherpa-onnx-russian-lab/refs/heads/main/win_asr_setup.bat" -OutFile "win_asr_setup.bat"`
-	- win_asr_setup.ps1 через браузер или через PowerShell командой:
-		`Invoke-WebRequest -Uri "https://raw.githubusercontent.com/akret00/sherpa-onnx-russian-lab/refs/heads/main/win_asr_setup.ps1" -OutFile "win_asr_setup.ps1"`
+- Создаёт папку проекта (например, C:\projects\sherpa_asr) и переходит в неё.
+- Скачивает в корень папки проекта из репозитория файл [win_asr_setup.bat](https://raw.githubusercontent.com/akret00/sherpa-onnx-russian-lab/refs/heads/main/win_asr_setup.bat)
 - Запускает win_asr_setup.bat. Этот bat-файл:
 ## Файл win_asr_setup.bat
+- Формат файла:  UTF-8 (CRLF)
+- Скачивает в корень папки проекта из репозитория файл [win_asr_setup.ps1](https://raw.githubusercontent.com/akret00/sherpa-onnx-russian-lab/refs/heads/main/win_asr_setup.ps1) при помощи curl.
 - Проверяет наличие PowerShell.
 - Запускает PowerShell с политикой Bypass: 
 	powershell -ExecutionPolicy Bypass -File "win_asr_setup.ps1"
@@ -17,37 +15,28 @@
 	Если код не 0 — выводит "Нажмите любую клавишу..." и ждёт.
 ## Файл win_asr_setup.ps1
 Выполняет обновление файлов проекта:
+- Формат файла:  UTF-8 with BOM (CRLF)
+- Скачивание должно производиться при помощи Invoke-WebRequest
 - Проверяет права на запись в текущей папке. Если прав нет — выводит ошибку на русском, ждёт нажатия клавиши, выходит с кодом 1.
-- Удаляет папку `tmp` со всем содержимым, если она есть.
-- Скачивает ZIP-архив проекта во временную папку "tmp", если ее нет, то создаем:
-	Invoke-WebRequest -Uri "https://github.com/akret00/sherpa-onnx-russian-lab/archive/refs/heads/main.zip" -OutFile "tmp\project_update.zip"
-	Если скачивание не удалось — выводит ошибку на русском, ждёт клавишу, выходит с кодом 2.
-- Распаковывает архив в `tmp\project_update_temp\`.
-	Если распаковка не удалась — удаляет архив, выводит ошибку, ждёт клавишу, выходит с кодом 3.
-- Копирует ВСЕ файлы из `tmp\project_update_temp\sherpa-onnx-russian-lab-main\*` в текущую папку проекта, КРОМЕ файлов win_asr_setup.bat и win_asr_setup.ps1.
-	При копировании сохраняется структура подпапок (Copy-Item -Recurse -Force).
-	Если копирование не удалось — выводит ошибку, удаляет временные файлы, выходит с кодом 4.
-- Проверяет, что в корне проекта теперь существует файл win_asr_init.ps1.
-	Если файла нет — выводит ошибку, удаляет временные файлы, выходит с кодом 5.
-- Удаляет папку `tmp` со всем содержимым.
+- Создает папку "tmp", если ее нет.
+- В папку "tmp" скачивает ZIP-архив проекта: [main.zip](https://github.com/akret00/sherpa-onnx-russian-lab/archive/refs/heads/main.zip). Если скачивание не удалось - выводит ошибку на русском, ждёт клавишу, выходит с кодом 2.
+- Распаковывает архив в `tmp\project_update\`. Если распаковка не удалась - выводит ошибку, ждёт клавишу, выходит с кодом 3.
+- Копирует ВСЕ файлы из `tmp\project_update_temp\sherpa-onnx-russian-lab-main\*` в корень проекта, КРОМЕ файлов win_asr_setup.bat и win_asr_setup.ps1. При копировании сохраняется структура подпапок. Если копирование не удалось — выводит ошибку, выходит с кодом 4.
+- Проверяет, что в корне проекта теперь существует файл win_asr_init.ps1. Если файла нет — выводит ошибку, удаляет временные файлы, выходит с кодом 5.
 - Запускает скрипт win_asr_init.ps1:
-	- Проверяет существование .\win_asr_init.ps1.
-	- Запускает его: 
 	 $process = Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -File `".\win_asr_init.ps1`"" -Wait -PassThru
 	- Если win_asr_init.ps1 завершился с ошибкой (код возврата не 0) - выводит сообщение и передаёт код ошибки дальше.
 - win_asr_setup.ps1 завершается:
 	Если всё успешно — выводит "Обновление завершено. Нажмите любую клавишу...".
 	Если была ошибка — выводит "Обновление прервано с ошибкой. Нажмите любую клавишу...".
-## Файл win_asr_init.bat
-- Проверяет наличие PowerShell.
-- Запускает PowerShell с политикой Bypass: 
-	powershell -ExecutionPolicy Bypass -File "win_asr_init.ps1"
-- После завершения PowerShell проверяет код возврата (%errorlevel%).
-	Если код не 0 — выводит "Нажмите любую клавишу..." и ждёт.
+- Удаляет папку "tmp", со всем ее содержимым.
 ## Файл win_asr_init.ps1
 Скрипт выполняет инициализацию окружения и загрузку всех необходимых компонентов
 для работы проекта. Все компоненты устанавливаются локально в папку проекта 
-(портабельный режим), не требуя прав администратора.
+(портативный режим), не требуя прав администратора.
+
+Формат файла:  UTF-8 with BOM (CRLF)
+Скачивание должно производиться при помощи Invoke-WebRequest
 ### 1. Проверка и копирование конфигурационного файла
 - Если в корне проекта нет файла "config.yaml":
 	- Проверяем существование "config.yaml.sample".
@@ -60,73 +49,71 @@
 	- Выводим инструкцию: "Пожалуйста, установите его вручную, а затем запустите скрипт установки заново. Сейчас откроется сайт Microsoft."
 	- Открываем ссылку https://aka.ms/vc14/vc_redist.x64.exe в браузере.
 	- Ждём нажатия клавиши и завершаем скрипт с кодом `9`.
-	- Примечание: скачать ссылку можно командой в PowerShell: 
-		`Invoke-WebRequest -Uri "https://aka.ms/vc14/vc_redist.x64.exe" -OutFile "vc_redist.x64.exe"`
 ### 3. Установка портативного Python в папку bin\python
-- Удаляем папку `tmp` со всем содержимым, если она есть.
 - Проверяем, существует ли файл "bin\python\python.exe".
 - Если файла нет:
-  - При помощи Invoke-WebRequest скачиваем портативную версию Python
-    (Windows embeddable package, 64-bit 3.14.4 stable) с официального сайта (по ссылке https://www.python.org/ftp/python/3.14.4/python-3.14.4-embed-amd64.zip) во временную папку `tmp`.
+  - Скачиваем портативную версию Python (Windows embeddable package, 64-bit 3.14.4 stable) с официального сайта (по ссылке https://www.python.org/ftp/python/3.14.4/python-3.14.4-embed-amd64.zip) во временную папку `tmp`.
   - Если скачивание не удалось — выводим ошибку на русском языке,
     ждём нажатия клавиши и завершаем скрипт с кодом 2.
   - Создаём папку "bin\python" (если её нет).
   - Распаковываем архив Python в папку "bin\python" с помощью Expand-Archive.
-  - Удаляем скачанный архив.
   - НАСТРАИВАЕМ ФАЙЛ `bin\python\python314._pth`:
-    - Заменяем текст файла содержимым:
+    - Заменяем текст файла содержимым (формат файла должен быть только UTF-8 (без BOM) CRLF, это достигается использованием .NET вызовом: `[System.IO.File]::WriteAllLines($pthFile, $pthContent)`):
 	    ```txt
-	    python314.zip
+		python314.zip
 		.
 		Lib
 		Lib\site-packages
+		../../src
 		import site
 		```
   - УСТАНАВЛИВАЕМ pip (в портативной сборке его нет):
-    - При помощи Invoke-WebRequest скачиваем файл "https://bootstrap.pypa.io/get-pip.py"
-      в папку "bin\python".
+    - Cкачиваем файл "https://bootstrap.pypa.io/get-pip.py" в папку "bin\python".
     - Выполняем команду: `.\bin\python\python.exe .\bin\python\get-pip.py`
     - Если установка pip не удалась — выводим ошибку, удаляем get-pip.py,
       ждём клавишу и завершаем скрипт с кодом 3.
-    - Удаляем файл get-pip.py.
 ### 4. Установка или обновление пакетов Python
 - Проверяем наличие файла "requirements.txt" в корне проекта.
 - Если файла нет — выводим предупреждение на русском языке, ждем нажатия клавиши и завершаем скрипт с кодом 4.
-- Если файл есть:
-	- Выполняем команду: 
-		`.\bin\python\python.exe -m pip install -r requirements.txt --quiet`
-	- Если установка не удалась — выводим ошибку на русском языке (с текстом ошибки), ждём нажатия клавиши и завершаем скрипт с кодом 4.
+- Если файл есть, то выполняем команду: `.\bin\python\python.exe -m pip install -r requirements.txt --quiet`
+- Если установка пакетов не удалась — выводим ошибку на русском языке (с текстом ошибки), ждём нажатия клавиши и завершаем скрипт с кодом 4.
 ### 5. Проверка и установка ffmpeg
 - Проверяем, существует ли файл "bin\ffmpeg.exe".
 - Если файла нет:
-	- При помощи Invoke-WebRequest скачиваем архив ffmpeg (релизная сборка для Windows) по ссылке: "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip" во временную папку `tmp`.
+	- Скачиваем архив ffmpeg (релизная сборка для Windows) по ссылке: "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip" во временную папку `tmp`.
 	- Если скачивание не удалось — выводим ошибку на русском языке, ждём клавишу и завершаем скрипт с кодом 5.
-  - Создаём папку "bin" (если её нет).
+- Создаём папку "bin" (если её нет).
 - Распаковываем архив во временную папку `tmp\ffmpeg_extract`.
-  - Находим файл "ffmpeg.exe" в папке `bin\` распакованного архива.
-  - Перемещаем "ffmpeg.exe" в папку "bin\" проекта.
-  - Удаляем скачанный архив и временную папку с распакованными файлами.
-  - Проверяем "bin\ffmpeg.exe" после копирования; если файл не появился —
-    ошибка, код 5.
-### 6. Загрузка ASR-модели (GigaAM v3)
+	- Находим файл "ffmpeg.exe" в папке `bin\` распакованного архива.
+	- Перемещаем "ffmpeg.exe" в папку "bin\" проекта.
+	- Проверяем "bin\ffmpeg.exe" после копирования; если файл не появился —
+	ошибка, код 5.
+### 6. Проверка и установка 7-zip
+- Проверяем, существует ли файл "bin\7zip\7z.exe".
+- Если файла нет:
+	- Скачиваем архив 7-zip по ссылке: "https://github.com/ip7z/7zip/releases/download/26.01/7z2601-x64.exe" во временную папку `tmp`.
+	- Если скачивание не удалось — выводим ошибку на русском языке, ждём клавишу и завершаем скрипт с кодом 6.
+- Создаём папку "bin\7zip" (если её нет).
+- Распаковываем архив во временную папку `tmp\7z-extract`.
+	- Находим файлы "7z.exe" и "7z.dll" в распакованном архиве и перемещаем их в папку "bin\7zip" проекта.
+	- Проверяем "bin\7zip\7z.exe" после копирования; если файл не появился —
+	ошибка, код 6.
+### 7. Загрузка ASR-модели (GigaAM v3)
 - Проверяем, существует ли папка "models\asr\giga-am-v3" и есть ли в ней файлы "model.int8.onnx" и "tokens.txt".
 - Если папки нет или в ней есть не все файлы, то:
 	- Создаём папку "models\asr\giga-am-v3" (включая все промежуточные).
-	- При помощи Invoke-WebRequest скачиваем файл модели: "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-ctc-punct-giga-am-v3-russian-2025-12-16.tar.bz2" во временную папку `tmp` с именем "asr_model.tar.bz2".
+	- Скачиваем архив с моделью: "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-ctc-punct-giga-am-v3-russian-2025-12-16.tar.bz2" во временную папку `tmp` в файл с именем "asr_model.tar.bz2".
 	- Если скачивание не удалось — выводим ошибку на русском языке, ждём клавишу и завершаем скрипт с кодом 6.
-	- РАСПАКОВЫВАЕМ АРХИВ .tar.bz2:
-	- Используем встроенную в Windows 10/11 утилиту `tar`:
-	  `tar -xjf "tmp\asr_model.tar.bz2" -C "tmp\asr_extract"`
-	- Если команда `tar` не найдена (очень старая версия Windows), выводим ошибку с предложением обновить систему или установить 7-Zip вручную, завершаем скрипт с кодом 6.
-	- Перемещаем все файлы и папки из распакованного архива в "models\asr\giga-am-v3", КРОМЕ папки "test_wavs" (она содержит примеры аудио и не нужна для работы).
-	- Удаляем скачанный архив "asr_model.tar.bz2" и временную папку "asr_extract".
-### 7. Загрузка VAD-модели (Silero)
+	- РАСПАКОВЫВАЕМ АРХИВ .tar.bz2 при помощи архиватора "bin\7zip\7z.exe" и получаем файл "asr_model.tar.bz2", затем распаковываем файл "asr_model.tar.bz2" в папку "tmp\asr_extract" при помощи архиватора "bin\7zip\7z.exe".
+	- Перемещаем все файлы и папки "tmp\asr_extract" в "models\asr\giga-am-v3", КРОМЕ папки "test_wavs" (она содержит примеры аудио и не нужна для работы).
+	- Проверяем, существует ли папка "models\asr\giga-am-v3" и есть ли в ней файлы "model.int8.onnx" и "tokens.txt". Если хотя бы одного файла нет - ошибка, код 7.
+### 8. Загрузка VAD-модели (Silero)
 - Проверяем, существует ли файл "models\vad\silero\silero_vad.onnx".
 - Если файла нет:
 	- Создаём папку "models\vad\silero" (включая все промежуточные).
-	- При помощи Invoke-WebRequest скачиваем файл модели Silero VAD по ссылке: "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx" 	непосредственно в папку "models\vad\silero\silero_vad.onnx".
-	- Если скачивание не удалось — выводим ошибку на русском языке, ждём клавишу и завершаем скрипт с кодом 7.
-### 8. Завершение
+	- Скачиваем файл модели Silero VAD по ссылке: "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx"  непосредственно в папку "models\vad\silero\silero_vad.onnx".
+	- Если скачивание не удалось — выводим ошибку на русском языке, ждём клавишу и завершаем скрипт с кодом 8.
+### 9. Завершение
 - Выводим сообщение об успешной инициализации на русском языке.
 - Предлагаем нажать любую клавишу для выхода.
 - Завершаем скрипт с кодом 0.
@@ -144,7 +131,7 @@
     - Проверяет, что файл существует.
     - Если файл не существует — выводит ошибку и ждёт клавишу.
     - Если файл существует — запускает Python-скрипт:
-      `".\bin\python\python.exe" "src\asr_vad.py" --input "<путь>" --output-dir "results"`
+      `".\bin\python\python.exe" "src\asr_vad.py" --input "<путь>" --output-dir "results" --no-timestamps`
     - После завершения Python-скрипта (независимо от успеха):
       выводит сообщение о том, куда сохранён результат.
     - Ждёт нажатия клавиши и закрывается.
