@@ -42,49 +42,39 @@ echo PowerShell найден.
 echo.
 
 :: ----------------------------------------------------------
-:: Шаг 2. Проверка наличия файла win_asr_setup.ps1
+:: Шаг 2. Обновление файла win_asr_setup.ps1
 :: ----------------------------------------------------------
-echo [2/3] Проверка наличия скрипта win_asr_setup.ps1...
+echo [2/3] Обновление скрипта win_asr_setup.ps1 с GitHub...
+
+:: Пытаемся скачать через curl (доступен в Windows 10/11)
+curl -L -o "%~dp0win_asr_setup.ps1" "https://raw.githubusercontent.com/akret00/sherpa-onnx-russian-lab/refs/heads/main/win_asr_setup.ps1" 2>nul
 
 if not exist "%~dp0win_asr_setup.ps1" (
+    :: Если curl не сработал, пробуем через PowerShell
+    echo Загрузка через curl не удалась, пробуем PowerShell...
+    powershell -Command "Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/akret00/sherpa-onnx-russian-lab/refs/heads/main/win_asr_setup.ps1' -OutFile '%~dp0win_asr_setup.ps1'" 2>nul
+)
+
+:: Проверяем, успешно ли скачался файл
+if exist "%~dp0win_asr_setup.ps1" (
     echo.
-    echo Скрипт win_asr_setup.ps1 не найден в папке запуска.
-    echo Выполняется загрузка с GitHub...
+    echo [УСПЕХ] Файл win_asr_setup.ps1 успешно загружен с GitHub.
     echo.
-    
-    :: Пытаемся скачать через curl (доступен в Windows 10/11)
-    curl -L -o "%~dp0win_asr_setup.ps1" "https://raw.githubusercontent.com/akret00/sherpa-onnx-russian-lab/refs/heads/main/win_asr_setup.ps1" 2>nul
-    
-    if not exist "%~dp0win_asr_setup.ps1" (
-        :: Если curl не сработал, пробуем через PowerShell
-        echo Загрузка через curl не удалась, пробуем PowerShell...
-        powershell -Command "Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/akret00/sherpa-onnx-russian-lab/refs/heads/main/win_asr_setup.ps1' -OutFile '%~dp0win_asr_setup.ps1'" 2>nul
-    )
-    
-    :: Проверяем, успешно ли скачался файл
-    if exist "%~dp0win_asr_setup.ps1" (
-        echo.
-        echo [УСПЕХ] Файл win_asr_setup.ps1 успешно загружен с GitHub.
-        echo.
-    ) else (
-        echo.
-        echo [ОШИБКА] Не удалось загрузить win_asr_setup.ps1 с GitHub.
-        echo.
-        echo Возможные причины:
-        echo   - Отсутствует подключение к интернету
-        echo   - Брандмауэр или антивирус блокирует соединение
-        echo   - Сервер GitHub недоступен
-        echo.
-        echo Вы можете вручную скачать файл и поместить его в папку:
-        echo %~dp0
-        echo.
-        echo Нажмите любую клавишу для выхода...
-        pause >nul
-        exit /b 2
-    )
 ) else (
-    echo Файл win_asr_setup.ps1 найден локально.
     echo.
+    echo [ОШИБКА] Не удалось загрузить win_asr_setup.ps1 с GitHub.
+    echo.
+    echo Возможные причины:
+    echo   - Отсутствует подключение к интернету
+    echo   - Брандмауэр или антивирус блокирует соединение
+    echo   - Сервер GitHub недоступен
+    echo.
+    echo Вы можете вручную скачать файл и поместить его в папку:
+    echo %~dp0
+    echo.
+    echo Нажмите любую клавишу для выхода...
+    pause >nul
+    exit /b 2
 )
 
 :: ----------------------------------------------------------
@@ -114,9 +104,6 @@ echo ============================================================
 if %EXIT_CODE% equ 0 (
     echo.
     echo [ГОТОВО] Установка и обновление успешно завершены!
-    echo.
-    echo Теперь вы можете закрыть это окно и запустить
-    echo ярлык "Распознать аудио" на рабочем столе.
     echo.
 ) else (
     echo.
