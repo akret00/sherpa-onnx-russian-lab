@@ -10,6 +10,7 @@ def make_ffmpeg_proc_for_file(path: str):
         "ffmpeg",
         "-hide_banner", "-loglevel", "error",
         "-i", path,
+        "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", # Умная нормализация громкости
         "-ac", "1",
         "-ar", str(config.SR),
         "-f", "s16le",
@@ -25,6 +26,7 @@ def make_ffmpeg_proc_for_pulse_default():
         "-hide_banner", "-loglevel", "error",
         "-f", "pulse",
         "-i", "default",
+        "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", # Умная нормализация громкости
         "-ac", "1",
         "-ar", str(config.SR),
         "-f", "s16le",
