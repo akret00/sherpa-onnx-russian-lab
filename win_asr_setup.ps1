@@ -53,8 +53,10 @@ $FfmpegUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffm
 
 # 7-zip
 $sevenZipDir = Join-Path $ProjectRoot "bin\7zip"
-$sevenZipExe = Join-Path $sevenZipDir "7z.exe"
-$sevenZipUrl = "https://github.com/ip7z/7zip/releases/download/26.01/7z2601-x64.exe"
+$sevenZipExe = Join-Path $sevenZipDir "7za.exe"
+# $sevenZipUrl = "https://github.com/ip7z/7zip/releases/download/26.01/7z2601-x64.exe"
+$sevenZipArchiveUrl = "https://github.com/ip7z/7zip/releases/download/26.01/7z2601-extra.7z"
+$sevenZipExtractorUrl = "https://github.com/ip7z/7zip/releases/download/26.01/7zr.exe"
 
 # Модели
 $AsrModelDir = Join-Path $ProjectRoot "models\asr\giga-am-v3"
@@ -632,7 +634,7 @@ else {
     
     # Скачиваем ffmpeg
     $ffmpegArchive = Join-Path $TempDir "ffmpeg.zip"
-    Write-Host "  Скачивание ffmpeg..."
+    Write-Host "  Скачивание ffmpeg (размер ~210 МБ)..."
     
     try {
         Invoke-WebRequest -Uri $FfmpegUrl -OutFile $ffmpegArchive -ErrorAction Stop
@@ -737,28 +739,34 @@ Write-Step "[$CurrStep/$MaxSteps] Проверка и установка 7zip"
             New-Item -Path $sevenZipDir -ItemType Directory -Force | Out-Null
         }
         
-        $installerPath = Join-Path $TempDir "7z-installer.exe"
+        $7zArchivePath = Join-Path $TempDir "7z.7z"
+        $7zExcractorPath = Join-Path $TempDir "7zr.exe"
         $extractTempDir = Join-Path $TempDir "7z-extract"
         
         try {
-            Invoke-WebRequest -Uri $sevenZipUrl -OutFile $installerPath -ErrorAction Stop
-            $archiveSize = (Get-Item $installerPath).Length
-            Write-Success "7-Zip скачан (размер: $([math]::Round($archiveSize/1MB, 1)) МБ)"
+            Write-Host "Скачивание архива 7z.7z ..."
+            Invoke-WebRequest -Uri $sevenZipArchiveUrl -OutFile $7zArchivePath -ErrorAction Stop
+            $archiveSize = (Get-Item $7zArchivePath).Length
+            Write-Success "Архив 7-Zip скачан (размер: $([math]::Round($archiveSize/1MB, 1)) МБ)"
             
-            Write-Host "  Извлечение 7-Zip (тихая распаковка)..."
-            Start-Process -FilePath $installerPath -ArgumentList "/S /D=$extractTempDir" -Wait -NoNewWindow
-            # & $installerPath /S /D=$extractTempDir | Out-Null
-            # if ($LASTEXITCODE -ne 0) {
-            #     throw "Ошибка выполнения инсталлятора 7-Zip. Код: $LASTEXITCODE"
-            # }
+            Write-Host "Скачивание распаковщика для .7z ..."
+            Invoke-WebRequest -Uri $sevenZipExtractorUrl -OutFile $7zExcractorPath -ErrorAction Stop
+            $archiveSize = (Get-Item $7zExcractorPath).Length
+            Write-Success "Распаковщик .7z скачан (размер: $([math]::Round($archiveSize/1MB, 1)) МБ)"
 
-            # Ждем 1 секунду, что бы распаковщик отпустил файл
-            # Start-Sleep -Milliseconds 1000
-            
-            # Копируем только консольную версию и библиотеку
-            Copy-Item (Join-Path $extractTempDir "7z.exe") -Destination $sevenZipDir -ErrorAction Stop
-            Copy-Item (Join-Path $extractTempDir "7z.dll") -Destination $sevenZipDir -ErrorAction Stop
-            
+            Write-Host "  Извлечение 7-Zip (тихая распаковка)..."
+            # РАЗБЛОКИРУЕМ СКАЧАННЫЙ EXE и, на всякий случай, архив тоже (Windows больше не будет его блокировать)
+            Unblock-File -Path $7zExcractorPath
+            Unblock-File -Path "$7zArchivePath"
+            # Извлекаем из архива ТОЛЬКО ОДИН файл — 64-битный автономный 7za.exe
+            # Конкретный файл указывается в конце команды после папки назначения
+            & $7zExcractorPath e $7zArchivePath -o"$sevenZipDir" "x64\7za.exe" -y > $null
+
+            # Start-Process -FilePath $installerPath -ArgumentList "/S /D=$extractTempDir" -Wait -NoNewWindow
+            if ($LASTEXITCODE -ne 0) {
+                throw "Ошибка распаковки 7-Zip. Код: $LASTEXITCODE"
+            }
+
             Write-Success "7-Zip портативный установлен."
         }
         catch {

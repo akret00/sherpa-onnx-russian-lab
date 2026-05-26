@@ -10,7 +10,6 @@ models/
 scripts/
 src/examples/
 src/ai*
-src/sp*
 src/benchmark
 /tests
 docker*

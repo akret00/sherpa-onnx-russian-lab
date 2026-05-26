@@ -77,7 +77,7 @@
 
 **Подготовка**
 - Создайте папку для проекта. **Важно:** в полном пути к ней не должно быть кириллицы. Например: `C:\projects\sherpa_asr`.
-- Скачайте в созданную папку файл **[win_asr_setup.bat](https://raw.githubusercontent.com/akret00/sherpa-onnx-russian-lab/refs/heads/main/win_asr_setup.bat)**.
+- Скачайте в созданную папку файл **[win_asr_setup.bat](https://github.com/akret00/sherpa-onnx-russian-lab/blob/main/win_asr_setup.bat)**.
 
 **Установка**
 - Запустите `win_asr_setup.bat`.
