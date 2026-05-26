@@ -16,12 +16,13 @@ def parse_args():
     ap.add_argument("--provider", default="cpu", help="onnxruntime provider, usually 'cpu'")
     ap.add_argument("--num-threads", type=int, default=1)
     ap.add_argument("--output-dir", help="Путь к папке с с файлами с распознанным текстом")
-    ap.add_argument("--no-timestamps", action="store_true", help="Запрещает вывод меток времени в распознанный текст")
+    ap.add_argument("--no-timestamps", action="store_true",
+        help="Запрещает вывод меток времени в распознанный текст")
 
     # VAD параметры
-    ap.add_argument("--vad-threshold", type=float, default=0.3)
-    ap.add_argument("--vad-min-silence", type=float, default=0.25)
-    ap.add_argument("--vad-min-speech", type=float, default=0.25)
+    ap.add_argument("--vad-threshold", type=float, default=0.4) # 0.4 Было 0.3
+    ap.add_argument("--vad-min-silence", type=float, default=0.1) # 0.1 Было 0.25
+    ap.add_argument("--vad-min-speech", type=float, default=0.2) # 0.2 Было 0.25
     ap.add_argument("--vad-max-speech", type=float, default=10.0)
 
     # Embedding параметры для speaker ID
