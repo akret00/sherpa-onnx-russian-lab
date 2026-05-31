@@ -11,6 +11,8 @@ SR = 16000
 MAX_PAUSE_FOR_INERTIA = 2.0
 # 0.5 сек - минимальная длина сегмента с фразой, с которой начинается поиск спикера
 MIN_SEARCH_SEG_LEN = 0.5
+PYANNOTE_MIN_DURATION_ON = 0.3
+PYANNOTE_MIN_DURATION_OFF = 0.5
 
 # Определяем корень проекта относительно этого файла
 # .parent — это папка src/, второй .parent — корень проекта
@@ -34,6 +36,7 @@ class Config:
         self._vad_model_name = self._data['work']['vad_model_name']
         self._embed_model_name = self._data['work']['embed_model_name']
         self._asr_model_name = self._data['work']['asr_model_name']
+        self._segmentation_model_name = self._data['work']['segmentation_model_name']
 
     # @property
     def get_work(self):
@@ -61,6 +64,10 @@ class Config:
     def get_asr_model(self):
         """Возвращает настройки рабочей модели ASR"""
         return self._data["models"]["asr"][self._asr_model_name]
+
+    def get_segmentation_model(self):
+        """Возвращает настройки рабочей модели сегментации"""
+        return self._data["models"]["segmentation"][self._segmentation_model_name]
 
     def get_default_args(self):
         """Возвращает список параметров и их значений по умолчанию"""
