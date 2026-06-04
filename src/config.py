@@ -27,6 +27,10 @@ if BIN_DIR.is_dir() and str(BIN_DIR) not in os.environ["PATH"]:
     # Добавляем в начало PATH
     os.environ["PATH"] = str(BIN_DIR) + os.pathsep + os.environ["PATH"]
 
+# Определяем пути к файлу с базой данных и файлу со структурой базы данных
+DB_DEFAULT_PATH = BASE_DIR / "db" / "speaker.sqlite3"
+DB_DEFAULT_SCHEME_PATH = BASE_DIR / "src" / "db_scheme.sql"
+
 class Config:
     """Класс загрузчика конфигурации"""
     def __init__(self):

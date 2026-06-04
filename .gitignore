@@ -4,6 +4,7 @@
 __pycache__/
 .pytest_cache/
 .vscode/
+.coverage
 dataset/
 notebooks/
 models/
@@ -11,11 +12,10 @@ scripts/
 src/examples/
 src/ai*
 src/benchmark
-/tests
 docker*
 config.yaml
-pytest.ini
 *_manual.md
 *_draft.md
 *.wav
 *.opus
+*.sqlite3

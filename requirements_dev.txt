@@ -1,0 +1,9 @@
+-r requirements.txt
+pytest
+pylint-pytest
+pytest-cov
+jiwer
+# ru-normalizr
+# spyder
+# simpleder
+# pyannote.metrics
