@@ -13,13 +13,13 @@ from speaker_storage import (
 # ФИКСТУРЫ (Настройка окружения для каждого теста)
 # ==========================================
 
-@pytest.fixture(params=["memory", "file"])
-def db_repo(request, tmp_path):
-    """Фикстура, которая по очереди возвращает то ОЗУ, то Дисковую БД."""
-    if request.param == "memory":
-        return VoiceDbRepository(db_path=":memory:")
-    db_file = tmp_path / "test_voice.db"
-    return VoiceDbRepository(db_path=str(db_file))
+@pytest.fixture
+def db_repo(tmp_path):
+    """Фикстура, которая возвращает объект VoiceDbRepository"""
+    repo = VoiceDbRepository(db_path=str(tmp_path / "test_voice.db"))
+
+    yield repo
+    # Здесь может быть код очистки или завершения, когда понадобится
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def sample_speakers(db_repo):
     spk1 = Speaker(name="Алексей", embedding=b"\x01\x02")
     spk2 = Speaker(name="Мария", embedding=b"\x03\x04")
     db_repo.save_speakers([spk1, spk2])
-    return spk1, spk2
+    yield spk1, spk2
 
 
 # ==========================================

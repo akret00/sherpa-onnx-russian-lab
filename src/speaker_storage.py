@@ -54,28 +54,19 @@ class VoiceDbRepository:
 
     def __init__(self, db_path: str | None = None):
         """Инициализирует подключение к БД и создает таблицы, если их нет."""
-        self._memory_conn = None  # Сюда сохраним коннект, ЕСЛИ база в памяти
-        self._is_in_memory = False
         # Корректно разворачиваем пути (~, относительные и т.д.) в абсолютный путь
         if db_path is None:
             self.db_path = config.DB_DEFAULT_PATH
-        elif db_path == ":memory:":
-            self._is_in_memory = True
-            self.db_path = db_path
         else:
             self.db_path = Path(db_path).expanduser().resolve()
 
         # Проверяем, нужна ли инициализация базы данных
         is_need_init = False
-        if self._is_in_memory:
-            # Если БД в памяти, то инициализируем ее каждый раз
-            is_need_init = True
-        else:
-            # Проверяем, существует ли файл базы данных ДО подключения
-            is_need_init = not self.db_path.is_file()
-            if is_need_init:
-                # Создаем родительские папки, если их еще нет
-                self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        # Проверяем, существует ли файл базы данных ДО подключения
+        is_need_init = not self.db_path.is_file()
+        if is_need_init:
+            # Создаем родительские папки, если их еще нет
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Инициализируем структуру БД, если она новая
         if is_need_init:
@@ -87,17 +78,10 @@ class VoiceDbRepository:
     def connection_scope(self):
         """
         Контекстный менеджер управляет транзакциями.
-        Закрывает коннект для БД на диске, или сохраняет для БД в ОЗУ.
+        Закрывает коннект для БД на диске, или оставляет открытым для БД в ОЗУ.
         """
         # 1. Получаем нужный коннект
-        if self._is_in_memory:
-            if self._memory_conn is None:
-                # Для БД в памяти создаем ОДИН перманентный коннект сразу
-                self._memory_conn = sqlite3.connect(":memory:")
-            conn = self._memory_conn
-        else:
-            conn = sqlite3.connect(self.db_path)
-
+        conn = sqlite3.connect(self.db_path)
         conn.execute("PRAGMA foreign_keys = ON;")
 
         try:
@@ -107,9 +91,8 @@ class VoiceDbRepository:
             conn.rollback()  # Авто-откат при ошибке внутри блока with
             raise
         finally:
-            # 2. Закрываем коннект ТОЛЬКО если это файл на диске
-            if self._memory_conn is None:
-                conn.close()
+            # 2. Закрываем коннект
+            conn.close()
 
     def _init_db(self):
         """Создает структуру таблиц и индексов, которых нет в базе."""
