@@ -5,6 +5,7 @@ from contextlib import contextmanager
 import sqlite3
 from typing import List
 from pathlib import Path
+import numpy
 import config
 
 # ==========================================
@@ -22,7 +23,9 @@ class Speaker:
     """Модель данных спикера."""
     id: int | None = None
     name: str = "Unknown Speaker"
-    embedding: bytes | None = None  # Хранится как сырые байты (float32 array)
+    embedding: numpy.ndarray | None = None
+    total_count: int = 0 # Глобальный счетчик фраз
+    count: int = 0  # Сессионный счетчик фраз, не сохраняется в БД
     created_at: str | None = None
 
 @dataclass
@@ -57,6 +60,8 @@ class VoiceDbRepository:
         # Корректно разворачиваем пути (~, относительные и т.д.) в абсолютный путь
         if db_path is None:
             self.db_path = config.DB_DEFAULT_PATH
+        elif db_path == ":memory:":
+            raise ValueError("Работа с БД в памяти не поддерживается")
         else:
             self.db_path = Path(db_path).expanduser().resolve()
 
@@ -82,6 +87,7 @@ class VoiceDbRepository:
         """
         # 1. Получаем нужный коннект
         conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row # Позволяет обращаться к колонке по имени
         conn.execute("PRAGMA foreign_keys = ON;")
 
         try:
@@ -119,7 +125,7 @@ class VoiceDbRepository:
         name: str | None = None
     ) -> List[Speaker]:
         """Загружает список спикеров по фильтрам. Без фильтров возвращает ВСЕХ спикеров."""
-        query = "SELECT id, name, embedding, created_at FROM speaker WHERE 1=1"
+        query = "SELECT id, name, embedding_blob, total_count, created_at FROM speaker WHERE 1=1"
         params = []
 
         if speaker_ids:
@@ -136,7 +142,16 @@ class VoiceDbRepository:
             cursor.execute(query, params)
             rows = cursor.fetchall()
 
-        return [Speaker(id=r[0], name=r[1], embedding=r[2], created_at=r[3]) for r in rows]
+        return [
+            Speaker(
+                id = r["id"],
+                name = r["name"],
+                embedding = numpy.frombuffer(r["embedding_blob"], dtype = numpy.float32),
+                total_count = r["total_count"],
+                created_at = r["created_at"],
+            )
+            for r in rows
+        ]
 
     def load_audio_file(
         self,
@@ -161,10 +176,10 @@ class VoiceDbRepository:
 
         if row:
             return AudioFile(
-                id=row[0],
-                file_path=row[1],
-                duration_seconds=row[2],
-                processed_at=row[3]
+                id=row["id"],
+                file_path=row["file_path"],
+                duration_seconds=row["duration_seconds"],
+                processed_at=row["processed_at"]
             )
         return None
 
@@ -179,7 +194,7 @@ class VoiceDbRepository:
         with self.connection_scope() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT id, audio_file_id, speaker_id, start_time, end_time, text, word_count 
+                SELECT id, audio_file_id, speaker_id, start_time, end_time, text, word_count
                 FROM speech_segment
                 WHERE audio_file_id = ?
                 ORDER BY start_time ASC
@@ -188,8 +203,13 @@ class VoiceDbRepository:
 
         for r in seg_rows:
             segments.append(AudioSegment(
-                id=r[0], audio_file_id=r[1], speaker_id=r[2],
-                start_time=r[3], end_time=r[4], text=r[5], word_count=r[6]
+                id=r["id"],
+                audio_file_id=r["audio_file_id"],
+                speaker_id=r["speaker_id"],
+                start_time=r["start_time"],
+                end_time=r["end_time"],
+                text=r["text"],
+                word_count=r["word_count"]
             ))
 
         # 2. Извлекаем уникальные ID спикеров из этих сегментов и загружаем их
@@ -219,8 +239,13 @@ class VoiceDbRepository:
                 # Сценарий А: Абсолютно новый спикер
                 if speaker.id is None:
                     cursor.execute(
-                        "INSERT INTO speaker (name, embedding) VALUES (?, ?);",
-                        (speaker.name, speaker.embedding)
+                        "INSERT INTO speaker (name, embedding_blob, total_count) "
+                        "VALUES (:name, :embedding_blob, :total_count);",
+                        {
+                            "name": speaker.name,
+                            "embedding_blob": speaker.embedding.tobytes(),
+                            "total_count": speaker.total_count,
+                        }
                     )
                     speaker.id = cursor.lastrowid  # Наполняем объект сгенерированным ID из базы
 
@@ -228,13 +253,24 @@ class VoiceDbRepository:
                 else:
                     if mode == SpeakerUpdateMode.UPDATE_ALL_EXCEPT_EMBEDDING:
                         cursor.execute(
-                            "UPDATE speaker SET name = ? WHERE id = ?;",
-                            (speaker.name, speaker.id)
+                            "UPDATE speaker "
+                            "SET name = :name, total_count = :total_count "
+                            "WHERE id = :id;",
+                            {
+                                "name": speaker.name,
+                                "total_count": speaker.total_count,
+                                "id": speaker.id
+                            }
                         )
                     elif mode == SpeakerUpdateMode.UPDATE_EMBEDDINGS_ONLY:
                         cursor.execute(
-                            "UPDATE speaker SET embedding = ? WHERE id = ?;",
-                            (speaker.embedding, speaker.id)
+                            "UPDATE speaker "
+                            "SET embedding_blob = :embedding_blob "
+                            "WHERE id = :id;",
+                            {
+                                "embedding_blob": speaker.embedding.tobytes(),
+                                "id": speaker.id
+                            }
                         )
                     elif mode == SpeakerUpdateMode.NO_UPDATE:
                         pass  # Ничего не делаем со старым спикером
@@ -245,14 +281,24 @@ class VoiceDbRepository:
             cursor = conn.cursor()
             if audio_file.id is None:
                 cursor.execute(
-                    "INSERT INTO audio_file (file_path, duration_seconds) VALUES (?, ?);",
-                    (audio_file.file_path, audio_file.duration_seconds)
+                    "INSERT INTO audio_file (file_path, duration_seconds) "
+                    "VALUES (:file_path, :duration_seconds);",
+                    {
+                        "file_path": audio_file.file_path,
+                        "duration_seconds": audio_file.duration_seconds
+                    }
                 )
                 audio_file.id = cursor.lastrowid
             else:
                 cursor.execute(
-                    "UPDATE audio_file SET file_path = ?, duration_seconds = ? WHERE id = ?;",
-                    (audio_file.file_path, audio_file.duration_seconds, audio_file.id)
+                    "UPDATE audio_file "
+                    "SET file_path = :file_path, duration_seconds = :duration_seconds "
+                    "WHERE id = :id;",
+                    {
+                        "file_path": audio_file.file_path,
+                        "duration_seconds": audio_file.duration_seconds,
+                        "id": audio_file.id
+                    }
                 )
 
         return audio_file.id
@@ -264,7 +310,14 @@ class VoiceDbRepository:
         """
         # Подготавливаем кортежи для быстрой пакетной вставки через executemany
         data_to_insert = [
-            (audio_file_id, seg.speaker_id, seg.start_time, seg.end_time, seg.text, seg.word_count)
+            {
+                "audio_file_id": audio_file_id,
+                "speaker_id": seg.speaker_id,
+                "start_time": seg.start_time,
+                "end_time": seg.end_time,
+                "text": seg.text,
+                "word_count": seg.word_count
+            }
             for seg in segments
         ]
 
@@ -273,12 +326,15 @@ class VoiceDbRepository:
 
             # Перед перезаписью сегментов конкретного файла удаляем старые,
             # если требуется логикой перезаписи
-            cursor.execute("DELETE FROM speech_segment WHERE audio_file_id = ?;", (audio_file_id,))
+            cursor.execute(
+                "DELETE FROM speech_segment WHERE audio_file_id = :audio_file_id;",
+                {"audio_file_id": audio_file_id,}
+            )
 
             cursor.executemany("""
                 INSERT INTO speech_segment
                 (audio_file_id, speaker_id, start_time, end_time, text, word_count)
-                VALUES (?, ?, ?, ?, ?, ?);
+                VALUES (:audio_file_id, :speaker_id, :start_time, :end_time, :text, :word_count);
             """, data_to_insert)
 
 def usage_sample():
