@@ -5,6 +5,7 @@ import model_utils
 import asr_utils
 import config
 import segment_utils
+from speaker_storage import Speaker
 
 class SpeakerResolvingMode(Enum):
     """Возможные способы диаризации"""
@@ -38,9 +39,8 @@ class SpeakerResolver:
             # Переменные для сброса последнего спикера при паузах
             self._last_name = "Unknown"
             self._last_end_time = 0.0
-            # Словарь спикеров с векторами и количеством накопленных фраз
-            # { "SPK_01": {"centroid": np_array, "count": int, "label": "Иван"} }
-            self._speaker_db = {}
+            # Список спикеров с векторами и количеством накопленных фраз
+            self._speaker_db: list[Speaker] = []
 
         # Инициализация экстрактора
         if self._resolving_mode in (
@@ -61,16 +61,16 @@ class SpeakerResolver:
             return vec  # Защита от деления на ноль, если вектор пустой
         return vec / norm
 
-    def _update_speaker_profile(self, name, new_emb, alpha=0.1):
+    def _update_speaker_profile(self, speaker: Speaker, new_emb, alpha=0.1):
         """Мягкое обновление центроида спикера"""
-        old_centroid = self._speaker_db[name]["centroid"]
+        old_centroid = speaker.embedding
         # Формула экспоненциального сглаживания
         updated_centroid = (1 - alpha) * old_centroid + alpha * new_emb
         # Нормализуем вектор обратно (важно для косинусного сходства)
-        self._speaker_db[name]["centroid"] = self._normalize_vector(updated_centroid)
-        self._speaker_db[name]["count"] += 1
+        speaker.embedding = self._normalize_vector(updated_centroid)
+        speaker.count += 1
 
-    def _search_speaker(self, seg, emb):
+    def _search_speaker(self, seg, emb) -> Speaker:
         """
         Делает:
             - поиск эмбеддинга фразы спикера среди центроидов
@@ -78,32 +78,32 @@ class SpeakerResolver:
             - если фраза качественная, и спикер найден, то ообновляет его центроид
         """
         # Ищем в нашей базе через косинусное сходство
-        best_name = None
+        best_spk = None
         best_score = -1
-        for curr_name, profile in self._speaker_db.items():
-            score = numpy.dot(profile["centroid"], emb) # Косинусное для нормированных векторов
+        for curr_spk in self._speaker_db:
+            score = numpy.dot(curr_spk.embedding, emb) # Косинусное для нормированных векторов
             if score > best_score:
                 best_score = score
-                best_name = curr_name
+                best_spk = curr_spk
 
         # print(f"Threshold: {self._spk_threshold} Best score: {best_score}")
 
         if best_score > self._spk_threshold:
-            name = best_name
+            spk = best_spk
             # Обновляем профиль только если фраза длинная (> 2 сек) = качественная
             if len(seg) > 2.0 * config.SR:
-                self._update_speaker_profile(name, emb)
+                self._update_speaker_profile(spk, emb)
         else:
-            # Создаем нового
-            name = f"SPK_{self._speaker_id:02d}"
-            self._speaker_db[name] = {
-                "centroid": emb, 
-                "count": 1, 
-                "label": name
-            }
-            self._speaker_id += 1
+            # Создаем нового и добавляем к базе
+            spk = Speaker(
+                name = f"SPK_{len(self._speaker_db):03d}",
+                embedding = emb,
+                count = 1,
+            )
 
-        return name
+            self._speaker_db.append(spk)
+
+        return spk
 
     def resolve(self, seg, t_start = 0, t_end = 0):
         """
@@ -139,7 +139,7 @@ class SpeakerResolver:
             # 3. Логика определения спикера (только для качественных сегментов)
             if len(vad_seg) >= int(config.MIN_SEARCH_SEG_LEN * config.SR):
                 emb = self._normalize_vector(asr_utils.compute_embedding(self._extractor, vad_seg))
-                name = self._search_speaker(vad_seg, emb)
+                name = self._search_speaker(vad_seg, emb).name
                 self._last_name = name # Обновляем "уверенного" спикера
             else:
                 # Сегмент короткий: берем последнего или Unknown
