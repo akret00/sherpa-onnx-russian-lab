@@ -6,7 +6,8 @@
 CREATE TABLE IF NOT EXISTS speaker (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL DEFAULT 'Unknown Speaker',
-    embedding BLOB,
+    embedding_blob BLOB NOT NULL,
+    total_count INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
