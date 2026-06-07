@@ -79,6 +79,7 @@ set "PROJECT_DIR=%PROJECT_DIR:~0,-1%"
 :: Исполняемые файлы
 set "PYTHON_EXE=%PROJECT_DIR%\bin\python\python.exe"
 set "ASR_SCRIPT=%PROJECT_DIR%\src\asr_vad.py"
+set "MANAGE_SCRIPT=%PROJECT_DIR%\src\manage_speakers.py"
 
 :: Папка для результатов
 set "OUTPUT_DIR=%PROJECT_DIR%\results"
@@ -129,8 +130,14 @@ echo Входной файл: %INPUT_FILE%
 echo.
 
 :: Запускаем Python-скрипт
-:: Кавычки вокруг путей обязательны для поддержки пробелов и кириллицы
-"%PYTHON_EXE%" "%ASR_SCRIPT%" --input "%INPUT_FILE%" --output-dir "%OUTPUT_DIR%" --no-timestamps
+if "%~1"=="" (
+    echo Запуск менеджера спикеров...
+    "%PYTHON_EXE%" "%MANAGER_SCRIPT%"
+) else (
+    echo Обработка файла: %~nx1...
+    :: Кавычки вокруг путей обязательны для поддержки пробелов и кириллицы
+    "%PYTHON_EXE%" "%ASR_SCRIPT%" --input "%INPUT_FILE%" --output-dir "%OUTPUT_DIR%" --no-timestamps
+)
 
 :: Сохраняем код возврата Python-скрипта
 set "EXIT_CODE=%errorlevel%"
