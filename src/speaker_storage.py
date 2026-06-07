@@ -14,6 +14,7 @@ import config
 
 class SpeakerUpdateMode(Enum):
     """Режимы обновления существующих спикеров при сохранении."""
+    UPDATE_ALL = "all"                                   # Обновить все, кроме ID
     UPDATE_ALL_EXCEPT_EMBEDDING = "all_except_embedding" # Обновить имя, метрики (если появятся)
     UPDATE_EMBEDDINGS_ONLY = "embeddings_only"           # Обновить только вектор
     NO_UPDATE = "no_update"                              # Не трогать старых, только добавлять новых
@@ -225,7 +226,7 @@ class VoiceDbRepository:
     def save_speakers(
         self,
         speakers: List[Speaker],
-        mode: SpeakerUpdateMode = SpeakerUpdateMode.NO_UPDATE
+        update_mode: SpeakerUpdateMode = SpeakerUpdateMode.NO_UPDATE
     ):
         """Сохраняет список спикеров. 
         
@@ -251,28 +252,41 @@ class VoiceDbRepository:
 
                 # Сценарий Б: Спикер уже существует, обрабатываем согласно логике mode
                 else:
-                    if mode == SpeakerUpdateMode.UPDATE_ALL_EXCEPT_EMBEDDING:
+                    if update_mode == SpeakerUpdateMode.UPDATE_ALL:
+                        cursor.execute(
+                            "UPDATE speaker "
+                            "SET name = :name, embedding_blob = :embedding_blob, "
+                            "   total_count = :total_count "
+                            "WHERE id = :id; ",
+                            {
+                                "name": speaker.name,
+                                "embedding_blob": speaker.embedding.tobytes(),
+                                "total_count": speaker.total_count,
+                                "id": speaker.id
+                            }
+                        )
+                    elif update_mode == SpeakerUpdateMode.UPDATE_ALL_EXCEPT_EMBEDDING:
                         cursor.execute(
                             "UPDATE speaker "
                             "SET name = :name, total_count = :total_count "
-                            "WHERE id = :id;",
+                            "WHERE id = :id; ",
                             {
                                 "name": speaker.name,
                                 "total_count": speaker.total_count,
                                 "id": speaker.id
                             }
                         )
-                    elif mode == SpeakerUpdateMode.UPDATE_EMBEDDINGS_ONLY:
+                    elif update_mode == SpeakerUpdateMode.UPDATE_EMBEDDINGS_ONLY:
                         cursor.execute(
                             "UPDATE speaker "
                             "SET embedding_blob = :embedding_blob "
-                            "WHERE id = :id;",
+                            "WHERE id = :id; ",
                             {
                                 "embedding_blob": speaker.embedding.tobytes(),
                                 "id": speaker.id
                             }
                         )
-                    elif mode == SpeakerUpdateMode.NO_UPDATE:
+                    elif update_mode == SpeakerUpdateMode.NO_UPDATE:
                         pass  # Ничего не делаем со старым спикером
 
     def save_audio_file(self, audio_file: AudioFile) -> int:
@@ -350,7 +364,7 @@ def usage_sample():
 
     # 3. Сохраняем спикеров с обновлением имени для старых.
     # Обратите внимание: у speaker_new_found динамически заполнится поле .id!
-    repo.save_speakers(speakers_list, mode=SpeakerUpdateMode.UPDATE_ALL_EXCEPT_EMBEDDING)
+    repo.save_speakers(speakers_list, update_mode=SpeakerUpdateMode.UPDATE_ALL_EXCEPT_EMBEDDING)
     print(f"Новому спикеру база присвоила ID: {speaker_new_found.id}")
 
     # 4. Создаем и сохраняем информацию об обработанном аудиофайле

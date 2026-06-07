@@ -115,6 +115,26 @@ def test_save_audio_file_and_segments(db_repo, sample_speakers):
 # ТЕСТЫ: РЕЖИМЫ ОБНОВЛЕНИЯ СПИКЕРОВ (UPDATE MODES)
 # ==========================================
 
+def test_update_mode_all(db_repo, sample_speakers):
+    """Проверяет обновление метаданных без изменения вектора."""
+    spk1, _ = sample_speakers
+
+    # Меняем имя в коде, но оставляем старый эмбеддинг
+    spk1.name = "Алексей Переименованный"
+    mock_embedding3 = numpy.random.rand(128).astype(numpy.float32)
+    spk1.embedding = mock_embedding3 # Попытка изменить эмбеддинг
+    spk1.total_count = 33
+
+    db_repo.save_speakers([spk1], update_mode=SpeakerUpdateMode.UPDATE_ALL)
+
+    # Вычитываем из базы заново
+    updated_spk = db_repo.load_speakers(speaker_ids=[spk1.id])[0]
+
+    assert updated_spk.name == "Алексей Переименованный"
+    assert numpy.array_equal(updated_spk.embedding, mock_embedding3)
+    assert updated_spk.total_count == 33
+
+
 def test_update_mode_all_except_embedding(db_repo, sample_speakers):
     """Проверяет обновление метаданных без изменения вектора."""
     spk1, _ = sample_speakers
@@ -126,10 +146,11 @@ def test_update_mode_all_except_embedding(db_repo, sample_speakers):
     spk1.embedding = mock_embedding3 # Попытка изменить эмбеддинг
     spk1.total_count = 33
 
-    db_repo.save_speakers([spk1], mode=SpeakerUpdateMode.UPDATE_ALL_EXCEPT_EMBEDDING)
+    db_repo.save_speakers([spk1], update_mode=SpeakerUpdateMode.UPDATE_ALL_EXCEPT_EMBEDDING)
 
     # Вычитываем из базы заново
     updated_spk = db_repo.load_speakers(speaker_ids=[spk1.id])[0]
+
     assert updated_spk.name == "Алексей Переименованный"
     # Эмбеддинг должен остаться СТАРЫМ
     assert numpy.array_equal(updated_spk.embedding, old_embedding1)
@@ -145,10 +166,11 @@ def test_update_mode_embeddings_only(db_repo, sample_speakers):
     spk1.embedding = mock_embedding3 # Новый эмбеддинг
     spk1.total_count = 33
 
-    db_repo.save_speakers([spk1], mode=SpeakerUpdateMode.UPDATE_EMBEDDINGS_ONLY)
+    db_repo.save_speakers([spk1], update_mode=SpeakerUpdateMode.UPDATE_EMBEDDINGS_ONLY)
 
     # Вычитываем из базы заново
     updated_spk = db_repo.load_speakers(speaker_ids=[spk1.id])[0]
+
     assert updated_spk.name == "Алексей"  # Имя должно остаться СТАРЫМ
     assert numpy.array_equal(updated_spk.embedding, mock_embedding3) # Эмбеддинг обновился
     assert updated_spk.total_count == 11 # Счетчик должен остаться старым
@@ -167,18 +189,22 @@ def test_update_mode_no_update(db_repo, sample_speakers):
     mock_embedding4 = numpy.random.rand(128).astype(numpy.float32)
     new_spk = Speaker(name = "Новичок", embedding = mock_embedding4, total_count = 44)
 
-    db_repo.save_speakers([spk1, new_spk], mode=SpeakerUpdateMode.NO_UPDATE)
+    db_repo.save_speakers([spk1, new_spk], update_mode=SpeakerUpdateMode.NO_UPDATE)
 
     # Проверяем старого
     old_spk_db = db_repo.load_speakers(speaker_ids=[spk1.id])[0]
+
     assert old_spk_db.name == "Алексей" # Данные не изменились
     assert old_spk_db.total_count == 11 # Счетчик должен остаться старым
 
     # Проверяем нового
-    assert new_spk.id is not None
-    assert new_spk.name == "Новичок"
-    assert numpy.array_equal(new_spk.embedding, mock_embedding4)
-    assert new_spk.total_count == 44
+    assert new_spk.id is not None # При сохранении, объекту должен был быть выдан ИД из БД
+
+    # Загружаем нового и проверяем
+    new_spk_from_db = db_repo.load_speakers(speaker_ids=[new_spk.id])[0]
+    assert new_spk_from_db.name == "Новичок"
+    assert numpy.array_equal(new_spk_from_db.embedding, mock_embedding4)
+    assert new_spk_from_db.total_count == 44
 
     assert len(db_repo.load_speakers()) == 3
 

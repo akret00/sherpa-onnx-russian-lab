@@ -12,6 +12,7 @@ import asr_utils
 import args_utils
 import vad_utils
 import diarization_utils
+import speaker_storage
 
 def main():
     """Основная функция"""
@@ -29,12 +30,20 @@ def main():
         max_speech=args.vad_max_speech,
     )
 
+    # Создаем репозитарий для спикеров
+    db_repo = speaker_storage.VoiceDbRepository()
+
     #Инициализируем распознаватель голоса
     speaker_resolver = diarization_utils.SpeakerResolver(
-        args.num_threads,
-        args.spk_threshold,
-        diarization_utils.SpeakerResolvingMode.VAD_SPEAKER_MANAGER
+        num_threads = args.num_threads,
+        spk_threshold = args.spk_threshold,
+        resolving_mode = diarization_utils.SpeakerResolvingMode.VAD_SPEAKER_MANAGER,
+        speakers = db_repo.load_speakers()
     )
+
+    # print(f"Загружено спикеров: {len(speaker_resolver.get_speakers())}")
+    # for spk in speaker_resolver.get_speakers():
+    #     print(f"ID: {spk.id}  Name: {spk.name}  Total count: {spk.total_count}")
 
     # Инициализируем ASR распознаватель
     recognizer = model_utils.load_asr(num_threads = args.num_threads, provider = args.provider)
@@ -100,6 +109,12 @@ def main():
         print(f"Время распознавания: {end_time - start_time:.6f} секунд")
     finally:
         ffmpeg_utils.close_ffmpeg_proc(proc)
+
+    # Сохраняем обновленную базу спикеров
+    db_repo.save_speakers(
+        speaker_resolver.get_speakers(),
+        update_mode = speaker_storage.SpeakerUpdateMode.UPDATE_ALL
+    )
 
 if __name__ == "__main__":
     main()
