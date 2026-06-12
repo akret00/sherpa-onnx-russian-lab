@@ -2,11 +2,13 @@
 import sqlite3
 import pytest
 import numpy
-from speaker_storage import (
-    VoiceDbRepository,
+from entities import (
     Speaker,
     AudioFile,
     AudioSegment,
+)
+from speaker_storage import (
+    VoiceDbRepository,
     SpeakerUpdateMode
 )
 

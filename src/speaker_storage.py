@@ -1,5 +1,4 @@
 """Модуль реалиpует хранилище данных о спикерах"""
-from dataclasses import dataclass
 from enum import Enum
 from contextlib import contextmanager
 import sqlite3
@@ -7,10 +6,8 @@ from typing import List
 from pathlib import Path
 import numpy
 import config
+from entities import Speaker, AudioFile, AudioSegment
 
-# ==========================================
-# 1. КЛАССЫ ДАННЫХ (ОБЪЕКТНЫЕ МОДЕЛИ)
-# ==========================================
 
 class SpeakerUpdateMode(Enum):
     """Режимы обновления существующих спикеров при сохранении."""
@@ -19,38 +16,8 @@ class SpeakerUpdateMode(Enum):
     UPDATE_EMBEDDINGS_ONLY = "embeddings_only"           # Обновить только вектор
     NO_UPDATE = "no_update"                              # Не трогать старых, только добавлять новых
 
-@dataclass
-class Speaker:
-    """Модель данных спикера."""
-    id: int | None = None
-    name: str = "Unknown Speaker"
-    embedding: numpy.ndarray | None = None
-    total_count: int = 0 # Глобальный счетчик фраз
-    count: int = 0  # Сессионный счетчик фраз, не сохраняется в БД
-    created_at: str | None = None
-
-@dataclass
-class AudioFile:
-    """Модель метаданных аудиофайла."""
-    id: int | None = None
-    file_path: str = ""
-    duration_seconds: float = 0.0
-    processed_at: str | None = None
-
-@dataclass
-class AudioSegment:
-    """Модель текстового сегмента аудиофайла с таймкодами."""
-    id: int | None = None
-    audio_file_id: int | None = None
-    speaker_id: int | None = None
-    start_time: float = 0.0
-    end_time: float = 0.0
-    text: str | None = None
-    word_count: int | None = None
-
-
 # ==========================================
-# 2. ОСНОВНОЙ РЕПОЗИТОРИЙ БАЗЫ ДАННЫХ
+# ОСНОВНОЙ РЕПОЗИТОРИЙ БАЗЫ ДАННЫХ
 # ==========================================
 
 class VoiceDbRepository:
