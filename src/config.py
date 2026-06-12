@@ -1,6 +1,7 @@
 """
 Модуль загрузки конфигурации
 """
+from dataclasses import dataclass
 from pathlib import Path
 import os
 import yaml
@@ -89,5 +90,20 @@ class Config:
 
         return default_args
 
+@dataclass
+class PipelineConfig:
+    """Конфигурация пайплайна"""
+    config: Config
+    num_threads = 1
+    provider = "cpu"
+    vad_threshold: float = 0.4 # 0.4 Было 0.3
+    vad_min_silence: float = 0.1 # 0.1 Было 0.25
+    vad_min_speech: float = 0.2 # 0.2 Было 0.25
+    vad_max_speech: float = 10.0
+    # Embedding параметры для speaker ID
+    spk_threshold: float = 0.4
+
+
 # Создаем экземпляр (синглтон) для импорта в другие файлы
 config = Config()
+pl_conf = PipelineConfig(config = config)

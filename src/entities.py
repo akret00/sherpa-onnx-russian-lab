@@ -34,7 +34,7 @@ class AudioSegment:
 @dataclass
 class PipelineResult:
     """Модель с результатами работы пайплайна"""
-    pipeline_type: str
+    pipeline_type: str | None
     speakers: list[Speaker]
-    file: AudioFile
-    segments: list[AudioSegment]
+    file: AudioFile | None
+    segments: list[AudioSegment] | None
