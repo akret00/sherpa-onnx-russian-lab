@@ -19,13 +19,17 @@ class AudioFile:
     file_path: str = ""
     duration_seconds: float = 0.0
     processed_at: str | None = None
+    segments: list[AudioSegment] | None = None
 
 @dataclass
 class AudioSegment:
     """Модель текстового сегмента аудиофайла с таймкодами."""
     id: int | None = None
     audio_file_id: int | None = None
+    audio_file: AudioFile | None = None
     speaker_id: int | None = None
+    speaker: Speaker | None = None
+    cos_similarity: float = 0.0 # Косинусная схожесть между эмбеддингами спикера и сегмента
     start_time: float = 0.0
     end_time: float = 0.0
     text: str | None = None

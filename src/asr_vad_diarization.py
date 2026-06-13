@@ -86,7 +86,11 @@ def main():
                 # Распознаем (ASR) полученный из VAD сегмент
                 text = asr_utils.decode_asr(recognizer, segment)
                 # Распознаем спикера
-                speaker_name = speaker_resolver.resolve(segment)
+                resolve_result = speaker_resolver.resolve(segment)
+                if resolve_result.speaker:
+                    speaker_name = resolve_result.speaker.name
+                else:
+                    speaker_name = "Unknown"
 
                 if text:
                     print(f"[{t_start:10.3f}-{t_end:10.3f}] {speaker_name}: {text}")
@@ -99,7 +103,11 @@ def main():
                 # Распознаем (ASR) полученный из VAD сегмент
                 text = asr_utils.decode_asr(recognizer, segment)
                 # Распознаем спикера
-                speaker_name = speaker_resolver.resolve(segment)
+                resolve_result = speaker_resolver.resolve(segment)
+                if resolve_result.speaker:
+                    speaker_name = resolve_result.speaker.name
+                else:
+                    speaker_name = "Unknown"
 
                 if text:
                     print(f"[{t_start:10.3f}-{t_end:10.3f}] {speaker_name}: {text}")

@@ -5,7 +5,7 @@ from config import PipelineConfig, SR
 from entities import PipelineResult
 import ffmpeg_utils
 import model_utils
-from speaker_storage import Speaker
+from speaker_storage import Speaker, AudioFile, AudioSegment
 import diarization_utils
 import vad_utils
 import asr_utils
@@ -16,6 +16,7 @@ class CentroidDiarizationPipeline:
         self._pl_config = pl_config
         self._config = pl_config.config
         self._speakers = speakers
+        self.pipeline_result: PipelineResult | None = None
         self._init_models()
 
     def _init_models(self):
@@ -60,6 +61,8 @@ class CentroidDiarizationPipeline:
 
         try:
             # Оснвной цикл
+            audio_file = AudioFile(file_path = audio_path)
+            segments: list[AudioSegment] = []
             while True:
                 # Пробуем прочитать полный блок (window_size == 512) данных (0.032 секунды аудио)
                 samples = ffmpeg_utils.read_samples(proc, self._window_size)
@@ -79,10 +82,23 @@ class CentroidDiarizationPipeline:
                     # Распознаем (ASR) полученный из VAD сегмент
                     text = asr_utils.decode_asr(self._recognizer, segment)
                     # Распознаем спикера
-                    speaker_name = self._speaker_resolver.resolve(segment, t_start, t_end)
+                    resolve_result = self._speaker_resolver.resolve(segment, t_start, t_end)
+                    if resolve_result.speaker:
+                        speaker_name = resolve_result.speaker.name
+                    else:
+                        speaker_name = "Unknown"
 
                     if text:
                         print(f"[{t_start:10.3f}-{t_end:10.3f}] {speaker_name}: {text}")
+                        segment = AudioSegment(
+                            audio_file = audio_file,
+                            speaker = resolve_result.speaker,
+                            cos_similarity = resolve_result.cos_similarity,
+                            start_time = t_start,
+                            end_time = t_end,
+                            text = text,
+                        )
+                        segments.append(segment)
 
             # Проталкиваем в VAD последнюю неоконченную фразу 1 секундой тишины (нулевые данные)
             zeros = np.zeros(self._window_size, dtype=np.float32)
@@ -96,14 +112,23 @@ class CentroidDiarizationPipeline:
 
                     if text:
                         print(f"[{t_start:10.3f}-{t_end:10.3f}] {speaker_name}: {text}")
+                        segment = AudioSegment(
+                            audio_file = audio_file,
+                            speaker = resolve_result.speaker,
+                            cos_similarity = resolve_result.cos_similarity,
+                            start_time = t_start,
+                            end_time = t_end,
+                            text = text,
+                        )
+                        segments.append(segment)
         finally:
             ffmpeg_utils.close_ffmpeg_proc(proc)
 
-        pl_result = PipelineResult(
+        self.pipeline_result = PipelineResult(
             pipeline_type = None,
             speakers = self._speakers,
-            file = None,
-            segments = None,
+            file = audio_file,
+            segments = segments,
         )
 
-        return pl_result
+        return self.pipeline_result

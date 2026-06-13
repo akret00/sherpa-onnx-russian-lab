@@ -43,7 +43,7 @@ def main():
 
     # Сохраняем обновленную базу спикеров
     db_repo.save_speakers(
-        pl_result.speakers,
+        pl.pipeline_result.speakers,
         update_mode = speaker_storage.SpeakerUpdateMode.UPDATE_ALL
     )
 

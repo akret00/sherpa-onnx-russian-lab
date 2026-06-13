@@ -1,11 +1,18 @@
 """Модуль содержит утилиты для разных способов диаризации"""
 from enum import Enum, auto
+from dataclasses import dataclass
 import numpy
 import model_utils
 import asr_utils
 import config
 import segment_utils
 from speaker_storage import Speaker
+
+@dataclass
+class ResolveResult:
+    """Содержит результаты определения спикера"""
+    speaker: Speaker | None = None
+    cos_similarity: float = -1  # косинусная схожесть или другой скор
 
 class SpeakerResolvingMode(Enum):
     """Возможные способы диаризации"""
@@ -48,7 +55,7 @@ class SpeakerResolver:
 
         if self._resolving_mode == SpeakerResolvingMode.VAD_SIMPLE_CENTROID:
             # Переменные для сброса последнего спикера при паузах
-            self._last_name = "Unknown"
+            self._last_spk = None
             self._last_end_time = 0.0
 
         # Инициализация экстрактора
@@ -81,7 +88,26 @@ class SpeakerResolver:
         # Нормализуем вектор обратно (важно для косинусного сходства)
         speaker.embedding = self._normalize_vector(updated_centroid)
 
-    def _search_or_create_speaker(self, seg, emb) -> Speaker:
+    def _search_or_create_speaker_manager(self, emb) -> ResolveResult:
+        matched_id = self._manager.search(emb, threshold = self._spk_threshold)
+        if not matched_id:
+            spk = Speaker(
+                name = f"SPK_{(len(self._speakers) + 1):03d}",
+                embedding = emb,
+            )
+
+            self._speakers.append(spk)
+            matched_id = str((len(self._speakers)))
+            ok = self._manager.add(matched_id, emb)
+            if not ok:
+                raise RuntimeError(f"Failed to register speaker {matched_id}")
+
+        spk = self._speakers[int(matched_id) - 1]
+        score = numpy.dot(spk.embedding, emb) # Косинусное для нормированных векторов
+
+        return ResolveResult(speaker = spk, cos_similarity = score)
+
+    def _search_or_create_speaker_centriod(self, seg, emb) -> ResolveResult:
         """
         Делает:
             - поиск эмбеддинга фразы спикера среди центроидов
@@ -112,8 +138,9 @@ class SpeakerResolver:
             )
 
             self._speakers.append(spk)
+            best_score = 1.0
 
-        return spk
+        return ResolveResult(speaker = spk, cos_similarity = best_score)
 
     def get_speakers(self):
         """Возвращает список спикеров"""
@@ -125,32 +152,20 @@ class SpeakerResolver:
             Пытается найти соответствие в базе голосов, если находит, то возвращает id спикера.
             Если голос не найден, то создается, сохраняется в базе и возвращается новый спикер.
         """
+        # ToDo: сделать более похожим алгоритм для обоих способов определения спикеров
         # Расчет эмбеддинга спикера и поиск спикера по эмбеддингам
         if self._resolving_mode == SpeakerResolvingMode.VAD_SPEAKER_MANAGER:
             emb = self._normalize_vector(asr_utils.compute_embedding(self._extractor, seg))
-            matched_id = self._manager.search(emb, threshold = self._spk_threshold)
-            if not matched_id:
-                spk = Speaker(
-                    name = f"SPK_{(len(self._speakers) + 1):03d}",
-                    embedding = emb,
-                )
-
-                self._speakers.append(spk)
-                matched_id = str((len(self._speakers)))
-                ok = self._manager.add(matched_id, emb)
-                if not ok:
-                    raise RuntimeError(f"Failed to register speaker {matched_id}")
-            spk = self._speakers[int(matched_id) - 1]
-            spk.count += 1
-            spk.total_count += 1
-            name = spk.name
+            resolve_result = self._search_or_create_speaker_manager(emb)
+            resolve_result.speaker.count += 1
+            resolve_result.speaker.total_count += 1
 
         # Расчет эмбеддинга спикера и поиск спикера по центроидам эмбеддингов
         elif self._resolving_mode == SpeakerResolvingMode.VAD_SIMPLE_CENTROID:
             # 1. Сброс инерции при длинной паузе
             pause_duration = t_start - self._last_end_time
             if pause_duration > config.MAX_PAUSE_FOR_INERTIA:
-                self._last_name = "Unknown"
+                self._last_spk = None
             self._last_end_time = t_end # Делать для всех или только качественных сегментов?
 
             # 2. Обрезка правого края с тишиной для коротких фраз
@@ -163,13 +178,15 @@ class SpeakerResolver:
             # 3. Логика определения спикера (только для качественных сегментов)
             if len(vad_seg) >= int(config.MIN_SEARCH_SEG_LEN * config.SR):
                 emb = self._normalize_vector(asr_utils.compute_embedding(self._extractor, vad_seg))
-                spk = self._search_or_create_speaker(vad_seg, emb)
-                spk.count += 1
-                spk.total_count += 1
-                name = spk.name
-                self._last_name = name # Обновляем "уверенного" спикера
+                resolve_result = self._search_or_create_speaker_centriod(vad_seg, emb)
+                resolve_result.speaker.count += 1
+                resolve_result.speaker.total_count += 1
+                self._last_spk = resolve_result.speaker # Обновляем "уверенного" спикера
             else:
                 # Сегмент короткий: берем последнего или Unknown
-                name = self._last_name
+                resolve_result = ResolveResult(
+                    speaker = self._last_spk,
+                    cos_similarity = -1,
+                )
 
-        return name
+        return resolve_result
