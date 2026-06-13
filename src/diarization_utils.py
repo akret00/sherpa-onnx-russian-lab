@@ -18,13 +18,11 @@ class SpeakerResolvingMode(Enum):
     """Возможные способы диаризации"""
     # Без диаризации
     NONE = auto()
-
     # Способы на основе VAD (посегментно)
     VAD_SPEAKER_MANAGER = auto()   # С использованием вашего менеджера и базы
     VAD_SIMPLE_THRESHOLD = auto()  # Простое сравнение эмбеддингов по порогу
     VAD_SIMPLE_CENTROID = auto()   # Простое сравнение эмбеддингов с центроидами по порогу
     VAD_SPEECHBRAIN = auto()       # Использование моделей SpeechBrain для эмбеддингов
-
     # Полноценная диаризация (целым файлом или потоком)
     PYANNOTE_OFFLINE = auto()      # Обработка всего файла целиком
     PYANNOTE_STREAMING = auto()    # Потоковая диаризация
@@ -71,6 +69,8 @@ class SpeakerResolver:
                 # Загружаем базу спикеров в менеджер
                 for index, spk in enumerate(self._speakers):
                     self._manager.add(str(index + 1), spk.embedding)
+        elif self._resolving_mode == SpeakerResolvingMode.NONE:
+            pass # Ничего не делаем
         else:
             raise ValueError(f"Тип диаризации {resolving_mode} пока не поддерживается")
 
@@ -153,8 +153,11 @@ class SpeakerResolver:
             Если голос не найден, то создается, сохраняется в базе и возвращается новый спикер.
         """
         # ToDo: сделать более похожим алгоритм для обоих способов определения спикеров
+        # Вернуть пустой ResolveResult, если режим SpeakerResolvingMode.NONE
+        if self._resolving_mode == SpeakerResolvingMode.NONE:
+            resolve_result = ResolveResult(speaker = None, cos_similarity = -1)
         # Расчет эмбеддинга спикера и поиск спикера по эмбеддингам
-        if self._resolving_mode == SpeakerResolvingMode.VAD_SPEAKER_MANAGER:
+        elif self._resolving_mode == SpeakerResolvingMode.VAD_SPEAKER_MANAGER:
             emb = self._normalize_vector(asr_utils.compute_embedding(self._extractor, seg))
             resolve_result = self._search_or_create_speaker_manager(emb)
             resolve_result.speaker.count += 1

@@ -7,17 +7,18 @@ from entities import PipelineResult
 import ffmpeg_utils
 import model_utils
 from speaker_storage import Speaker, AudioFile, AudioSegment
-import diarization_utils
+from diarization_utils import SpeakerResolver, SpeakerResolvingMode
 import vad_utils
 import asr_utils
 
-class CentroidDiarizationPipeline:
-    """Пайплайн для распознавания и диаризации при помощи VAD и центроидов"""
-    def __init__(self, pl_config: PipelineConfig, speakers: list[Speaker]):
+class BaseVadPipeline:
+    """Базовый пайплайн для распознавания и диаризации при помощи VAD"""
+    def __init__(self, pl_config: PipelineConfig, speakers: list[Speaker] | None = None):
         self._pl_config = pl_config
         self._config = pl_config.config
         self._speakers = speakers
         self.pipeline_result: PipelineResult | None = None
+        self._speaker_resolver: SpeakerResolver | None = None
         self._init_models()
 
     def _init_models(self):
@@ -29,14 +30,6 @@ class CentroidDiarizationPipeline:
             min_silence = self._pl_config.vad_min_silence,
             min_speech = self._pl_config.vad_min_speech,
             max_speech = self._pl_config.vad_max_speech,
-        )
-
-        #Инициализируем распознаватель голоса
-        self._speaker_resolver = diarization_utils.SpeakerResolver(
-            num_threads = self._pl_config.num_threads,
-            spk_threshold = self._pl_config.spk_threshold,
-            resolving_mode = diarization_utils.SpeakerResolvingMode.VAD_SIMPLE_CENTROID,
-            speakers = self._speakers,
         )
 
         # print(f"Загружено спикеров: {len(speaker_resolver.get_speakers())}")
@@ -137,3 +130,49 @@ class CentroidDiarizationPipeline:
             pass
 
         return self.pipeline_result
+
+
+class AsrPipeline(BaseVadPipeline):
+    """Пайплайн для распознавания при помощи VAD"""
+    def _init_models(self):
+        """Инициализация моделей"""
+        # Запуск инициализации моделей в родительском классе
+        super()._init_models()
+
+        #Инициализируем распознаватель голоса
+        self._speaker_resolver = SpeakerResolver(
+            num_threads = self._pl_config.num_threads,
+            spk_threshold = self._pl_config.spk_threshold,
+            resolving_mode = SpeakerResolvingMode.NONE,
+            speakers = self._speakers,
+        )
+
+class ManagerDiarizationPipeline(BaseVadPipeline):
+    """Пайплайн для распознавания и диаризации при помощи VAD и менеджера спикеров"""
+    def _init_models(self):
+        """Инициализация моделей"""
+        # Запуск инициализации моделей в родительском классе
+        super()._init_models()
+
+        #Инициализируем распознаватель голоса
+        self._speaker_resolver = SpeakerResolver(
+            num_threads = self._pl_config.num_threads,
+            spk_threshold = self._pl_config.spk_threshold,
+            resolving_mode = SpeakerResolvingMode.VAD_SPEAKER_MANAGER,
+            speakers = self._speakers,
+        )
+
+class CentroidDiarizationPipeline(BaseVadPipeline):
+    """Пайплайн для распознавания и диаризации при помощи VAD и центроидов"""
+    def _init_models(self):
+        """Инициализация моделей"""
+        # Запуск инициализации моделей в родительском классе
+        super()._init_models()
+
+        #Инициализируем распознаватель голоса
+        self._speaker_resolver = SpeakerResolver(
+            num_threads = self._pl_config.num_threads,
+            spk_threshold = self._pl_config.spk_threshold,
+            resolving_mode = SpeakerResolvingMode.VAD_SIMPLE_CENTROID,
+            speakers = self._speakers,
+        )
