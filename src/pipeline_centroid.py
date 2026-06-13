@@ -1,5 +1,6 @@
 """Пайплан для распознавания и диаризации при помощи VAD и центроидов"""
 import sys
+from collections.abc import Generator
 import numpy as np
 from config import PipelineConfig, SR
 from entities import PipelineResult
@@ -48,8 +49,10 @@ class CentroidDiarizationPipeline:
             provider = self._pl_config.provider
         )
 
-    def run(self, audio_path: str = "mic") -> PipelineResult:
+    def run_as_stream(self, audio_path: str = "mic") -> Generator[AudioSegment, None, None]:
         """Запуск пайплайна для аудио с источником в audio_path"""
+        self.pipeline_result = None
+
         if audio_path == "mic":
             proc = ffmpeg_utils.make_ffmpeg_proc_for_pulse_default()
         else:
@@ -83,13 +86,8 @@ class CentroidDiarizationPipeline:
                     text = asr_utils.decode_asr(self._recognizer, segment)
                     # Распознаем спикера
                     resolve_result = self._speaker_resolver.resolve(segment, t_start, t_end)
-                    if resolve_result.speaker:
-                        speaker_name = resolve_result.speaker.name
-                    else:
-                        speaker_name = "Unknown"
 
                     if text:
-                        print(f"[{t_start:10.3f}-{t_end:10.3f}] {speaker_name}: {text}")
                         segment = AudioSegment(
                             audio_file = audio_file,
                             speaker = resolve_result.speaker,
@@ -99,6 +97,7 @@ class CentroidDiarizationPipeline:
                             text = text,
                         )
                         segments.append(segment)
+                        yield segment
 
             # Проталкиваем в VAD последнюю неоконченную фразу 1 секундой тишины (нулевые данные)
             zeros = np.zeros(self._window_size, dtype=np.float32)
@@ -108,10 +107,9 @@ class CentroidDiarizationPipeline:
                     # Распознаем (ASR) полученный из VAD сегмент
                     text = asr_utils.decode_asr(self._recognizer, segment)
                     # Распознаем спикера
-                    speaker_name = self._speaker_resolver.resolve(segment, t_start, t_end)
+                    resolve_result = self._speaker_resolver.resolve(segment, t_start, t_end)
 
                     if text:
-                        print(f"[{t_start:10.3f}-{t_end:10.3f}] {speaker_name}: {text}")
                         segment = AudioSegment(
                             audio_file = audio_file,
                             speaker = resolve_result.speaker,
@@ -121,6 +119,7 @@ class CentroidDiarizationPipeline:
                             text = text,
                         )
                         segments.append(segment)
+                        yield segment
         finally:
             ffmpeg_utils.close_ffmpeg_proc(proc)
 
@@ -130,5 +129,11 @@ class CentroidDiarizationPipeline:
             file = audio_file,
             segments = segments,
         )
+
+    def run(self, audio_path: str = "mic") -> PipelineResult:
+        """Метод сразу возвращает конеяный результат"""
+        # Истощает собственный генератор и возвращает готовый результат
+        for _ in self.run_as_stream(audio_path):
+            pass
 
         return self.pipeline_result

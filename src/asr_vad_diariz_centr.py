@@ -35,7 +35,12 @@ def main():
     start_time = time.perf_counter()
 
     # Запуск пайплайна обработки аудио
-    pl_result = pl.run(a_path)
+    for seg in pl.run_as_stream(a_path):
+        if seg.speaker:
+            spk_name = seg.speaker.name
+        else:
+            spk_name = "Unknown"
+        print(f"[{seg.start_time:10.3f}-{seg.end_time:10.3f}] {spk_name}: {seg.text}")
 
     # Засекаем время окончания распознавания
     end_time = time.perf_counter()
