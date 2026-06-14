@@ -57,8 +57,8 @@ class BaseVadPipeline:
 
         try:
             # Оснвной цикл
-            audio_file = AudioFile(file_path = audio_path)
             segments: list[AudioSegment] = []
+            audio_file = AudioFile(file_path = audio_path, segments = segments)
             while True:
                 # Пробуем прочитать полный блок (window_size == 512) данных (0.032 секунды аудио)
                 samples = ffmpeg_utils.read_samples(proc, self._window_size)
@@ -124,7 +124,7 @@ class BaseVadPipeline:
         )
 
     def run(self, audio_path: str = "mic") -> PipelineResult:
-        """Метод сразу возвращает конеяный результат"""
+        """Метод сразу возвращает конечный результат"""
         # Истощает собственный генератор и возвращает готовый результат
         for _ in self.run_as_stream(audio_path):
             pass
