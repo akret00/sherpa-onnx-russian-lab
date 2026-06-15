@@ -1,7 +1,6 @@
-"""
-Модуль для первичной разметки аудио с записями спикеров
-Запуск: PYTHONPATH=src python src/benchmark/markup_audio.py --input file_path
-"""
+"""Модуль для первичной разметки аудио с записями спикеров"""
+# Запуск: PYTHONPATH=src python src/benchmark/markup_audio.py --input audio_file_path
+
 import time
 from pathlib import Path
 from config import pl_conf, BASE_DIR
@@ -66,9 +65,9 @@ def main():
     # )
 
     benchmark.markup_storage.export_to_yaml(
-        output_path = output_file_path,
-        # speakers = pl.pipeline_result.speakers,
-        file = pl.pipeline_result.file,
+        yaml_path = output_file_path,
+        speakers = None,
+        audio_file = pl.pipeline_result.file,
     )
 
 
