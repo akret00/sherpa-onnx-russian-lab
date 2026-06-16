@@ -18,6 +18,7 @@ class AudioSegmentEditor:
         # Загружаем спикеров и аудиофайл из YAML
         self.speakers, self.audio_file = benchmark.markup_storage.load_from_yaml(self.yaml_path)
         self.segments = sorted(self.audio_file.segments, key=lambda x: x.start_time)
+        self.audio_file.segments = self.segments
         self.index = 0
         self.step = 0.05  # Шаг сдвига границ по умолчанию (50 мс)
         self.audio_data: numpy.ndarray | None = None
