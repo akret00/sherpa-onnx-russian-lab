@@ -127,7 +127,7 @@ class AudioSegmentEditor:
         )
         print(f"Текст: {seg.text}")
         print(
-            "Команды: [p]lay | [n]ext | [b]ack | [g]oto ID | [l]eft+/- | [r]ight+/- | "
+            "Команды: [p]lay | [n]ext | [b]ack | [g]oto ID | [l]eft+/- dist | [r]ight+/- dist | "
             "[s]plit | [m]erge L/R | [w]rite | [q]uit"
         )
 
@@ -164,9 +164,17 @@ class AudioSegmentEditor:
                 else:
                     print("Укажите ID сегмента.")
             elif cmd in ('l+', 'l-'):
-                self._shift_boundary('start', 1 if cmd == 'l+' else -1)
+                if args:
+                    distance = int(args[0])
+                else:
+                    distance = 1
+                self._shift_boundary('start', distance if cmd == 'l+' else -distance)
             elif cmd in ('r+', 'r-'):
-                self._shift_boundary('end', 1 if cmd == 'r+' else -1)
+                if args:
+                    distance = int(args[0])
+                else:
+                    distance = 1
+                self._shift_boundary('end', distance if cmd == 'r+' else -distance)
             elif cmd == 's':
                 self._split_segment()
             elif cmd == 'm':
@@ -218,11 +226,14 @@ class AudioSegmentEditor:
 
         # Создаем второй сегмент (копируем метаданные)
         new_seg = AudioSegment(
-            id=f"{seg.id}_split",
-            audio_file=seg.audio_file,
-            start_time=midpoint,
-            end_time=seg.end_time,
-            text="[Разделенная часть]"
+            id = seg.id + 10000,
+            audio_file_id = seg.audio_file_id,
+            audio_file = seg.audio_file,
+            speaker_id = seg.speaker_id,
+            speaker = seg.speaker,
+            start_time = midpoint,
+            end_time = seg.end_time,
+            text = seg.text
         )
         # Обрезаем текущий
         seg.end_time = midpoint
