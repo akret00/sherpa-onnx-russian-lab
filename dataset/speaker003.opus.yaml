@@ -1,0 +1,736 @@
+dataset_version: '0.1'
+sample_rate: '16000'
+speakers:
+- id: 3
+  name: SPK03
+  notes: laptop mic
+files:
+- id: 3
+  file_path: speaker003.opus
+segments:
+- id: 0001
+  speaker_id: 3
+  file_id: 3
+  text: Привет
+  speech_start: 0.86
+  speech_end: 1.34
+- id: 0002
+  speaker_id: 3
+  file_id: 3
+  text: Проверяем запись голоса.
+  speech_start: 1.62
+  speech_end: 2.91
+- id: 0003
+  speaker_id: 3
+  file_id: 3
+  text: Раз, два, три
+  speech_start: 3.06
+  speech_end: 3.8
+- id: 0004
+  speaker_id: 3
+  file_id: 3
+  text: Сегодня я говорю нормально и достаточно спокойно.
+  speech_start: 4.89
+  speech_end: 7.45
+- id: 0005
+  speaker_id: 3
+  file_id: 3
+  text: А сейчас попробую говорить чуть быстрее, не сбиваясь
+  speech_start: 8.89
+  speech_end: 11.39
+- id: 0006
+  speaker_id: 3
+  file_id: 3
+  text: Э-э, подожди, я начну заново
+  speech_start: 12.41
+  speech_end: 14.27
+- id: 0007
+  speaker_id: 3
+  file_id: 3
+  text: Говори чуть быстрее.
+  speech_start: 14.36
+  speech_end: 15.36
+- id: 0008
+  speaker_id: 3
+  file_id: 3
+  text: Скажи, пожалуйста, во сколько начинается встреча
+  speech_start: 16.54
+  speech_end: 18.91
+- id: 0009
+  speaker_id: 3
+  file_id: 3
+  text: Встреча.
+  speech_start: 20.31
+  speech_end: 21.12
+- id: 0010
+  speaker_id: 3
+  file_id: 3
+  text: 19:45, без опозданий
+  speech_start: 21.37
+  speech_end: 23.23
+- id: 0011
+  speaker_id: 3
+  file_id: 3
+  text: Пиши адрес
+  speech_start: 24.44
+  speech_end: 25.18
+- id: 0012
+  speaker_id: 3
+  file_id: 3
+  text: Улица Лесная, дом 7, квартира 12
+  speech_start: 25.3
+  speech_end: 27.77
+- id: 0013
+  speaker_id: 3
+  file_id: 3
+  text: Мой номер заказа
+  speech_start: 28.47
+  speech_end: 29.66
+- id: 0014
+  speaker_id: 3
+  file_id: 3
+  text: 20 24
+  speech_start: 29.88
+  speech_end: 31.71
+- id: 0015
+  speaker_id: 3
+  file_id: 3
+  text: Ноль-ноль
+  speech_start: 31.8
+  speech_end: 32.28
+- id: 0016
+  speaker_id: 3
+  file_id: 3
+  text: Один
+  speech_start: 32.38
+  speech_end: 32.83
+- id: 0017
+  speaker_id: 3
+  file_id: 3
+  text: Я отправлю отчёт завтра утром
+  speech_start: 34.33
+  speech_end: 35.87
+- id: 0018
+  speaker_id: 3
+  file_id: 3
+  text: После девяти
+  speech_start: 36.18
+  speech_end: 36.92
+- id: 0019
+  speaker_id: 3
+  file_id: 3
+  text: Проверка связи.
+  speech_start: 38.42
+  speech_end: 39.26
+- id: 0020
+  speaker_id: 3
+  file_id: 3
+  text: Слышно меня хорошо
+  speech_start: 39.51
+  speech_end: 40.54
+- id: 0021
+  speaker_id: 3
+  file_id: 3
+  text: Да, слышно.
+  speech_start: 42.33
+  speech_end: 43.0
+- id: 0022
+  speaker_id: 3
+  file_id: 3
+  text: Говори чуть ближе к микрофону
+  speech_start: 43.13
+  speech_end: 44.64
+- id: 0023
+  speaker_id: 3
+  file_id: 3
+  text: Нет.
+  speech_start: 46.3
+  speech_end: 46.65
+- id: 0024
+  speaker_id: 3
+  file_id: 3
+  text: Так не пойдёт
+  speech_start: 46.78
+  speech_end: 47.48
+- id: 0025
+  speaker_id: 3
+  file_id: 3
+  text: Давай сделаем по-другому
+  speech_start: 47.67
+  speech_end: 48.86
+- id: 0026
+  speaker_id: 3
+  file_id: 3
+  text: Тверди.
+  speech_start: 50.97
+  speech_end: 51.48
+- id: 0027
+  speaker_id: 3
+  file_id: 3
+  text: Ты оплатил счёт или только собираешься
+  speech_start: 51.58
+  speech_end: 53.31
+- id: 0028
+  speaker_id: 3
+  file_id: 3
+  text: Я оплатил счёт
+  speech_start: 55.22
+  speech_end: 56.12
+- id: 0029
+  speaker_id: 3
+  file_id: 3
+  text: Но человек пока не пришёл.
+  speech_start: 56.44
+  speech_end: 57.6
+- id: 0030
+  speaker_id: 3
+  file_id: 3
+  text: Сумма
+  speech_start: 60.06
+  speech_end: 60.67
+- id: 0031
+  speaker_id: 3
+  file_id: 3
+  text: 3 450 ₽
+  speech_start: 60.82
+  speech_end: 62.84
+- id: 0032
+  speaker_id: 3
+  file_id: 3
+  text: Скидка 10%, действует до пятницы
+  speech_start: 65.24
+  speech_end: 67.61
+- id: 0033
+  speaker_id: 3
+  file_id: 3
+  text: 41 день
+  speech_start: 69.85
+  speech_end: 70.62
+- id: 0034
+  speaker_id: 3
+  file_id: 3
+  text: Максимум два
+  speech_start: 70.9
+  speech_end: 71.61
+- id: 0035
+  speaker_id: 3
+  file_id: 3
+  text: Мне нужен доступ к IPI
+  speech_start: 73.88
+  speech_end: 75.1
+- id: 0036
+  speaker_id: 3
+  file_id: 3
+  text: Токен и секретный ключ
+  speech_start: 75.19
+  speech_end: 76.44
+- id: 0037
+  speaker_id: 3
+  file_id: 3
+  text: GP перегружеn
+  speech_start: 78.1
+  speech_end: 79.16
+- id: 0038
+  speaker_id: 3
+  file_id: 3
+  text: Тию ещё терпят.
+  speech_start: 79.54
+  speech_end: 80.38
+- id: 0039
+  speaker_id: 3
+  file_id: 3
+  text: ООО, линия
+  speech_start: 82.23
+  speech_end: 83.29
+- id: 0040
+  speaker_id: 3
+  file_id: 3
+  text: И
+  speech_start: 83.64
+  speech_end: 83.96
+- id: 0041
+  speaker_id: 3
+  file_id: 3
+  text: П Петров  разные получатели
+  speech_start: 84.31
+  speech_end: 86.04
+- id: 0042
+  speaker_id: 3
+  file_id: 3
+  text: НДС включён в стоимость.
+  speech_start: 88.09
+  speech_end: 89.37
+- id: 0043
+  speaker_id: 3
+  file_id: 3
+  text: Но не всегда очевидно
+  speech_start: 89.53
+  speech_end: 90.56
+- id: 0044
+  speaker_id: 3
+  file_id: 3
+  text: Пожалуйста
+  speech_start: 92.7
+  speech_end: 93.31
+- id: 0045
+  speaker_id: 3
+  file_id: 3
+  text: Повторите последние цифры ещё раз
+  speech_start: 93.85
+  speech_end: 95.42
+- id: 0046
+  speaker_id: 3
+  file_id: 3
+  text: Последняя цифра — 8
+  speech_start: 97.11
+  speech_end: 98.3
+- id: 0047
+  speaker_id: 3
+  file_id: 3
+  text: Нет девять
+  speech_start: 98.42
+  speech_end: 99.04
+- id: 0048
+  speaker_id: 3
+  file_id: 3
+  text: Извини, девять
+  speech_start: 99.22
+  speech_end: 100.12
+- id: 0049
+  speaker_id: 3
+  file_id: 3
+  text: Я думаю
+  speech_start: 101.62
+  speech_end: 102.33
+- id: 0050
+  speaker_id: 3
+  file_id: 3
+  text: Нет, я уверен, это правильное решение.
+  speech_start: 102.68
+  speech_end: 104.8
+- id: 0051
+  speaker_id: 3
+  file_id: 3
+  text: Сейчас будет перечисление
+  speech_start: 107.42
+  speech_end: 108.76
+- id: 0052
+  speaker_id: 3
+  file_id: 3
+  text: Чай.
+  speech_start: 109.18
+  speech_end: 109.5
+- id: 0053
+  speaker_id: 3
+  file_id: 3
+  text: Кофе
+  speech_start: 109.78
+  speech_end: 110.17
+- id: 0054
+  speaker_id: 3
+  file_id: 3
+  text: Вода
+  speech_start: 110.36
+  speech_end: 110.78
+- id: 0055
+  speaker_id: 3
+  file_id: 3
+  text: Ключи от гаража
+  speech_start: 113.59
+  speech_end: 114.46
+- id: 0056
+  speaker_id: 3
+  file_id: 3
+  text: Кажется, лежат в зеркале
+  speech_start: 114.58
+  speech_end: 115.8
+- id: 0057
+  speaker_id: 3
+  file_id: 3
+  text: Ты серьёзно?
+  speech_start: 117.75
+  speech_end: 118.43
+- id: 0058
+  speaker_id: 3
+  file_id: 3
+  text: Я там уже смотрел два раза
+  speech_start: 118.71
+  speech_end: 120.06
+- id: 0059
+  speaker_id: 3
+  file_id: 3
+  text: Ладно
+  speech_start: 122.01
+  speech_end: 122.43
+- id: 0060
+  speaker_id: 3
+  file_id: 3
+  text: Проверю ещё раз и напишу тебе.
+  speech_start: 122.94
+  speech_end: 124.54
+- id: 0061
+  speaker_id: 3
+  file_id: 3
+  text: Сколько минут осталось до конца
+  speech_start: 126.71
+  speech_end: 128.06
+- id: 0062
+  speaker_id: 3
+  file_id: 3
+  text: Осталось примерно 7 минут
+  speech_start: 130.71
+  speech_end: 131.96
+- id: 0063
+  speaker_id: 3
+  file_id: 3
+  text: Может, чуть меньше
+  speech_start: 132.34
+  speech_end: 133.21
+- id: 0064
+  speaker_id: 3
+  file_id: 3
+  text: Сделай звук потише
+  speech_start: 134.87
+  speech_end: 135.77
+- id: 0065
+  speaker_id: 3
+  file_id: 3
+  text: Пожалуйста
+  speech_start: 135.9
+  speech_end: 136.44
+- id: 0066
+  speaker_id: 3
+  file_id: 3
+  text: Сделай звук погромче. Вот так.
+  speech_start: 138.52
+  speech_end: 140.0
+- id: 0067
+  speaker_id: 3
+  file_id: 3
+  text: Нормально
+  speech_start: 140.15
+  speech_end: 140.57
+- id: 0068
+  speaker_id: 3
+  file_id: 3
+  text: Не перебивай меня
+  speech_start: 141.91
+  speech_end: 142.78
+- id: 0069
+  speaker_id: 3
+  file_id: 3
+  text: Я сейчас договорю
+  speech_start: 143.06
+  speech_end: 144.0
+- id: 0070
+  speaker_id: 3
+  file_id: 3
+  text: Нет-нет.
+  speech_start: 145.82
+  speech_end: 146.3
+- id: 0071
+  speaker_id: 3
+  file_id: 3
+  text: Я просто уточняю, продолжай.
+  speech_start: 146.52
+  speech_end: 147.84
+- id: 0072
+  speaker_id: 3
+  file_id: 3
+  text: Давай обсудим план
+  speech_start: 149.82
+  speech_end: 150.72
+- id: 0073
+  speaker_id: 3
+  file_id: 3
+  text: Сначала подготовка
+  speech_start: 150.87
+  speech_end: 151.77
+- id: 0074
+  speaker_id: 3
+  file_id: 3
+  text: Там тесты
+  speech_start: 152.06
+  speech_end: 152.6
+- id: 0075
+  speaker_id: 3
+  file_id: 3
+  text: Потом отчёт и короткое резюме в конце.
+  speech_start: 154.71
+  speech_end: 156.8
+- id: 0076
+  speaker_id: 3
+  file_id: 3
+  text: Фай называется
+  speech_start: 158.84
+  speech_end: 159.8
+- id: 0077
+  speaker_id: 3
+  file_id: 3
+  text: et AudioFinel Version TV
+  speech_start: 159.9
+  speech_end: 161.76
+- id: 0078
+  speaker_id: 3
+  file_id: 3
+  text: Храни как лав.
+  speech_start: 163.96
+  speech_end: 164.64
+- id: 0079
+  speaker_id: 3
+  file_id: 3
+  text: 15 кгерц
+  speech_start: 165.34
+  speech_end: 166.2
+- id: 0080
+  speaker_id: 3
+  file_id: 3
+  text: Мona
+  speech_start: 166.3
+  speech_end: 166.65
+- id: 0081
+  speaker_id: 3
+  file_id: 3
+  text: Я немного устал
+  speech_start: 168.82
+  speech_end: 169.69
+- id: 0082
+  speaker_id: 3
+  file_id: 3
+  text: Поэтому говори
+  speech_start: 170.07
+  speech_end: 170.84
+- id: 0083
+  speaker_id: 3
+  file_id: 3
+  text: Тише
+  speech_start: 171.64
+  speech_end: 172.09
+- id: 0084
+  speaker_id: 3
+  file_id: 3
+  text: А теперь скажи громче, чтобы было контрастно.
+  speech_start: 173.91
+  speech_end: 176.0
+- id: 0085
+  speaker_id: 3
+  file_id: 3
+  text: Я нарочно делаю паузу.
+  speech_start: 178.04
+  speech_end: 179.32
+- id: 0086
+  speaker_id: 3
+  file_id: 3
+  text: И продолжаю.
+  speech_start: 180.66
+  speech_end: 181.47
+- id: 0087
+  speaker_id: 3
+  file_id: 3
+  text: Если что-то непонятно,
+  speech_start: 183.86
+  speech_end: 184.92
+- id: 0088
+  speaker_id: 3
+  file_id: 3
+  text: Переспроси.
+  speech_start: 185.05
+  speech_end: 185.72
+- id: 0089
+  speaker_id: 3
+  file_id: 3
+  text: Вопрос сложный.
+  speech_start: 187.32
+  speech_end: 188.12
+- id: 0090
+  speaker_id: 3
+  file_id: 3
+  text: Но ответ короткий.
+  speech_start: 188.5
+  speech_end: 189.18
+- id: 0091
+  speaker_id: 3
+  file_id: 3
+  text: Вопрос сложный
+  speech_start: 191.38
+  speech_end: 192.16
+- id: 0092
+  speaker_id: 3
+  file_id: 3
+  text: Ответ короткий
+  speech_start: 192.28
+  speech_end: 193.15
+- id: 0093
+  speaker_id: 3
+  file_id: 3
+  text: Нет.
+  speech_start: 193.3
+  speech_end: 193.66
+- id: 0094
+  speaker_id: 3
+  file_id: 3
+  text: Угу
+  speech_start: 195.93
+  speech_end: 196.35
+- id: 0095
+  speaker_id: 3
+  file_id: 3
+  text: Ага
+  speech_start: 196.79
+  speech_end: 197.21
+- id: 0096
+  speaker_id: 3
+  file_id: 3
+  text: Понял
+  speech_start: 197.43
+  speech_end: 197.85
+- id: 0097
+  speaker_id: 3
+  file_id: 3
+  text: Хорошо.
+  speech_start: 198.2
+  speech_end: 198.68
+- id: 0098
+  speaker_id: 3
+  file_id: 3
+  text: Секунду.
+  speech_start: 200.22
+  speech_end: 200.7
+- id: 0099
+  speaker_id: 3
+  file_id: 3
+  text: Я отвлёкся. Продолжаем.
+  speech_start: 201.21
+  speech_end: 202.36
+- id: 0100
+  speaker_id: 3
+  file_id: 3
+  text: Проверка.
+  speech_start: 204.6
+  speech_end: 205.12
+- id: 0101
+  speaker_id: 3
+  file_id: 3
+  text: Один, два.
+  speech_start: 205.62
+  speech_end: 206.59
+- id: 0102
+  speaker_id: 3
+  file_id: 3
+  text: Четыре, пять
+  speech_start: 207.29
+  speech_end: 208.16
+- id: 0103
+  speaker_id: 3
+  file_id: 3
+  text: Проверка
+  speech_start: 210.33
+  speech_end: 210.88
+- id: 0104
+  speaker_id: 3
+  file_id: 3
+  text: '10'
+  speech_start: 211.13
+  speech_end: 211.64
+- id: 0105
+  speaker_id: 3
+  file_id: 3
+  text: '20'
+  speech_start: 211.86
+  speech_end: 212.41
+- id: 0106
+  speaker_id: 3
+  file_id: 3
+  text: Тридцать
+  speech_start: 212.63
+  speech_end: 213.15
+- id: 0107
+  speaker_id: 3
+  file_id: 3
+  text: Сорок
+  speech_start: 213.43
+  speech_end: 213.85
+- id: 0108
+  speaker_id: 3
+  file_id: 3
+  text: Проверка
+  speech_start: 215.54
+  speech_end: 216.12
+- id: 0109
+  speaker_id: 3
+  file_id: 3
+  text: Сто один
+  speech_start: 216.57
+  speech_end: 217.05
+- id: 0110
+  speaker_id: 3
+  file_id: 3
+  text: А два
+  speech_start: 217.24
+  speech_end: 217.69
+- id: 0111
+  speaker_id: 3
+  file_id: 3
+  text: Сто 3
+  speech_start: 217.85
+  speech_end: 218.33
+- id: 0112
+  speaker_id: 3
+  file_id: 3
+  text: Да
+  speech_start: 220.28
+  speech_end: 220.67
+- id: 0113
+  speaker_id: 3
+  file_id: 3
+  text: Нет.
+  speech_start: 221.85
+  speech_end: 222.36
+- id: 0114
+  speaker_id: 3
+  file_id: 3
+  text: Ага
+  speech_start: 223.54
+  speech_end: 224.09
+- id: 0115
+  speaker_id: 3
+  file_id: 3
+  text: Ой
+  speech_start: 225.59
+  speech_end: 225.98
+- id: 0116
+  speaker_id: 3
+  file_id: 3
+  text: Конечно.
+  speech_start: 228.06
+  speech_end: 228.73
+- id: 0117
+  speaker_id: 3
+  file_id: 3
+  text: Хорошо
+  speech_start: 230.74
+  speech_end: 231.29
+- id: 0118
+  speaker_id: 3
+  file_id: 3
+  text: Э-ээ
+  speech_start: 232.63
+  speech_end: 233.34
+- id: 0119
+  speaker_id: 3
+  file_id: 3
+  text: ЭM.
+  speech_start: 237.78
+  speech_end: 238.59
+- id: 0120
+  speaker_id: 3
+  file_id: 3
+  text: На этом всё.
+  speech_start: 239.99
+  speech_end: 240.67
+- id: 0121
+  speaker_id: 3
+  file_id: 3
+  text: Запись можно останавливать
+  speech_start: 240.79
+  speech_end: 242.17

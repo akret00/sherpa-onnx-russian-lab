@@ -5,7 +5,9 @@ __pycache__/
 .pytest_cache/
 .vscode/
 .coverage
-dataset/
+dataset/*.opus
+dataset/*bak
+dataset/test*
 notebooks/
 models/
 scripts/
