@@ -6,657 +6,513 @@ speakers:
   notes: laptop mic
 files:
 - id: 4
-  file_path: speaker004.opus
+  file_path: dataset/speaker004.opus
 segments:
-- id: 0001
+- id: 1
   speaker_id: 4
   file_id: 4
-  text: Привет. Проверяем запись голоса
-  speech_start: 1.18
-  speech_end: 4.35
-- id: 0002
-  speaker_id: 4
-  file_id: 4
-  text: Раз, два, три
-  speech_start: 4.63
+  text: Привет. Проверяем запись голоса Раз, два, три
+  speech_start: 1.68
   speech_end: 5.85
-- id: 0003
+- id: 2
   speaker_id: 4
   file_id: 4
   text: Сегодня я говорю нормально и достаточно спокойно.
-  speech_start: 6.74
+  speech_start: 6.49
   speech_end: 9.5
-- id: 0004
+- id: 3
   speaker_id: 4
   file_id: 4
   text: А сейчас попробую говорить чуть быстрее, не сбиваясь.
-  speech_start: 10.2
+  speech_start: 9.95
   speech_end: 14.24
-- id: 0005
+- id: 4
   speaker_id: 4
   file_id: 4
-  text: Э-э, подожди, я начну заново
+  text: Э-э, подожди, я начну заново Говорю чуть быстрее.
   speech_start: 15.99
-  speech_end: 17.98
-- id: 0006
-  speaker_id: 4
-  file_id: 4
-  text: Говорю чуть быстрее.
-  speech_start: 18.42
   speech_end: 20.06
-- id: 0007
+- id: 5
   speaker_id: 4
   file_id: 4
-  text: Мне нужен доступ к IP.
+  text: Мне нужен доступ к IP Токен и секретный ключ
   speech_start: 21.85
-  speech_end: 23.96
-- id: 0008
-  speaker_id: 4
-  file_id: 4
-  text: Токен и секретный ключ
-  speech_start: 24.09
   speech_end: 25.95
-- id: 0009
+- id: 6
   speaker_id: 4
   file_id: 4
   text: ЧПУ перегружен, а КПУ ещё терпит.
-  speech_start: 28.95
+  speech_start: 28.7
   speech_end: 32.48
-- id: 0010
+- id: 7
   speaker_id: 4
   file_id: 4
-  text: Давай обсудим план. Сначала подготовка, потом тексты.
+  text: Давай обсудим план. Сначала подготовка, потом тексты. Потом тесты
   speech_start: 34.42
-  speech_end: 37.79
-- id: 0011
-  speaker_id: 4
-  file_id: 4
-  text: Потом тесты
-  speech_start: 38.07
   speech_end: 39.48
-- id: 0012
+- id: 8
   speaker_id: 4
   file_id: 4
   text: Потом отчёт и короткое резюме в конце дня
   speech_start: 43.38
   speech_end: 46.24
-- id: 0013
+- id: 9
   speaker_id: 4
   file_id: 4
-  text: Файл называется Test Auдиio Финал 2
+  text: Файл называется Test аудио Финал 2
   speech_start: 49.75
   speech_end: 54.14
-- id: 0014
+- id: 10
   speaker_id: 4
   file_id: 4
-  text: Сохрани как ваф.
+  text: Сохрани как ваф шестнадцать килогерц, моно
   speech_start: 56.57
-  speech_end: 58.2
-- id: 0015
-  speaker_id: 4
-  file_id: 4
-  text: 16 кгерц. Моно
-  speech_start: 59.58
   speech_end: 62.27
-- id: 0016
+- id: 11
   speaker_id: 4
   file_id: 4
   text: Я отправил запрос, но сервер выдал ошибку 500
   speech_start: 65.05
   speech_end: 68.67
-- id: 0017
+- id: 12
   speaker_id: 4
   file_id: 4
-  text: Скорее всего, дело в конфиге
+  text: Скорее всего, дело в конфиге Проверь ветку, дев.
   speech_start: 70.87
-  speech_end: 72.89
-- id: 0018
-  speaker_id: 4
-  file_id: 4
-  text: Проверь ветку, дев.
-  speech_start: 73.43
   speech_end: 75.04
-- id: 0019
+- id: 13
   speaker_id: 4
   file_id: 4
   text: О'кей, сейчас посмотрю логи и сразу отпишусь.
   speech_start: 78.14
   speech_end: 81.34
-- id: 0020
+- id: 14
   speaker_id: 4
   file_id: 4
-  text: 'Запиши адрес: улица Лесная, дом 7, квартира 12'
+  text: 'Запиши адрес: улица Лесная, дом семь, квартира двенадцать'
   speech_start: 85.5
   speech_end: 89.24
-- id: 0021
+- id: 15
   speaker_id: 4
   file_id: 4
-  text: Мой номер заказа.
+  text: Мой номер заказа два ноль четыре два, тире, ноль ноль один
   speech_start: 91.48
-  speech_end: 93.12
-- id: 0022
-  speaker_id: 4
-  file_id: 4
-  text: Два.
-  speech_start: 93.3
-  speech_end: 94.3
-- id: 0023
-  speaker_id: 4
-  file_id: 4
-  text: Ноль четыре, два тире, ноль, ноль один
-  speech_start: 94.55
   speech_end: 98.97
-- id: 0024
+- id: 16
   speaker_id: 4
   file_id: 4
-  text: Сумма 3 450 ₽
+  text: Сумма три тысячи четыреста пятьдесят рублей
   speech_start: 100.73
   speech_end: 104.51
-- id: 0025
+- id: 17
   speaker_id: 4
   file_id: 4
-  text: Скидка 10% действует до пятницы
-  speech_start: 106.55
+  text: Скидка десять процентов действует до пятницы
+  speech_start: 106.3
   speech_end: 109.18
-- id: 0026
+- id: 18
   speaker_id: 4
   file_id: 4
-  text: О Лине.
+  text: О Линия И-и- ИП Петров — разные получатели.
   speech_start: 111.48
-  speech_end: 112.96
-- id: 0027
-  speaker_id: 4
-  file_id: 4
-  text: И-и- ИП Петров — разные получатели.
-  speech_start: 113.05
   speech_end: 116.76
-- id: 0028
+- id: 19
   speaker_id: 4
   file_id: 4
   text: НДС включён в стоимость, но не всегда очевидно
   speech_start: 117.98
   speech_end: 122.27
-- id: 0029
+- id: 20
   speaker_id: 4
   file_id: 4
   text: Пожалуйста, повтори последнюю цифру ещё раз
   speech_start: 123.86
   speech_end: 127.2
-- id: 0030
+- id: 21
   speaker_id: 4
   file_id: 4
-  text: Последняя цифра — 8
+  text: Последняя цифра восемь Нет, девять. Извини девять
   speech_start: 129.24
-  speech_end: 132.35
-- id: 0031
-  speaker_id: 4
-  file_id: 4
-  text: Нет, девять. Извини
-  speech_start: 133.05
-  speech_end: 135.23
-- id: 0032
-  speaker_id: 4
-  file_id: 4
-  text: Двя.
-  speech_start: 135.38
   speech_end: 136.22
-- id: 0033
+- id: 22
   speaker_id: 4
   file_id: 4
-  text: Проверка.
+  text: Проверка. Один, два, три, четыре, пять.
   speech_start: 137.66
-  speech_end: 138.78
-- id: 0034
-  speaker_id: 4
-  file_id: 4
-  text: Один, два, три, четыре, пять.
-  speech_start: 139.13
   speech_end: 141.24
-- id: 0035
+- id: 23
   speaker_id: 4
   file_id: 4
-  text: Проверка.
+  text: Проверка. десять, двадцать, тридцать, сорок
   speech_start: 142.04
-  speech_end: 143.2
-- id: 0036
-  speaker_id: 4
-  file_id: 4
-  text: 10, 20, 30, 40.
-  speech_start: 143.64
   speech_end: 145.92
-- id: 0037
+- id: 24
   speaker_id: 4
   file_id: 4
-  text: Проверка.
+  text: Проверка. сто один, сто два, сто три
   speech_start: 146.84
-  speech_end: 148.12
-- id: 0038
-  speaker_id: 4
-  file_id: 4
-  text: С10 о1, 10 2, 10 3.
-  speech_start: 148.76
   speech_end: 150.88
-- id: 0039
+- id: 25
   speaker_id: 4
   file_id: 4
-  text: ИНН 707001. Далее без изменений.
+  text: ИНН семьдесят семьдесят ноль один. Далее без изменений.
   speech_start: 153.02
   speech_end: 158.49
-- id: 0040
+- id: 26
   speaker_id: 4
   file_id: 4
-  text: Почта для связи.
+  text: Почта для связи инфо собака домен точка ру
   speech_start: 159.61
-  speech_end: 161.24
-- id: 0041
-  speaker_id: 4
-  file_id: 4
-  text: Инфособака.domin.ru
-  speech_start: 161.43
   speech_end: 163.74
-- id: 0042
+- id: 27
   speaker_id: 4
   file_id: 4
   text: Скажи, пожалуйста, во сколько начинается встреча
   speech_start: 166.33
   speech_end: 169.12
-- id: 0043
+- id: 28
   speaker_id: 4
   file_id: 4
-  text: Третья
+  text: Встреча в девятнадцать сорок пять, без опозданий
   speech_start: 170.46
-  speech_end: 171.48
-- id: 0044
-  speaker_id: 4
-  file_id: 4
-  text: В 19:45, без опозданий
-  speech_start: 171.7
   speech_end: 174.52
-- id: 0045
+- id: 29
   speaker_id: 4
   file_id: 4
   text: Нет, так не подойдёт. Давай сделаем по-другому
   speech_start: 175.51
   speech_end: 178.49
-- id: 0046
+- id: 30
   speaker_id: 4
   file_id: 4
   text: Я думаю, нет, я уверен, это правильное решение
   speech_start: 180.15
   speech_end: 184.06
-- id: 0047
+- id: 31
   speaker_id: 4
   file_id: 4
   text: Ключи от гаража, кажется, лежат у зеркала
   speech_start: 185.69
   speech_end: 188.03
-- id: 0048
+- id: 32
   speaker_id: 4
   file_id: 4
   text: Ты серьёзно? Я там уже смотрел два раза.
   speech_start: 189.27
   speech_end: 191.87
-- id: 0049
+- id: 33
   speaker_id: 4
   file_id: 4
   text: Ладно, проверь ещё раз и напишу тебе
   speech_start: 192.66
   speech_end: 195.13
-- id: 0050
+- id: 34
   speaker_id: 4
   file_id: 4
-  text: Не перебивай меня, я сейчас договор договариваю
+  text: Не перебивай меня, я сейчас договор договариваю Договорю
   speech_start: 196.31
-  speech_end: 199.64
-- id: 0051
-  speaker_id: 4
-  file_id: 4
-  text: Договорю.
-  speech_start: 199.9
   speech_end: 200.89
-- id: 0052
+- id: 35
   speaker_id: 4
   file_id: 4
   text: Нет-нет, я просто уточняю, продолжай
   speech_start: 202.1
   speech_end: 205.12
-- id: 0053
+- id: 36
   speaker_id: 4
   file_id: 4
-  text: Да Да как-то так-то
+  text: Да Да как-то так-то Мы же договаривались на утро.
   speech_start: 206.2
-  speech_end: 209.34
-- id: 0054
-  speaker_id: 4
-  file_id: 4
-  text: Мы же договаривались на утро.
-  speech_start: 209.56
   speech_end: 211.36
-- id: 0055
+- id: 37
   speaker_id: 4
   file_id: 4
   text: Слушай, ну не сердись, планы немного поменялись
   speech_start: 219.16
   speech_end: 222.43
-- id: 0056
+- id: 38
   speaker_id: 4
   file_id: 4
   text: В любом случае, я буду на месте через полчаса
   speech_start: 222.81
   speech_end: 225.95
-- id: 0057
+- id: 39
   speaker_id: 4
   file_id: 4
   text: Понял.
   speech_start: 229.3
   speech_end: 230.27
-- id: 0058
+- id: 40
   speaker_id: 4
   file_id: 4
   text: Да
   speech_start: 231.06
   speech_end: 231.96
-- id: 0059
+- id: 41
   speaker_id: 4
   file_id: 4
   text: Нет
   speech_start: 233.27
   speech_end: 234.17
-- id: 0060
+- id: 42
   speaker_id: 4
   file_id: 4
   text: Ага.
   speech_start: 235.26
   speech_end: 236.22
-- id: 0061
+- id: 43
   speaker_id: 4
   file_id: 4
   text: Ой
   speech_start: 237.82
   speech_end: 238.72
-- id: 0062
+- id: 44
   speaker_id: 4
   file_id: 4
   text: Конечно.
   speech_start: 240.54
   speech_end: 241.53
-- id: 0063
+- id: 45
   speaker_id: 4
   file_id: 4
   text: Хорошо.
   speech_start: 243.06
   speech_end: 244.03
-- id: 0064
+- id: 46
   speaker_id: 4
   file_id: 4
   text: Эээ
   speech_start: 245.78
   speech_end: 247.16
-- id: 0065
+- id: 47
   speaker_id: 4
   file_id: 4
   text: Ок
   speech_start: 248.09
   speech_end: 248.83
-- id: 0066
+- id: 48
   speaker_id: 4
   file_id: 4
   text: Эм.
   speech_start: 250.42
   speech_end: 251.74
-- id: 0067
+- id: 49
   speaker_id: 4
   file_id: 4
   text: Ну
   speech_start: 253.05
   speech_end: 254.11
-- id: 0068
+- id: 50
   speaker_id: 4
   file_id: 4
   text: Так-так
   speech_start: 259.9
   speech_end: 260.83
-- id: 0069
+- id: 51
   speaker_id: 4
   file_id: 4
-  text: Нуе в смысле
-  speech_start: 261.02
+  text: в смысле
+  speech_start: 261.12
   speech_end: 262.08
-- id: 0070
+- id: 52
   speaker_id: 4
   file_id: 4
   text: Ясно
   speech_start: 262.87
   speech_end: 263.74
-- id: 0071
+- id: 53
   speaker_id: 4
   file_id: 4
   text: Не уверен
   speech_start: 264.06
   speech_end: 264.96
-- id: 0072
+- id: 54
   speaker_id: 4
   file_id: 4
   text: Точно
   speech_start: 265.85
   speech_end: 266.62
-- id: 0073
+- id: 55
   speaker_id: 4
   file_id: 4
   text: Вопрос сложный, но ответ короткий. Да
   speech_start: 272.41
   speech_end: 275.04
-- id: 0074
+- id: 56
   speaker_id: 4
   file_id: 4
-  text: Вопрос сложный, но ответ короткий — « нет.
+  text: Вопрос сложный, но ответ короткий нет.
   speech_start: 277.11
   speech_end: 279.87
-- id: 0075
+- id: 57
   speaker_id: 4
   file_id: 4
-  text: 'Сейчас будет перечисление: Чй, кофе, вода, сок.'
+  text: 'Сейчас будет перечисление: Чай, кофе, вода, сок.'
   speech_start: 281.37
   speech_end: 285.05
-- id: 0076
+- id: 58
   speaker_id: 4
   file_id: 4
-  text: Я нарочно делаю паузу
+  text: Я нарочно делаю паузу И продолжаю
   speech_start: 286.3
-  speech_end: 288.12
-- id: 0077
-  speaker_id: 4
-  file_id: 4
-  text: И продолжаю
-  speech_start: 288.79
   speech_end: 290.04
-- id: 0078
+- id: 59
   speaker_id: 4
   file_id: 4
-  text: Секунду.
+  text: Секунду. Я отвлёкся. Продолжаем
   speech_start: 291.19
-  speech_end: 292.32
-- id: 0079
-  speaker_id: 4
-  file_id: 4
-  text: Я отвлёкся.
-  speech_start: 292.73
-  speech_end: 293.85
-- id: 0080
-  speaker_id: 4
-  file_id: 4
-  text: Продолжаем
-  speech_start: 294.17
   speech_end: 295.26
-- id: 0081
+- id: 60
   speaker_id: 4
   file_id: 4
   text: С одной стороны, это дорого, с другой стороны, надёжно
   speech_start: 296.98
   speech_end: 301.88
-- id: 0082
+- id: 61
   speaker_id: 4
   file_id: 4
   text: Тот, кто придёт последним, будет закрывать офис
   speech_start: 302.46
   speech_end: 306.08
-- id: 0083
+- id: 62
   speaker_id: 4
   file_id: 4
   text: Впрочем, если хочешь, можем оставить всё как есть.
   speech_start: 308.79
   speech_end: 312.51
-- id: 0084
+- id: 63
   speaker_id: 4
   file_id: 4
   text: Я отправляю отчёт завтра утром, после девяти
   speech_start: 315.74
   speech_end: 318.52
-- id: 0085
+- id: 64
   speaker_id: 4
   file_id: 4
   text: Проверка связи. Слышно меня хорошо
   speech_start: 319.42
   speech_end: 321.92
-- id: 0086
+- id: 65
   speaker_id: 4
   file_id: 4
   text: Да, слышно. Говори чуть ближе к микрофону
   speech_start: 323.32
   speech_end: 325.85
-- id: 0087
+- id: 66
   speaker_id: 4
   file_id: 4
   text: Подтверди, ты оплатил счёт или только собираешься?
   speech_start: 326.58
   speech_end: 329.63
-- id: 0088
+- id: 67
   speaker_id: 4
   file_id: 4
   text: Я оплатил счёт, но чека пока не нашёл, не пришёл
   speech_start: 330.1
   speech_end: 333.76
-- id: 0089
+- id: 68
   speaker_id: 4
   file_id: 4
-  text: '41'
+  text: Сорок один день, минимум, максимум два
   speech_start: 335.42
-  speech_end: 336.76
-- id: 0090
-  speaker_id: 4
-  file_id: 4
-  text: День, минимум, максимум два.
-  speech_start: 336.92
   speech_end: 339.16
-- id: 0091
+- id: 69
   speaker_id: 4
   file_id: 4
   text: Сколько минут осталось до конца
   speech_start: 340.06
   speech_end: 342.08
-- id: 0092
+- id: 70
   speaker_id: 4
   file_id: 4
-  text: Осталось примерно 7 минут, может, чуть меньше
+  text: Осталось примерно семь минут, может, чуть меньше
   speech_start: 343.35
   speech_end: 346.68
-- id: 0093
+- id: 71
   speaker_id: 4
   file_id: 4
   text: Сделай звук потише, пожалуйста
   speech_start: 348.28
   speech_end: 350.27
-- id: 0094
+- id: 72
   speaker_id: 4
   file_id: 4
-  text: Сделай звук погромче. Во
+  text: Сделай звук погромче. Во Так нормально.
   speech_start: 351.35
-  speech_end: 353.18
-- id: 0095
-  speaker_id: 4
-  file_id: 4
-  text: Так нормально.
-  speech_start: 353.27
   speech_end: 354.27
-- id: 0096
+- id: 73
   speaker_id: 4
   file_id: 4
-  text: Я немного устал.
+  text: Я немного устал. Поэтому говорю чуть тише
   speech_start: 356.41
-  speech_end: 358.04
-- id: 0097
-  speaker_id: 4
-  file_id: 4
-  text: Поэтому говорю чуть тише
-  speech_start: 360.12
   speech_end: 361.98
-- id: 0098
+- id: 74
   speaker_id: 4
   file_id: 4
-  text: А теперь скажи громче, чтобы было контрастно
+  text: А теперь скажу громче, чтобы было контрастно
   speech_start: 362.97
   speech_end: 366.62
-- id: 0099
+- id: 75
   speaker_id: 4
   file_id: 4
   text: Если что непонятно, переспроси
   speech_start: 367.32
   speech_end: 369.63
-- id: 0100
+- id: 76
   speaker_id: 4
   file_id: 4
   text: Раз.
   speech_start: 370.52
   speech_end: 371.48
-- id: 0101
+- id: 77
   speaker_id: 4
   file_id: 4
   text: Один
   speech_start: 372.02
   speech_end: 372.92
-- id: 0102
+- id: 78
   speaker_id: 4
   file_id: 4
   text: Два
   speech_start: 373.53
   speech_end: 374.4
-- id: 0103
+- id: 79
   speaker_id: 4
   file_id: 4
   text: Три
   speech_start: 375.06
   speech_end: 375.68
-- id: 0104
+- id: 80
   speaker_id: 4
   file_id: 4
   text: Четыре
   speech_start: 376.31
   speech_end: 377.34
-- id: 0105
+- id: 81
   speaker_id: 4
   file_id: 4
   text: Пять.
   speech_start: 377.98
   speech_end: 378.81
-- id: 0106
+- id: 82
   speaker_id: 4
   file_id: 4
   text: Минутку, я сейчас найду нужный документ
   speech_start: 379.32
   speech_end: 381.63
-- id: 0107
+- id: 83
   speaker_id: 4
   file_id: 4
   text: Всё, я на связи. Что я пропустил?
   speech_start: 382.26
   speech_end: 384.7
-- id: 0108
+- id: 84
   speaker_id: 4
   file_id: 4
   text: Давай закругляйся, время уже поджимает
   speech_start: 387.32
   speech_end: 389.79
-- id: 0109
+- id: 85
   speaker_id: 4
   file_id: 4
   text: На этом всё, запись можно останавливать
