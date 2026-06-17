@@ -53,7 +53,7 @@ segments:
 - id: 8
   speaker_id: 2
   file_id: 2
-  text: потом отчёты, короткое резюме в конце
+  text: потом отчёты, и короткое резюме в конце
   speech_start: 30.83
   speech_end: 34.24
 - id: 9
@@ -222,7 +222,7 @@ segments:
   speaker_id: 2
   file_id: 2
   text: Да как так-то? Мы даже договаривались на утро.
-  speech_start: 169.78
+  speech_start: 169.53
   speech_end: 174.46
 - id: 37
   speaker_id: 2

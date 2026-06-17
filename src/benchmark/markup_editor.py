@@ -16,9 +16,7 @@ class AudioSegmentEditor:
     def __init__(self, yaml_path: str):
         self.yaml_path = yaml_path
         # Загружаем спикеров и аудиофайл из YAML
-        self.speakers, self.audio_file = benchmark.markup_storage.load_from_yaml(self.yaml_path)
-        self.segments = sorted(self.audio_file.segments, key=lambda x: x.start_time)
-        self.audio_file.segments = self.segments
+        self.load_yaml()
         self.index = 0
         self.step = 0.05  # Шаг сдвига границ по умолчанию (50 мс)
         self.audio_data: numpy.ndarray | None = None
@@ -27,6 +25,13 @@ class AudioSegmentEditor:
     def current(self) -> AudioSegment:
         """Возвращает текущий сегмент аудио"""
         return self.segments[self.index]
+
+    def load_yaml(self):
+        """Загружает данные из yaml файла с разметкой"""
+        self.speakers, self.audio_file = benchmark.markup_storage.load_from_yaml(self.yaml_path)
+        self.segments = sorted(self.audio_file.segments, key=lambda x: x.start_time)
+        self.audio_file.segments = self.segments
+        print("Данные загружены из файла: {self.yaml_path}")
 
     def load_audio_data(self, file_path: str):
         """Загружает аудиофайл в формате PCM, 16 кГц, моно"""
@@ -128,7 +133,7 @@ class AudioSegmentEditor:
         print(f"Текст: {seg.text}")
         print(
             "Команды: [p]lay | [n]ext | [b]ack | [g]oto ID | [l]eft+/- dist | [r]ight+/- dist | "
-            "[s]plit | [m]erge L/R | [w]rite | [q]uit"
+            "[s]plit | [m]erge L/R | [i]mport | [w]rite | [q]uit"
         )
 
     def run(self):
@@ -182,6 +187,8 @@ class AudioSegmentEditor:
                     self._merge_segment(args[0])
                 else:
                     print("Укажите направление слияния: m l (слева) или m r (справа)")
+            elif cmd == 'i':
+                self.load_yaml()
             elif cmd == 'w':
                 print("Внимание: вы запросили запись файла")
                 confirm = input("Для подтверждения записи введите \"y\": ").strip().lower()

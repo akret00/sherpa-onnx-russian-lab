@@ -41,7 +41,7 @@
 Датасет строится по двухуровневой модели: **сегменты (segments)** → **сцены (scenes)**.
 
 ### 3.1. Сегменты (исходные аудиофрагменты)
-Атомарная единица датасета — короткая одноголосая реплика, вырезанная из исходного файла диктора.
+Атомарная единица датасета — короткая одноголосая реплика, заданная (указанная) разметкой в исходном файле диктора.
 - **Содержание:** Одна законченная фраза или предложение.
 - **Длительность:** 1–6 секунд.
 - **Качество:** Чистая речь (без фонового шума, музыки, реверберации).
@@ -51,25 +51,26 @@
     dataset_version: 0.1
     sample_rate: 16000
     speakers:
-      - id: SPK01
+      - id: 1
         name: "alex"
         notes: "headset mic, same room"
-      - id: SPK02
+      - id: 2
         name: "maria"
         notes: "laptop mic"
+    files:
+	  - id: 1
+	    file_path: speakers/SPK01/SPK01.opus  # относительный путь к файлу диктора
     segments:
-      - id: SPK01_0001
-        speaker_id: SPK01
-        file: speakers/SPK01/SPK01.opus    # относительный путь к файлу диктора
+      - id: 1
+        speaker_id: 1
+        file_id: 1
         text: "Привет. Проверяем запись голоса, раз, два, три."
-        tags: [neutral]
         speech_start: 0.20                 # секунды от начала файла
         speech_end: 2.70                   # секунды от начала файла
-      - id: SPK01_0002
-        speaker_id: SPK01
-        file: speakers/SPK01/SPK01.opus
+      - id: 2
+        speaker_id: 1
+        file_id: 1
         text: "Сегодня я говорю нормально и достаточно спокойно."
-        tags: [neutral]
         speech_start: 4.50                 # пауза ~1.8 сек от конца предыдущей
         speech_end: 7.60
     ```
@@ -85,16 +86,13 @@
       - id: S001_clean_2spk_nooverlap
         description: "2 speakers, clean, no overlap"
         events:
-          - segment_id: SPK01_0001
-            speaker_id: SPK01
+          - segment_id: 1
             start: 0.00
             gain_db: 0.0
-          - segment_id: SPK02_0001
-            speaker_id: SPK02
+          - segment_id: 2
             start: 3.50
             gain_db: 0.0
-          - segment_id: SPK01_0002
-            speaker_id: SPK01
+          - segment_id: 3
             start: 7.20
             gain_db: 0.0
         noise:
@@ -102,12 +100,10 @@
       - id: S002_overlap_500ms_cafe_snr10
         description: "Controlled overlap 0.5s + cafe noise SNR=10dB"
         events:
-          - segment_id: SPK01_0033
-            speaker_id: SPK01
+          - segment_id: 33
             start: 0.00
             gain_db: 0.0
-          - segment_id: SPK02_0034
-            speaker_id: SPK02
+          - segment_id: 34
             start: 1.80
             gain_db: 0.0
         noise:
