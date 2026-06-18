@@ -1,8 +1,13 @@
 """Модуль содержит функции выгрузки и загрузки результатов разметки в YAML формат"""
 from pathlib import Path
+from dataclasses import dataclass
 import yaml
 from entities import Speaker, AudioFile, AudioSegment
 
+@dataclass
+class AudioSegmentMarkup(AudioSegment):
+    """Модель аудиосегмента для разметки"""
+    phrase_id: int | None = None
 
 def export_to_yaml(
     yaml_path: str | Path,
@@ -45,6 +50,7 @@ def export_to_yaml(
                     "id": seg_id, # Перенумерация id сегментов с начала
                     "speaker_id": seg.speaker.id if seg.speaker.id is not None else default_spk_id,
                     "file_id": audio_file.id if audio_file.id is not None else default_file_id,
+                    "phrase_id": seg.phrase_id,
                     "text": seg.text,
                     "speech_start": round(seg.start_time, 2),
                     "speech_end": round(seg.end_time, 2),
@@ -100,14 +106,15 @@ def load_from_yaml(yaml_path: str | Path) -> tuple[list[Speaker], AudioFile]:
 
         speaker = speakers_dict.get(spk_id)
 
-        segment = AudioSegment(
-            id=int(seg_data["id"]),
+        segment = AudioSegmentMarkup(
+            id = int(seg_data["id"]),
             audio_file_id = f_id,
             audio_file = audio_file,  # циклическая ссылка обратно на файл
             speaker_id = spk_id,
             speaker = speaker,  # ссылка на объект спикера
             start_time = float(seg_data["speech_start"]),
             end_time = float(seg_data["speech_end"]),
+            phrase_id = int(seg_data.get("phrase_id", seg_data["id"])),
             text = seg_data["text"],
             word_count = len(seg_data["text"].split()) if seg_data["text"] else 0,
         )

@@ -11,510 +11,595 @@ segments:
 - id: 1
   speaker_id: 2
   file_id: 2
+  phrase_id: 1
   text: Привет. Проверяем запись голоса. Раз, два, три.
   speech_start: 2.52
   speech_end: 6.59
 - id: 2
   speaker_id: 2
   file_id: 2
+  phrase_id: 2
   text: Сегодня я говорю нормально и достаточно спокойно.
   speech_start: 7.19
   speech_end: 10.11
 - id: 3
   speaker_id: 2
   file_id: 2
+  phrase_id: 3
   text: А сейчас попробую заговорить быстрее, чуть быстрее, не сбиваясь
   speech_start: 10.65
   speech_end: 13.8
 - id: 4
   speaker_id: 2
   file_id: 2
+  phrase_id: 4
   text: Э-э, подожди, я начну заново. Говорю чуть быстрее
   speech_start: 13.8
   speech_end: 17.06
 - id: 5
   speaker_id: 2
   file_id: 2
+  phrase_id: 5
   text: 'Мне нужен доступ к IP: токен и секретный ключ.'
   speech_start: 17.36
   speech_end: 20.92
 - id: 6
   speaker_id: 2
   file_id: 2
+  phrase_id: 6
   text: GPU перегружен, а CPU не терпит
   speech_start: 21.02
   speech_end: 26.82
 - id: 7
   speaker_id: 2
   file_id: 2
+  phrase_id: 7
   text: Давай обсудим план. Сначала подготовка, потом тесты
   speech_start: 26.72
   speech_end: 30.88
 - id: 8
   speaker_id: 2
   file_id: 2
+  phrase_id: 8
   text: потом отчёты, и короткое резюме в конце
   speech_start: 30.83
   speech_end: 34.24
 - id: 9
   speaker_id: 2
   file_id: 2
+  phrase_id: 9
   text: Файл называется Teст аудио Финал два
   speech_start: 34.33
   speech_end: 39.03
 - id: 10
   speaker_id: 2
   file_id: 2
+  phrase_id: 10
   text: Сохрани как вав. шестнадцать килогерц моно
   speech_start: 38.8
   speech_end: 44.38
 - id: 11
   speaker_id: 2
   file_id: 2
+  phrase_id: 11
   text: Я отправила запрос на сервер, но сервер выдаёт ошибку 500
   speech_start: 44.86
   speech_end: 51.33
 - id: 12
   speaker_id: 2
   file_id: 2
+  phrase_id: 12
   text: Скорее всего, дело в конфиге. Проверь ветвь. Ветку дев. Жесть.
   speech_start: 51.21
   speech_end: 58.08
 - id: 13
   speaker_id: 2
   file_id: 2
+  phrase_id: 13
   text: Окей, сейчас посмотрю логи и сразу отпишусь
   speech_start: 58.17
   speech_end: 62.36
 - id: 14
   speaker_id: 2
   file_id: 2
+  phrase_id: 14
   text: 'Запиши адрес: улица Лесная, дом семь, квартира двенадцать.'
   speech_start: 64.73
   speech_end: 69.69
 - id: 15
   speaker_id: 2
   file_id: 2
+  phrase_id: 15
   text: Мой номер заказа два ноль два четыре, тире, ноль ноль один
   speech_start: 69.91
   speech_end: 74.4
 - id: 16
   speaker_id: 2
   file_id: 2
+  phrase_id: 16
   text: Сумма три тысячи четыреста пятьдесят рублей
   speech_start: 74.01
   speech_end: 78.2
 - id: 17
   speaker_id: 2
   file_id: 2
+  phrase_id: 17
   text: Скидка десять процентов, действует до пятницы
   speech_start: 78.41
   speech_end: 81.4
 - id: 18
   speaker_id: 2
   file_id: 2
+  phrase_id: 18
   text: ООО Линия и и Петров, разные получатели
   speech_start: 82.55
   speech_end: 86.74
 - id: 19
   speaker_id: 2
   file_id: 2
+  phrase_id: 19
   text: НДС включён в стоимость, но не всегда очевидно
   speech_start: 86.8
   speech_end: 90.84
 - id: 20
   speaker_id: 2
   file_id: 2
+  phrase_id: 20
   text: Пожалуйста, повтори последнюю цифру ещё раз
   speech_start: 91.38
   speech_end: 94.65
 - id: 21
   speaker_id: 2
   file_id: 2
+  phrase_id: 21
   text: Последняя цифра — восемь. Нет, девять. Извини, девять.
   speech_start: 94.56
   speech_end: 99.96
 - id: 22
   speaker_id: 2
   file_id: 2
+  phrase_id: 22
   text: Проверка. Один, два, три, четыре, пять
   speech_start: 100.12
   speech_end: 104.22
 - id: 23
   speaker_id: 2
   file_id: 2
+  phrase_id: 23
   text: Проверка. Десять, двадцать, тридцать, сорок
   speech_start: 103.87
   speech_end: 108.22
 - id: 24
   speaker_id: 2
   file_id: 2
+  phrase_id: 24
   text: Проверка. сто один, сто два, сто три
   speech_start: 108.12
   speech_end: 112.22
 - id: 25
   speaker_id: 2
   file_id: 2
+  phrase_id: 25
   text: ИНН семьдесят семь ноль один, Далее без изменений.
   speech_start: 112.31
   speech_end: 117.95
 - id: 26
   speaker_id: 2
   file_id: 2
+  phrase_id: 26
   text: Почта для связи. Инфо собака домен точка ру
   speech_start: 118.36
   speech_end: 124.09
 - id: 27
   speaker_id: 2
   file_id: 2
+  phrase_id: 27
   text: Скажи, пожалуйста, во сколько начинается встреча?
   speech_start: 135.8
   speech_end: 139.8
 - id: 28
   speaker_id: 2
   file_id: 2
+  phrase_id: 28
   text: Встреча в девятнадцать сорок пять, без опоздания
   speech_start: 140.25
   speech_end: 143.82
 - id: 29
   speaker_id: 2
   file_id: 2
+  phrase_id: 29
   text: Нет, так не пойдёт. Давай сделаем по-другому.
   speech_start: 143.75
   speech_end: 147.32
 - id: 30
   speaker_id: 2
   file_id: 2
+  phrase_id: 30
   text: Я думаю, нет. Я уверен, это правильное решение.
   speech_start: 148.22
   speech_end: 153.34
 - id: 31
   speaker_id: 2
   file_id: 2
+  phrase_id: 31
   text: Ключи от гаража, кажется, лежат у зеркала
   speech_start: 153.69
   speech_end: 157.17
 - id: 32
   speaker_id: 2
   file_id: 2
+  phrase_id: 32
   text: Ты серьёзно? Я там уже смотрел два раза
   speech_start: 156.94
   speech_end: 160.17
 - id: 33
   speaker_id: 2
   file_id: 2
+  phrase_id: 33
   text: Ладно, проверь ещё раз и напишу тебе
   speech_start: 160.44
   speech_end: 163.17
 - id: 34
   speaker_id: 2
   file_id: 2
+  phrase_id: 34
   text: Не перебивай меня, я сейчас договорю.
   speech_start: 163.44
   speech_end: 166.17
 - id: 35
   speaker_id: 2
   file_id: 2
+  phrase_id: 35
   text: Нет, нет, я просто уточняю, продолжай
   speech_start: 166.26
   speech_end: 169.53
 - id: 36
   speaker_id: 2
   file_id: 2
+  phrase_id: 36
   text: Да как так-то? Мы даже договаривались на утро.
   speech_start: 169.53
   speech_end: 174.46
 - id: 37
   speaker_id: 2
   file_id: 2
+  phrase_id: 37
   text: Слушай, ну не сердись. Планы немного поменялись
   speech_start: 175.0
   speech_end: 177.77
 - id: 38
   speaker_id: 2
   file_id: 2
+  phrase_id: 38
   text: В любом случае, я буду на месте через полчаса
   speech_start: 177.65
   speech_end: 181.67
 - id: 39
   speaker_id: 2
   file_id: 2
+  phrase_id: 39
   text: Понял
   speech_start: 183.0
   speech_end: 183.85
 - id: 40
   speaker_id: 2
   file_id: 2
+  phrase_id: 40
   text: Да
   speech_start: 183.9
   speech_end: 184.85
 - id: 41
   speaker_id: 2
   file_id: 2
+  phrase_id: 41
   text: Нет
   speech_start: 185.05
   speech_end: 185.95
 - id: 42
   speaker_id: 2
   file_id: 2
+  phrase_id: 42
   text: Ага
   speech_start: 186.0
   speech_end: 187.1
 - id: 43
   speaker_id: 2
   file_id: 2
+  phrase_id: 43
   text: Ой
   speech_start: 187.25
   speech_end: 188.6
 - id: 44
   speaker_id: 2
   file_id: 2
+  phrase_id: 44
   text: конечно
   speech_start: 188.35
   speech_end: 189.5
 - id: 45
   speaker_id: 2
   file_id: 2
+  phrase_id: 45
   text: хорошо
   speech_start: 189.55
   speech_end: 190.75
 - id: 46
   speaker_id: 2
   file_id: 2
+  phrase_id: 46
   text: Э-ээ
   speech_start: 190.7
   speech_end: 191.95
 - id: 47
   speaker_id: 2
   file_id: 2
+  phrase_id: 47
   text: Ок
   speech_start: 192.0
   speech_end: 192.7
 - id: 48
   speaker_id: 2
   file_id: 2
+  phrase_id: 48
   text: Эм
   speech_start: 192.7
   speech_end: 193.85
 - id: 49
   speaker_id: 2
   file_id: 2
+  phrase_id: 49
   text: Ну-у-у
   speech_start: 193.94
   speech_end: 195.25
 - id: 50
   speaker_id: 2
   file_id: 2
+  phrase_id: 50
   text: такк-так
   speech_start: 195.54
   speech_end: 196.65
 - id: 51
   speaker_id: 2
   file_id: 2
+  phrase_id: 51
   text: В смысле?
   speech_start: 196.69
   speech_end: 198.0
 - id: 52
   speaker_id: 2
   file_id: 2
+  phrase_id: 52
   text: Ясно
   speech_start: 198.14
   speech_end: 199.25
 - id: 53
   speaker_id: 2
   file_id: 2
+  phrase_id: 53
   text: Не уверен
   speech_start: 199.64
   speech_end: 200.75
 - id: 54
   speaker_id: 2
   file_id: 2
+  phrase_id: 54
   text: Точно.
   speech_start: 201.04
   speech_end: 202.25
 - id: 55
   speaker_id: 2
   file_id: 2
+  phrase_id: 55
   text: Вопрос сложный, но ответ короткий. Да
   speech_start: 204.02
   speech_end: 207.71
 - id: 56
   speaker_id: 2
   file_id: 2
+  phrase_id: 56
   text: Вопрос сложный, но ответ короткий. Нет
   speech_start: 208.31
   speech_end: 211.71
 - id: 57
   speaker_id: 2
   file_id: 2
+  phrase_id: 57
   text: Сейчас будет перечисление. Чай, кофе, вода, сок
   speech_start: 212.22
   speech_end: 217.38
 - id: 58
   speaker_id: 2
   file_id: 2
+  phrase_id: 58
   text: Я нарочно делаю паузу ... И продолжаю
   speech_start: 217.76
   speech_end: 222.27
 - id: 59
   speaker_id: 2
   file_id: 2
+  phrase_id: 59
   text: Секунду. Я отвлёкся. Продолжаем
   speech_start: 222.71
   speech_end: 226.3
 - id: 60
   speaker_id: 2
   file_id: 2
+  phrase_id: 60
   text: С одной стороны, это дорого, с другой — надёжно.
   speech_start: 226.81
   speech_end: 231.48
 - id: 61
   speaker_id: 2
   file_id: 2
+  phrase_id: 61
   text: Тот, кто придёт последним, будет закрывать офис
   speech_start: 232.02
   speech_end: 235.96
 - id: 62
   speaker_id: 2
   file_id: 2
+  phrase_id: 62
   text: Впрочем, если хочешь, можем оставить всё как есть
   speech_start: 236.63
   speech_end: 240.06
 - id: 63
   speaker_id: 2
   file_id: 2
+  phrase_id: 63
   text: Я отправлю отчёт завтра утром, после девяти
   speech_start: 240.54
   speech_end: 244.42
 - id: 64
   speaker_id: 2
   file_id: 2
+  phrase_id: 64
   text: Проверка связи. Слышно меня хорошо?
   speech_start: 244.44
   speech_end: 246.92
 - id: 65
   speaker_id: 2
   file_id: 2
+  phrase_id: 65
   text: Да, слышно. Говори чуть ближе к микрофону
   speech_start: 247.61
   speech_end: 251.55
 - id: 66
   speaker_id: 2
   file_id: 2
+  phrase_id: 66
   text: Подтверди. Ты оплатил счёт или только собираешься?
   speech_start: 252.02
   speech_end: 256.5
 - id: 67
   speaker_id: 2
   file_id: 2
+  phrase_id: 67
   text: Я оплатил счёт, но чек пока не пришёл
   speech_start: 256.27
   speech_end: 260.0
 - id: 68
   speaker_id: 2
   file_id: 2
+  phrase_id: 68
   text: Срок один день, максимум два
   speech_start: 260.02
   speech_end: 263.0
 - id: 69
   speaker_id: 2
   file_id: 2
+  phrase_id: 69
   text: Сколько минут осталось до конца?
   speech_start: 263.1
   speech_end: 265.88
 - id: 70
   speaker_id: 2
   file_id: 2
+  phrase_id: 70
   text: Осталось примерно семь минут. Может, чуть меньше
   speech_start: 266.6
   speech_end: 269.38
 - id: 71
   speaker_id: 2
   file_id: 2
+  phrase_id: 71
   text: Сделай звук потише, пожалуйста
   speech_start: 270.84
   speech_end: 273.22
 - id: 72
   speaker_id: 2
   file_id: 2
+  phrase_id: 72
   text: Сделай звук погромче. Вот так, нормально
   speech_start: 273.91
   speech_end: 277.33
 - id: 73
   speaker_id: 2
   file_id: 2
+  phrase_id: 73
   text: Я немного устал, поэтому говорю чуть тише
   speech_start: 277.41
   speech_end: 280.68
 - id: 74
   speaker_id: 2
   file_id: 2
+  phrase_id: 74
   text: А теперь скажу громче, чтобы было контрастно
   speech_start: 281.37
   speech_end: 284.99
 - id: 75
   speaker_id: 2
   file_id: 2
+  phrase_id: 75
   text: Если что-то непонятно, переспроси
   speech_start: 285.27
   speech_end: 287.7
 - id: 76
   speaker_id: 2
   file_id: 2
+  phrase_id: 76
   text: Раз
   speech_start: 287.82
   speech_end: 288.55
 - id: 77
   speaker_id: 2
   file_id: 2
+  phrase_id: 77
   text: один
   speech_start: 288.47
   speech_end: 289.7
 - id: 78
   speaker_id: 2
   file_id: 2
+  phrase_id: 78
   text: два
   speech_start: 289.37
   speech_end: 290.55
 - id: 79
   speaker_id: 2
   file_id: 2
+  phrase_id: 79
   text: три
   speech_start: 290.52
   speech_end: 291.45
 - id: 80
   speaker_id: 2
   file_id: 2
+  phrase_id: 80
   text: четыре
   speech_start: 291.32
   speech_end: 292.45
 - id: 81
   speaker_id: 2
   file_id: 2
+  phrase_id: 81
   text: пять
   speech_start: 292.27
   speech_end: 293.55
 - id: 82
   speaker_id: 2
   file_id: 2
+  phrase_id: 82
   text: Минутку, сейчас найду нужен документ
   speech_start: 294.04
   speech_end: 296.7
 - id: 83
   speaker_id: 2
   file_id: 2
+  phrase_id: 83
   text: Всё, я на связи. Что пропустил?
   speech_start: 297.21
   speech_end: 299.65
 - id: 84
   speaker_id: 2
   file_id: 2
+  phrase_id: 84
   text: Давай закругляться, время уже поджимает.
   speech_start: 299.71
   speech_end: 302.65
 - id: 85
   speaker_id: 2
   file_id: 2
+  phrase_id: 85
   text: На этом всё. Запись можно останавливать
   speech_start: 302.81
   speech_end: 306.3
