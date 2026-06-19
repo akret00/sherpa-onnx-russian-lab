@@ -64,7 +64,7 @@ def main():
     #     update_mode = speaker_storage.SpeakerUpdateMode.UPDATE_ALL
     # )
 
-    benchmark.markup_storage.export_to_yaml(
+    benchmark.markup_storage.export_markup_to_yaml(
         yaml_path = output_file_path,
         speakers = None,
         audio_file = pl.pipeline_result.file,

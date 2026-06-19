@@ -7,7 +7,7 @@ import numpy
 import sounddevice
 from entities import AudioSegment
 import args_utils
-import benchmark.markup_storage
+from benchmark.markup_storage import load_markup_from_yaml, export_markup_to_yaml
 import ffmpeg_utils
 from config import SR
 
@@ -28,7 +28,7 @@ class AudioSegmentEditor:
 
     def load_yaml(self):
         """Загружает данные из yaml файла с разметкой"""
-        self.speakers, self.audio_file = benchmark.markup_storage.load_from_yaml(self.yaml_path)
+        self.speakers, self.audio_file = load_markup_from_yaml(self.yaml_path)
         self.segments = sorted(self.audio_file.segments, key=lambda x: x.start_time)
         self.audio_file.segments = self.segments
         print("Данные загружены из файла: {self.yaml_path}")
@@ -193,7 +193,7 @@ class AudioSegmentEditor:
                 print("Внимание: вы запросили запись файла")
                 confirm = input("Для подтверждения записи введите \"y\": ").strip().lower()
                 if confirm == "y":
-                    benchmark.markup_storage.export_to_yaml(
+                    export_markup_to_yaml(
                         yaml_path = self.yaml_path,
                         speakers = self.speakers,
                         audio_file = self.audio_file

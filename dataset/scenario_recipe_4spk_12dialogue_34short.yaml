@@ -1,0 +1,383 @@
+dataset_version: 0.1
+sample_rate: 16000
+episodes:
+- id: four_speakers_two_leads_two_commentators_rot1
+  description: 'Rotation 1: D1->Spk1, D2->Spk2, D3->Spk3, D4->Spk4'
+  events:
+  - file_id: 1
+    segment_id: 1
+    start: 0.0
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 64
+    start: 4.26
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 11
+    start: 6.74
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 7
+    start: 9.3
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 8
+    start: 12.95
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 11
+    start: 16.36
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 43
+    start: 20.14
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 12
+    start: 21.04
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 18
+    start: 27.91
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 13
+    start: 30.47
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 47
+    start: 33.58
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 36
+    start: 34.32
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 37
+    start: 37.88
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 51
+    start: 40.65
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 16
+    start: 41.61
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 20
+    start: 44.78
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 49
+    start: 48.05
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 54
+    start: 50.44
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 68
+    start: 51.21
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 70
+    start: 53.42
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 84
+    start: 56.2
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 85
+    start: 58.54
+    gain_db: 0.0
+  noise:
+    enabled: false
+    file: null
+    snr_db: null
+- id: four_speakers_two_leads_two_commentators_rot2
+  description: 'Rotation 2: D1->Spk2, D2->Spk3, D3->Spk4, D4->Spk1'
+  events:
+  - file_id: 2
+    segment_id: 1
+    start: 0.0
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 10
+    start: 4.07
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 65
+    start: 6.19
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 7
+    start: 8.72
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 36
+    start: 12.88
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 11
+    start: 15.22
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 43
+    start: 21.69
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 49
+    start: 22.75
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 5
+    start: 25.14
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 13
+    start: 29.24
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 46
+    start: 33.43
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 36
+    start: 34.58
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 49
+    start: 39.51
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 50
+    start: 41.9
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 16
+    start: 43.28
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 22
+    start: 47.47
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 25
+    start: 50.44
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 53
+    start: 55.91
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 69
+    start: 56.97
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 30
+    start: 59.75
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 84
+    start: 62.5
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 61
+    start: 65.44
+    gain_db: 0.0
+  noise:
+    enabled: false
+    file: null
+    snr_db: null
+- id: four_speakers_two_leads_two_commentators_rot3
+  description: 'Rotation 3: D1->Spk3, D2->Spk4, D3->Spk1, D4->Spk2'
+  events:
+  - file_id: 3
+    segment_id: 1
+    start: 0.0
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 64
+    start: 3.44
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 64
+    start: 5.94
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 35
+    start: 8.76
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 8
+    start: 12.04
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 49
+    start: 14.9
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 43
+    start: 17.29
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 12
+    start: 18.64
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 5
+    start: 22.81
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 49
+    start: 26.5
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 47
+    start: 28.89
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 49
+    start: 29.59
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 37
+    start: 31.98
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 51
+    start: 35.25
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 15
+    start: 36.56
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 20
+    start: 39.34
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 25
+    start: 42.68
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 54
+    start: 46.59
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 29
+    start: 47.8
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 70
+    start: 49.65
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 49
+    start: 52.98
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 85
+    start: 55.37
+    gain_db: 0.0
+  noise:
+    enabled: false
+    file: null
+    snr_db: null
+- id: four_speakers_two_leads_two_commentators_rot4
+  description: 'Rotation 4: D1->Spk4, D2->Spk1, D3->Spk2, D4->Spk3'
+  events:
+  - file_id: 4
+    segment_id: 1
+    start: 0.0
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 63
+    start: 4.17
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 65
+    start: 6.93
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 7
+    start: 10.87
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 8
+    start: 15.93
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 11
+    start: 18.85
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 56
+    start: 22.47
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 12
+    start: 23.11
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 5
+    start: 26.47
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 13
+    start: 30.03
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 49
+    start: 33.23
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 36
+    start: 35.62
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 37
+    start: 40.78
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 49
+    start: 43.57
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 16
+    start: 45.96
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 20
+    start: 49.74
+    gain_db: 0.0
+  - file_id: 2
+    segment_id: 25
+    start: 52.59
+    gain_db: 0.0
+  - file_id: 3
+    segment_id: 49
+    start: 58.23
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 69
+    start: 60.62
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 69
+    start: 62.64
+    gain_db: 0.0
+  - file_id: 4
+    segment_id: 84
+    start: 65.94
+    gain_db: 0.0
+  - file_id: 1
+    segment_id: 85
+    start: 68.41
+    gain_db: 0.0
+  noise:
+    enabled: false
+    file: null
+    snr_db: null

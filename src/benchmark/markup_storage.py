@@ -1,15 +1,15 @@
 """Модуль содержит функции выгрузки и загрузки результатов разметки в YAML формат"""
 from pathlib import Path
-from dataclasses import dataclass
+import os
+import dataclasses
 import yaml
-from entities import Speaker, AudioFile, AudioSegment
+from entities import Speaker, AudioFile
+from benchmark.entities_dataset import (
+    AudioSegmentMarkup, Recipe, RecipeStep,
+    Scenario, ScenarioEpisode, ScenarioEvent, NoiseConfig
+)
 
-@dataclass
-class AudioSegmentMarkup(AudioSegment):
-    """Модель аудиосегмента для разметки"""
-    phrase_id: int | None = None
-
-def export_to_yaml(
+def export_markup_to_yaml(
     yaml_path: str | Path,
     speakers: list[Speaker] | None,
     audio_file: AudioFile,
@@ -77,7 +77,7 @@ def export_to_yaml(
         )
 
 
-def load_from_yaml(yaml_path: str | Path) -> tuple[list[Speaker], AudioFile]:
+def load_markup_from_yaml(yaml_path: str | Path) -> tuple[list[Speaker], AudioFile]:
     """Загрузка из YAML и восстановление связей в датаклассах."""
     with open(yaml_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
@@ -124,3 +124,138 @@ def load_from_yaml(yaml_path: str | Path) -> tuple[list[Speaker], AudioFile]:
             audio_file.segments.append(segment)
 
     return list(speakers_dict.values()), audio_file
+
+def load_recipe_from_yaml(file_path: str) -> Recipe:
+    """Загружает рецепт из YAML-файла и возвращает объект Recipe.
+    Args:
+        file_path: Относительный или абсолютный путь к YAML-файлу.
+    Returns:
+        Объект Recipe с валидированными данными и списком шагов внутри.
+    """
+    # Нормализуем путь относительно текущей рабочей директории
+    full_path = os.path.abspath(file_path)
+
+    if not os.path.exists(full_path):
+        raise FileNotFoundError(f"Файл рецепта не найден по пути: {full_path}")
+
+    with open(full_path, "r", encoding="utf-8") as f:
+        # Loader=yaml.SafeLoader защищает от выполнения произвольного кода из YAML
+        data = yaml.load(f, Loader=yaml.SafeLoader)
+
+    if not data:
+        raise ValueError(f"Файл рецепта {full_path} пуст")
+
+    # Извлекаем шаги таймлайна и преобразуем их в объекты RecipeStep
+    raw_timeline = data.get("timeline", [])
+    timeline_steps = [
+        RecipeStep(
+            step_id=int(step["step_id"]),
+            dictor_id=int(step["dictor_id"]),
+            phrase_id=int(step["phrase_id"]),
+        )
+        for step in raw_timeline
+    ]
+
+    # Собираем и возвращаем финальный объект Recipe
+    return Recipe(
+        recipe_id=str(data["recipe_id"]),
+        description=str(data.get("description", "")),
+        pause_ms=int(data.get("pause_ms", 0)),
+        timeline=timeline_steps,
+    )
+
+def load_scenario_from_yaml(file_path: str) -> Scenario:
+    """Загружает сценарий из YAML-файла и возвращает заполненный объект Scenario.
+    Args:
+        file_path: Относительный или абсолютный путь к YAML-файлу сценария.
+    Returns:
+        Объект Scenario со структурированными эпизодами и событиями.
+    """
+    full_path = os.path.abspath(file_path)
+
+    if not os.path.exists(full_path):
+        raise FileNotFoundError(
+            f"Файл сценария не найден по пути: {full_path}"
+        )
+
+    with open(full_path, "r", encoding="utf-8") as f:
+        data = yaml.load(f, Loader=yaml.SafeLoader)
+
+    if not data:
+        raise ValueError(f"Файл сценария {full_path} пуст")
+
+    parsed_episodes = []
+    raw_episodes = data.get("episodes") or []
+
+    for ep in raw_episodes:
+        # Восстанавливаем NoiseConfig, если секция есть в файле
+        noise_data = ep.get("noise")
+        noise_config = None
+        if noise_data:
+            noise_config = NoiseConfig(
+                enabled=bool(noise_data.get("enabled", False)),
+                file=noise_data.get("file"),
+                snr_db=(
+                    int(noise_data["snr_db"])
+                    if noise_data.get("snr_db") is not None
+                    else None
+                ),
+            )
+
+        # Восстанавливаем список ScenarioEvent
+        events_data = ep.get("events") or []
+        events_list = [
+            ScenarioEvent(
+                file_id=int(ev["file_id"]),
+                segment_id=int(ev["segment_id"]),
+                start=float(ev["start"]),
+                gain_db=float(ev.get("gain_db", 0.0)),
+            )
+            for ev in events_data
+        ]
+
+        # Собираем эпизод
+        episode = ScenarioEpisode(
+            id=str(ep["id"]),
+            description=str(ep.get("description", "")),
+            events=events_list,
+            noise=noise_config,
+        )
+        parsed_episodes.append(episode)
+
+    # Возвращаем финальный корневой объект сценария
+    return Scenario(
+        dataset_version=float(data.get("dataset_version", 0.1)),
+        sample_rate=int(data.get("sample_rate", 16000)),
+        episodes=parsed_episodes,
+    )
+
+
+def export_scenario_to_yaml(file_path: str, scenario: Scenario) -> None:
+    """Выгружает объект Scenario в файл в чистом формате YAML без тегов типов.
+    Args:
+        file_path: Относительный или абсолютный путь для сохранения YAML-файла.
+        scenario: Объект датакласса Scenario, который нужно сохранить.
+    """
+    full_path = os.path.abspath(file_path)
+
+    # Создаем директорию для файла, если она еще не существует
+    dir_name = os.path.dirname(full_path)
+    if dir_name and not os.path.exists(dir_name):
+        os.makedirs(dir_name, exist_ok=True)
+
+    # dataclasses.asdict рекурсивно преобразует датаклассы в нативные dict/list
+    scenario_dict = dataclasses.asdict(scenario)
+
+    with open(full_path, "w", encoding="utf-8") as f:
+        # dump параметры:
+        # default_flow_style=False заставляет писать блоками (красивые списки)
+        # allow_unicode=True сохраняет кириллицу в описании читаемой
+        # sort_keys=False сохраняет порядок полей как в датаклассах
+        yaml.dump(
+            scenario_dict,
+            f,
+            default_flow_style=False,
+            allow_unicode=True,
+            sort_keys=False,
+        )
