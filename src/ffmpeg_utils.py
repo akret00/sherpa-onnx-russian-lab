@@ -1,5 +1,6 @@
 """Управляет подпроцессом ffmpeg"""
 import subprocess
+from pathlib import Path
 import numpy
 import config
 
@@ -115,3 +116,87 @@ def read_all_samples(path: str, step_minutes: int = 10):
     # Обрезаем массив до фактически записанного размера
     result_array.resize(write_pointer, refcheck=False)
     return result_array
+
+
+def convert_wav_to_opus(wav_path: Path, opus_path: Path | None = None) -> Path:
+    """Конвертирует WAV-файл в формат OPUS с автоматическим управлением ресурсами.
+
+    Гарантированно закрывает подпроцесс FFmpeg и освобождает ресурсы ОС
+    даже в случае системных сбоев или некорректных аудиоданных.
+
+    Args:
+        wav_path: Путь к исходному WAV-файлу.
+        opus_path: Необязательный путь к итоговому .opus файлу.
+            Если не указан, создается в той же папке с заменой расширения.
+
+    Returns:
+        Path: Путь к созданному файлу .opus.
+    """
+    if not wav_path.exists():
+        raise FileNotFoundError(f"Исходный WAV-файл не найден: {wav_path}")
+
+    # 1. Если выходной путь не передан, заменяем расширение исходного файла на .opus
+    if opus_path is None:
+        opus_path = wav_path.with_suffix(".opus")
+
+    # Гарантируем, что целевая папка для OPUS существует
+    opus_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # 2. Формируем аргументы для запуска FFmpeg
+    ffmpeg_cmd = [
+        "ffmpeg",
+        "-y",  # Автоматически перезаписывать выходной файл, если он есть
+        "-i",
+        str(wav_path),  # Входной файл
+        "-c:a",
+        "libopus",  # Официальный кодек Opus
+        "-ar",
+        "16000",  # Целевая частота дискретизации для бенчмарка
+        str(opus_path),  # Выходной файл
+    ]
+
+    print(f"Запуск FFmpeg: {wav_path.name} -> {opus_path.name}")
+
+    try:
+        # 3. Менеджер контекста 'with' гарантирует вызов методов очистки процесса.
+        # Перенаправляем потоки вывода в DEVNULL, чтобы избежать переполнения
+        # системных буферов (из-за чего процесс может намертво зависнуть).
+        with subprocess.Popen(
+            ffmpeg_cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ) as process:
+            try:
+                # Ожидаем завершения кодирования. Метод communicate() гарантирует
+                # закрытие стандартных потоков ввода-вывода подпроцесса.
+                # timeout=60 защищает от бесконечного зависания, если FFmpeg застрял.
+                process.communicate(timeout=60)
+
+            except subprocess.TimeoutExpired as exc:
+                # Если FFmpeg завис и превысил таймаут — принудительно уничтожаем его
+                process.kill()
+                # Даем операционной системе очистить дескрипторы после уничтожения
+                process.communicate()
+                raise TimeoutError(
+                    f"FFmpeg превысил лимит времени ожидания при обработке {wav_path}"
+                ) from exc
+
+            except Exception:
+                # При любом другом внутреннем исключении (например, Ctrl+C от пользователя)
+                process.kill()
+                process.communicate()
+                raise
+
+            # Проверяем код возврата утилиты после штатного выхода из communicate()
+            if process.returncode != 0:
+                raise subprocess.CalledProcessError(
+                    process.returncode, ffmpeg_cmd
+                )
+
+    except FileNotFoundError as exc:
+        raise RuntimeError(
+            "Утилита 'ffmpeg' не найдена в системе. "
+            "Убедитесь, что FFmpeg установлен и добавлен в переменную окружения PATH."
+        ) from exc
+
+    return opus_path

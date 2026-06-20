@@ -3,6 +3,7 @@ pytest
 pylint-pytest
 pytest-cov
 sounddevice
+soundfile
 jiwer
 # ru-normalizr
 # spyder

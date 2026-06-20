@@ -67,6 +67,7 @@ def generate_scenario(recipe: Recipe, audio_files: list[AudioFile]) -> Scenario:
     pause_seconds = recipe.pause_ms / 1000.0
 
     # 3. Генерация 4 вариантов ротации
+    current_time = 0.00
     for rotation_idx in range(num_speakers):
         # Строим маппинг: dictor_id -> speaker_id
         # Пример для rotation_idx=0 (Вариант 1): D1->Spk1, D2->Spk2, D3->Spk3, D4->Spk4
@@ -80,7 +81,7 @@ def generate_scenario(recipe: Recipe, audio_files: list[AudioFile]) -> Scenario:
 
         # Собираем события для текущей сцены
         scene_events: list[ScenarioEvent] = []
-        current_time = 0.00
+        # current_time = 0.00 # Тут это будет насинать таймлайн для каждого эпизода с нуля
 
         # 4. Трансляция таймлайна рецепта
         for step in recipe.timeline:
