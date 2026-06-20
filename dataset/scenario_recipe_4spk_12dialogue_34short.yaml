@@ -7,90 +7,134 @@ episodes:
   - file_id: 1
     segment_id: 1
     start: 0.0
+    end: 4.26
+    text: Привет Проверяем запись голоса. Раз, два, три.
     gain_db: 0.0
   - file_id: 2
     segment_id: 64
     start: 4.26
+    end: 6.74
+    text: Проверка связи. Слышно меня хорошо?
     gain_db: 0.0
   - file_id: 3
     segment_id: 11
     start: 6.74
+    end: 9.3
+    text: Да, слышно. Говори чуть ближе к микрофону
     gain_db: 0.0
   - file_id: 1
     segment_id: 7
     start: 9.3
+    end: 12.95
+    text: Давай обсудим план. Сначала подготовка, потом тесты
     gain_db: 0.0
   - file_id: 2
     segment_id: 8
     start: 12.95
+    end: 16.36
+    text: потом отчёты, и короткое резюме в конце
     gain_db: 0.0
   - file_id: 1
     segment_id: 11
     start: 16.36
+    end: 20.14
+    text: Я отправил запрос, но сервер выдаёт ошибку пятьсот
     gain_db: 0.0
   - file_id: 4
     segment_id: 43
     start: 20.14
+    end: 21.04
+    text: Ой
     gain_db: 0.0
   - file_id: 2
     segment_id: 12
     start: 21.04
+    end: 27.91
+    text: Скорее всего, дело в конфиге. Проверь ветвь. Ветку дев. Жесть.
     gain_db: 0.0
   - file_id: 3
     segment_id: 18
     start: 27.91
+    end: 30.47
+    text: Мне нужен доступ к PI, токен и секретный ключ
     gain_db: 0.0
   - file_id: 1
     segment_id: 13
     start: 30.47
+    end: 33.58
+    text: О'кей, сейчас посмотрю логи и сразу отпишусь
     gain_db: 0.0
   - file_id: 4
     segment_id: 47
     start: 33.58
+    end: 34.32
+    text: Ок
     gain_db: 0.0
   - file_id: 1
     segment_id: 36
     start: 34.32
+    end: 37.88
+    text: Да как так-то? Мы же договаривались на утро.
     gain_db: 0.0
   - file_id: 2
     segment_id: 37
     start: 37.88
+    end: 40.65
+    text: Слушай, ну не сердись. Планы немного поменялись
     gain_db: 0.0
   - file_id: 4
     segment_id: 51
     start: 40.65
+    end: 41.61
+    text: в смысле
     gain_db: 0.0
   - file_id: 1
     segment_id: 16
     start: 41.61
+    end: 44.78
+    text: Сумма три тысячи четыреста пятьдесят рублей
     gain_db: 0.0
   - file_id: 2
     segment_id: 20
     start: 44.78
+    end: 48.05
+    text: Пожалуйста, повтори последнюю цифру ещё раз
     gain_db: 0.0
   - file_id: 3
     segment_id: 49
     start: 48.05
+    end: 50.44
+    text: Секунду. Я отвлёкся. Продолжаем.
     gain_db: 0.0
   - file_id: 4
     segment_id: 54
     start: 50.44
+    end: 51.21
+    text: Точно
     gain_db: 0.0
   - file_id: 1
     segment_id: 68
     start: 51.21
+    end: 53.42
+    text: Сколько минут осталось до конца
     gain_db: 0.0
   - file_id: 2
     segment_id: 70
     start: 53.42
+    end: 56.2
+    text: Осталось примерно семь минут. Может, чуть меньше
     gain_db: 0.0
   - file_id: 1
     segment_id: 84
     start: 56.2
+    end: 58.54
+    text: Давай закругляться. Время уже поджимает
     gain_db: 0.0
   - file_id: 2
     segment_id: 85
     start: 58.54
+    end: 62.03
+    text: На этом всё. Запись можно останавливать
     gain_db: 0.0
   noise:
     enabled: false
@@ -102,90 +146,134 @@ episodes:
   - file_id: 2
     segment_id: 1
     start: 0.0
+    end: 4.07
+    text: Привет. Проверяем запись голоса. Раз, два, три.
     gain_db: 0.0
   - file_id: 3
     segment_id: 10
     start: 4.07
+    end: 6.19
+    text: Проверка связи. Слышно меня хорошо
     gain_db: 0.0
   - file_id: 4
     segment_id: 65
     start: 6.19
+    end: 8.72
+    text: Да, слышно. Говори чуть ближе к микрофону
     gain_db: 0.0
   - file_id: 2
     segment_id: 7
     start: 8.72
+    end: 12.88
+    text: Давай обсудим план. Сначала подготовка, потом тесты
     gain_db: 0.0
   - file_id: 3
     segment_id: 36
     start: 12.88
+    end: 15.22
+    text: Потом отчёт и короткое резюме в конце.
     gain_db: 0.0
   - file_id: 2
     segment_id: 11
     start: 15.22
+    end: 21.69
+    text: Я отправила запрос на сервер, но сервер выдаёт ошибку 500
     gain_db: 0.0
   - file_id: 1
     segment_id: 43
     start: 21.69
+    end: 22.75
+    text: Ой
     gain_db: 0.0
   - file_id: 3
     segment_id: 49
     start: 22.75
+    end: 25.14
+    text: Секунду. Я отвлёкся. Продолжаем.
     gain_db: 0.0
   - file_id: 4
     segment_id: 5
     start: 25.14
+    end: 29.24
+    text: Мне нужен доступ к IP Токен и секретный ключ
     gain_db: 0.0
   - file_id: 2
     segment_id: 13
     start: 29.24
+    end: 33.43
+    text: Окей, сейчас посмотрю логи и сразу отпишусь
     gain_db: 0.0
   - file_id: 1
     segment_id: 46
     start: 33.43
+    end: 34.58
+    text: О'кей.
     gain_db: 0.0
   - file_id: 2
     segment_id: 36
     start: 34.58
+    end: 39.51
+    text: Да как так-то? Мы даже договаривались на утро.
     gain_db: 0.0
   - file_id: 3
     segment_id: 49
     start: 39.51
+    end: 41.9
+    text: Секунду. Я отвлёкся. Продолжаем.
     gain_db: 0.0
   - file_id: 1
     segment_id: 50
     start: 41.9
+    end: 43.28
+    text: В смысле
     gain_db: 0.0
   - file_id: 2
     segment_id: 16
     start: 43.28
+    end: 47.47
+    text: Сумма три тысячи четыреста пятьдесят рублей
     gain_db: 0.0
   - file_id: 3
     segment_id: 22
     start: 47.47
+    end: 50.44
+    text: Пожалуйста, повторите последние цифры ещё раз
     gain_db: 0.0
   - file_id: 4
     segment_id: 25
     start: 50.44
+    end: 55.91
+    text: ИНН семьдесят семьдесят ноль один. Далее без изменений.
     gain_db: 0.0
   - file_id: 1
     segment_id: 53
     start: 55.91
+    end: 56.97
+    text: Точно
     gain_db: 0.0
   - file_id: 2
     segment_id: 69
     start: 56.97
+    end: 59.75
+    text: Сколько минут осталось до конца?
     gain_db: 0.0
   - file_id: 3
     segment_id: 30
     start: 59.75
+    end: 62.5
+    text: Осталось примерно семь минут. Может, чуть меньше
     gain_db: 0.0
   - file_id: 2
     segment_id: 84
     start: 62.5
+    end: 65.44
+    text: Давай закругляться, время уже поджимает.
     gain_db: 0.0
   - file_id: 3
     segment_id: 61
     start: 65.44
+    end: 67.87
+    text: На этом всё. Запись можно останавливать
     gain_db: 0.0
   noise:
     enabled: false
@@ -197,90 +285,134 @@ episodes:
   - file_id: 3
     segment_id: 1
     start: 0.0
+    end: 3.44
+    text: Привет Проверяем запись голоса. Раз, два, три
     gain_db: 0.0
   - file_id: 4
     segment_id: 64
     start: 3.44
+    end: 5.94
+    text: Проверка связи. Слышно меня хорошо
     gain_db: 0.0
   - file_id: 1
     segment_id: 64
     start: 5.94
+    end: 8.76
+    text: Да, слышно. Говори чуть ближе к микрофону
     gain_db: 0.0
   - file_id: 3
     segment_id: 35
     start: 8.76
+    end: 12.04
+    text: Давай обсудим план сначала подготовка, потом тесты
     gain_db: 0.0
   - file_id: 4
     segment_id: 8
     start: 12.04
+    end: 14.9
+    text: Потом отчёт и короткое резюме в конце дня
     gain_db: 0.0
   - file_id: 3
     segment_id: 49
     start: 14.9
+    end: 17.29
+    text: Секунду. Я отвлёкся. Продолжаем.
     gain_db: 0.0
   - file_id: 2
     segment_id: 43
     start: 17.29
+    end: 18.64
+    text: Ой
     gain_db: 0.0
   - file_id: 4
     segment_id: 12
     start: 18.64
+    end: 22.81
+    text: Скорее всего, дело в конфиге Проверь ветку, дев.
     gain_db: 0.0
   - file_id: 1
     segment_id: 5
     start: 22.81
+    end: 26.5
+    text: Мне нужен доступ к API, токен и секретный ключ.
     gain_db: 0.0
   - file_id: 3
     segment_id: 49
     start: 26.5
+    end: 28.89
+    text: Секунду. Я отвлёкся. Продолжаем.
     gain_db: 0.0
   - file_id: 2
     segment_id: 47
     start: 28.89
+    end: 29.59
+    text: Ок
     gain_db: 0.0
   - file_id: 3
     segment_id: 49
     start: 29.59
+    end: 31.98
+    text: Секунду. Я отвлёкся. Продолжаем.
     gain_db: 0.0
   - file_id: 4
     segment_id: 37
     start: 31.98
+    end: 35.25
+    text: Слушай, ну не сердись, планы немного поменялись
     gain_db: 0.0
   - file_id: 2
     segment_id: 51
     start: 35.25
+    end: 36.56
+    text: В смысле?
     gain_db: 0.0
   - file_id: 3
     segment_id: 15
     start: 36.56
+    end: 39.34
+    text: 'Сумма: три тысячи четыреста пятьдесят рублей'
     gain_db: 0.0
   - file_id: 4
     segment_id: 20
     start: 39.34
+    end: 42.68
+    text: Пожалуйста, повтори последнюю цифру ещё раз
     gain_db: 0.0
   - file_id: 1
     segment_id: 25
     start: 42.68
+    end: 46.59
+    text: ИНН семьдесят семь ноль один. Далее без изменений
     gain_db: 0.0
   - file_id: 2
     segment_id: 54
     start: 46.59
+    end: 47.8
+    text: Точно.
     gain_db: 0.0
   - file_id: 3
     segment_id: 29
     start: 47.8
+    end: 49.65
+    text: Сколько минут осталось до конца
     gain_db: 0.0
   - file_id: 4
     segment_id: 70
     start: 49.65
+    end: 52.98
+    text: Осталось примерно семь минут, может, чуть меньше
     gain_db: 0.0
   - file_id: 3
     segment_id: 49
     start: 52.98
+    end: 55.37
+    text: Секунду. Я отвлёкся. Продолжаем.
     gain_db: 0.0
   - file_id: 4
     segment_id: 85
     start: 55.37
+    end: 57.71
+    text: На этом всё, запись можно останавливать
     gain_db: 0.0
   noise:
     enabled: false
@@ -292,90 +424,134 @@ episodes:
   - file_id: 4
     segment_id: 1
     start: 0.0
+    end: 4.17
+    text: Привет. Проверяем запись голоса Раз, два, три
     gain_db: 0.0
   - file_id: 1
     segment_id: 63
     start: 4.17
+    end: 6.93
+    text: Проверка связи. Слышно меня хорошо?
     gain_db: 0.0
   - file_id: 2
     segment_id: 65
     start: 6.93
+    end: 10.87
+    text: Да, слышно. Говори чуть ближе к микрофону
     gain_db: 0.0
   - file_id: 4
     segment_id: 7
     start: 10.87
+    end: 15.93
+    text: Давай обсудим план. Сначала подготовка, потом тексты. Потом тесты
     gain_db: 0.0
   - file_id: 1
     segment_id: 8
     start: 15.93
+    end: 18.85
+    text: Потом отчёты и короткое резюме в конце.
     gain_db: 0.0
   - file_id: 4
     segment_id: 11
     start: 18.85
+    end: 22.47
+    text: Я отправил запрос, но сервер выдал ошибку 500
     gain_db: 0.0
   - file_id: 3
     segment_id: 56
     start: 22.47
+    end: 23.11
+    text: Ой
     gain_db: 0.0
   - file_id: 1
     segment_id: 12
     start: 23.11
+    end: 26.47
+    text: Скорее всего, дело в конфиге. Проверь ветку дев.
     gain_db: 0.0
   - file_id: 2
     segment_id: 5
     start: 26.47
+    end: 30.03
+    text: 'Мне нужен доступ к IP: токен и секретный ключ.'
     gain_db: 0.0
   - file_id: 4
     segment_id: 13
     start: 30.03
+    end: 33.23
+    text: О'кей, сейчас посмотрю логи и сразу отпишусь.
     gain_db: 0.0
   - file_id: 3
     segment_id: 49
     start: 33.23
+    end: 35.62
+    text: Секунду. Я отвлёкся. Продолжаем.
     gain_db: 0.0
   - file_id: 4
     segment_id: 36
     start: 35.62
+    end: 40.78
+    text: Да Да как-то так-то Мы же договаривались на утро.
     gain_db: 0.0
   - file_id: 1
     segment_id: 37
     start: 40.78
+    end: 43.57
+    text: Слушай, ну не сердись, планы немного поменялись
     gain_db: 0.0
   - file_id: 3
     segment_id: 49
     start: 43.57
+    end: 45.96
+    text: Секунду. Я отвлёкся. Продолжаем.
     gain_db: 0.0
   - file_id: 4
     segment_id: 16
     start: 45.96
+    end: 49.74
+    text: Сумма три тысячи четыреста пятьдесят рублей
     gain_db: 0.0
   - file_id: 1
     segment_id: 20
     start: 49.74
+    end: 52.59
+    text: Пожалуйста, повтори последнюю цифру ещё раз
     gain_db: 0.0
   - file_id: 2
     segment_id: 25
     start: 52.59
+    end: 58.23
+    text: ИНН семьдесят семь ноль один, Далее без изменений.
     gain_db: 0.0
   - file_id: 3
     segment_id: 49
     start: 58.23
+    end: 60.62
+    text: Секунду. Я отвлёкся. Продолжаем.
     gain_db: 0.0
   - file_id: 4
     segment_id: 69
     start: 60.62
+    end: 62.64
+    text: Сколько минут осталось до конца
     gain_db: 0.0
   - file_id: 1
     segment_id: 69
     start: 62.64
+    end: 65.94
+    text: Осталось примерно семь минут, может, чуть меньше
     gain_db: 0.0
   - file_id: 4
     segment_id: 84
     start: 65.94
+    end: 68.41
+    text: Давай закругляйся, время уже поджимает
     gain_db: 0.0
   - file_id: 1
     segment_id: 85
     start: 68.41
+    end: 70.78
+    text: На этом всё, запись можно останавливать
     gain_db: 0.0
   noise:
     enabled: false

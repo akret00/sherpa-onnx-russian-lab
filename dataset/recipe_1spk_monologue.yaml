@@ -1,0 +1,267 @@
+recipe_id: "one_speaker_monologue"
+description: >
+  Монолог одного говорящего. Включает технический контекст,
+  числовые данные, короткие ответы и вопросы.
+pause_ms: 1000 # Интервал между сегментами, в миллисекундах
+timeline:
+  #### Блок 1: Технический созвон (Контекст: IT, API, отчеты)
+  - step_id: 1 
+    dictor_id: 1
+    phrase_id: 1 # "Привет. Проверяем запись голоса, раз, два, три."
+  - step_id: 2 
+    dictor_id: 1
+    phrase_id: 2 # "Сегодня я говорю нормально и достаточно спокойно."
+  - step_id: 3 
+    dictor_id: 1
+    phrase_id: 3 # "А сейчас попробую говорить чуть быстрее, не сбиваясь."
+  - step_id: 4 
+    dictor_id: 1
+    phrase_id: 4 # "Э-э… подожди, я начну заново: говорю чуть быстрее."
+  - step_id: 5 
+    dictor_id: 1
+    phrase_id: 5 # "Мне нужен доступ к API, токен и секретный ключ."
+  - step_id: 6 
+    dictor_id: 1
+    phrase_id: 6 # "GPU перегружен, а CPU ещё терпит."
+  - step_id: 7 
+    dictor_id: 1
+    phrase_id: 7 # "Давай обсудим план: сначала подготовка, потом тесты."
+  - step_id: 8 
+    dictor_id: 1
+    phrase_id: 8 # "Потом отчёт и короткое резюме в конце."
+  - step_id: 9 
+    dictor_id: 1
+    phrase_id: 9 # "Файл называется тест аудио финал два."
+  - step_id: 10 
+    dictor_id: 1
+    phrase_id: 10 # "Сохрани как WAV, шестнадцать килогерц, моно."
+  - step_id: 11 
+    dictor_id: 1
+    phrase_id: 11 # "Я отправил запрос, но сервер выдает ошибку пятьсот."
+  - step_id: 12 
+    dictor_id: 1
+    phrase_id: 12 # "Скорее всего, дело в конфиге, проверь ветку дев."
+  - step_id: 13 
+    dictor_id: 1
+    phrase_id: 13 # "Окей, сейчас посмотрю логи и сразу отпишусь."
+  #### Блок 2: Диктовка и Числа (Контекст: Адреса, деньги, проверка точности)
+  - step_id: 14 
+    dictor_id: 1
+    phrase_id: 14 # "Запиши адрес: улица Лесная, дом семь, квартира двенадцать."
+  - step_id: 15 
+    dictor_id: 1
+    phrase_id: 15 # "Мой номер заказа: два ноль два четыре, тире, ноль ноль один."
+  - step_id: 16 
+    dictor_id: 1
+    phrase_id: 16 # "Сумма: три тысячи четыреста пятьдесят рублей."
+  - step_id: 17 
+    dictor_id: 1
+    phrase_id: 17 # "Скидка десять процентов действует до пятницы."
+  - step_id: 18 
+    dictor_id: 1
+    phrase_id: 18 # "ООО “Линия” и ИП Петров — разные получатели."
+  - step_id: 19 
+    dictor_id: 1
+    phrase_id: 19 # "НДС включён в стоимость, но не всегда очевидно."
+  - step_id: 20 
+    dictor_id: 1
+    phrase_id: 20 # "Пожалуйста, повтори последнюю цифру ещё раз."
+  - step_id: 21 
+    dictor_id: 1
+    phrase_id: 21 # "Последняя цифра — восемь. Нет, девять. Извини, девять."
+  - step_id: 22 
+    dictor_id: 1
+    phrase_id: 22 # "Проверка: один, два, три, четыре, пять."
+  - step_id: 23 
+    dictor_id: 1
+    phrase_id: 23 # "Проверка: десять, двадцать, тридцать, сорок."
+  - step_id: 24 
+    dictor_id: 1
+    phrase_id: 24 # "Проверка: сто один, сто два, сто три."
+  - step_id: 25 
+    dictor_id: 1
+    phrase_id: 25 # "ИНН семьдесят семь ноль один, далее без изменений."
+  - step_id: 26 
+    dictor_id: 1
+    phrase_id: 26 # "Почта для связи: инфо собака домен точка ру."
+  #### Блок 3: Бытовой диалог и Эмоции (Контекст: Диаризация, спонтанная речь)
+  - step_id: 27 
+    dictor_id: 1
+    phrase_id: 27 # "Скажи, пожалуйста, во сколько начинается встреча?"
+  - step_id: 28 
+    dictor_id: 1
+    phrase_id: 28 # "Встреча в девятнадцать сорок пять, без опозданий."
+  - step_id: 29 
+    dictor_id: 1
+    phrase_id: 29 # "Нет, так не пойдёт. Давай сделаем по‑другому!"
+  - step_id: 30 
+    dictor_id: 1
+    phrase_id: 30 # "Я думаю… нет, я уверен: это правильное решение."
+  - step_id: 31 
+    dictor_id: 1
+    phrase_id: 31 # "Ключи от гаража, кажется, лежат у зеркала."
+  - step_id: 32 
+    dictor_id: 1
+    phrase_id: 32 # "Ты серьёзно? Я там уже смотрел два раза!"
+  - step_id: 33 
+    dictor_id: 1
+    phrase_id: 33 # "Ладно, проверю ещё раз и напишу тебе."
+  - step_id: 34 
+    dictor_id: 1
+    phrase_id: 34 # "Не перебивай меня, я сейчас договорю."
+  - step_id: 35 
+    dictor_id: 1
+    phrase_id: 35 # "Нет-нет, я просто уточняю, продолжай."
+  - step_id: 36 
+    dictor_id: 1
+    phrase_id: 36 # "Да как так-то? Мы же договаривались на утро!"
+  - step_id: 37 
+    dictor_id: 1
+    phrase_id: 37 # "Слушай, ну не сердись, планы немного поменялись."
+  - step_id: 38 
+    dictor_id: 1
+    phrase_id: 38 # "В любом случае, я буду на месте через полчаса."
+  #### Блок 4: Перебивки и короткие реакции (для Overlap и Diarization)
+  - step_id: 39 
+    dictor_id: 1
+    phrase_id: 39 # "Понял"
+  - step_id: 40 
+    dictor_id: 1
+    phrase_id: 40 # "Да"
+  - step_id: 41 
+    dictor_id: 1
+    phrase_id: 41 # "Нет"
+  - step_id: 42 
+    dictor_id: 1
+    phrase_id: 42 # "Ага"
+  - step_id: 43 
+    dictor_id: 1
+    phrase_id: 43 # "Ой"
+  - step_id: 44 
+    dictor_id: 1
+    phrase_id: 44 # "Конечно"
+  - step_id: 45 
+    dictor_id: 1
+    phrase_id: 45 # "Хорошо"
+  - step_id: 46 
+    dictor_id: 1
+    phrase_id: 46 # "Э ..."
+  - step_id: 47 
+    dictor_id: 1
+    phrase_id: 47 # "Ок"
+  - step_id: 48 
+    dictor_id: 1
+    phrase_id: 48 # "Эм ..."
+  - step_id: 49 
+    dictor_id: 1
+    phrase_id: 49 # "Ну ..."
+  - step_id: 50 
+    dictor_id: 1
+    phrase_id: 50 # "Так-так"
+  - step_id: 51 
+    dictor_id: 1
+    phrase_id: 51 # "В смысле?"
+  - step_id: 52 
+    dictor_id: 1
+    phrase_id: 52 # "Ясно"
+  - step_id: 53 
+    dictor_id: 1
+    phrase_id: 53 # "Не уверен"
+  - step_id: 54 
+    dictor_id: 1
+    phrase_id: 54 # "Точно"
+  #### Блок 5: Сложная пунктуация и структура предложений (для моделей с пунктуацией)
+  - step_id: 55 
+    dictor_id: 1
+    phrase_id: 55 # "Вопрос сложный, но ответ короткий: да."
+  - step_id: 56 
+    dictor_id: 1
+    phrase_id: 56 # "Вопрос сложный, но ответ короткий: нет."
+  - step_id: 57 
+    dictor_id: 1
+    phrase_id: 57 # "Сейчас будет перечисление: чай, кофе, вода, сок."
+  - step_id: 58 
+    dictor_id: 1
+    phrase_id: 58 # "Я нарочно делаю паузу… и продолжаю."
+  - step_id: 59 
+    dictor_id: 1
+    phrase_id: 59 # "Секунду… я отвлёкся. Продолжаем."
+  - step_id: 60 
+    dictor_id: 1
+    phrase_id: 60 # "С одной стороны — это дорого, с другой — надежно."
+  - step_id: 61 
+    dictor_id: 1
+    phrase_id: 61 # "Тот, кто придет последним, будет закрывать офис."
+  - step_id: 62 
+    dictor_id: 1
+    phrase_id: 62 # "Впрочем, если хочешь, можем оставить всё как есть."
+  #### Блок 6: Управление сессией и связки
+  - step_id: 63 
+    dictor_id: 1
+    phrase_id: 63 # "Я отправлю отчёт завтра утром, после девяти."
+  - step_id: 64 
+    dictor_id: 1
+    phrase_id: 64 # "Проверка связи: слышно меня хорошо?"
+  - step_id: 65 
+    dictor_id: 1
+    phrase_id: 65 # "Да, слышно. Говори чуть ближе к микрофону."
+  - step_id: 66 
+    dictor_id: 1
+    phrase_id: 66 # "Подтверди: ты оплатил счёт или только собираешься?"
+  - step_id: 67 
+    dictor_id: 1
+    phrase_id: 67 # "Я оплатил счёт, но чек пока не пришёл."
+  - step_id: 68 
+    dictor_id: 1
+    phrase_id: 68 # "Срок — один день. Максимум два."
+  - step_id: 69 
+    dictor_id: 1
+    phrase_id: 69 # "Сколько минут осталось до конца?"
+  - step_id: 70 
+    dictor_id: 1
+    phrase_id: 70 # "Осталось примерно семь минут, может чуть меньше."
+  - step_id: 71 
+    dictor_id: 1
+    phrase_id: 71 # "Сделай звук потише, пожалуйста."
+  - step_id: 72 
+    dictor_id: 1
+    phrase_id: 72 # "Сделай звук погромче… вот так, нормально."
+  - step_id: 73 
+    dictor_id: 1
+    phrase_id: 73 # "Я немного устал, поэтому говорю чуть тише."
+  - step_id: 74 
+    dictor_id: 1
+    phrase_id: 74 # "А теперь скажу громче, чтобы было контрастно!"
+  - step_id: 75 
+    dictor_id: 1
+    phrase_id: 75 # "Если что-то непонятно, переспроси."
+  - step_id: 76 
+    dictor_id: 1
+    phrase_id: 76 # "Раз"
+  - step_id: 77 
+    dictor_id: 1
+    phrase_id: 77 # "Один"
+  - step_id: 78 
+    dictor_id: 1
+    phrase_id: 78 # "Два"
+  - step_id: 79 
+    dictor_id: 1
+    phrase_id: 79 # "Три"
+  - step_id: 80 
+    dictor_id: 1
+    phrase_id: 80 # "Четыре"
+  - step_id: 81 
+    dictor_id: 1
+    phrase_id: 81 # "Пять"
+  - step_id: 82 
+    dictor_id: 1
+    phrase_id: 82 # "Минутку, я сейчас найду нужный документ."
+  - step_id: 83 
+    dictor_id: 1
+    phrase_id: 83 # "Всё, я на связи. Что я пропустил?"
+  - step_id: 84 
+    dictor_id: 1
+    phrase_id: 84 # "Давай закругляться, время уже поджимает."
+  - step_id: 85 
+    dictor_id: 1
+    phrase_id: 85 # "На этом всё. Запись можно останавливать."

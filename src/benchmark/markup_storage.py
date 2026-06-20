@@ -206,10 +206,12 @@ def load_scenario_from_yaml(file_path: str) -> Scenario:
         events_data = ep.get("events") or []
         events_list = [
             ScenarioEvent(
-                file_id=int(ev["file_id"]),
-                segment_id=int(ev["segment_id"]),
-                start=float(ev["start"]),
-                gain_db=float(ev.get("gain_db", 0.0)),
+                file_id = int(ev["file_id"]),
+                segment_id = int(ev["segment_id"]),
+                start = float(ev["start"]),
+                end = float(ev["end"]),
+                text = str(ev["text"]),
+                gain_db = float(ev.get("gain_db", 0.0)),
             )
             for ev in events_data
         ]

@@ -107,6 +107,8 @@ def generate_scenario(recipe: Recipe, audio_files: list[AudioFile]) -> Scenario:
                 file_id = target_speaker_id,
                 segment_id = segment.id if segment.id is not None else 0,
                 start = round(current_time, 2), # Нужно ли тут округление до 10 миллисекунд?
+                end = round(current_time + duration, 2),
+                text = segment.text,
                 gain_db=0.0
             )
             scene_events.append(event)
