@@ -62,7 +62,7 @@ def read_exactly(stream, n: int) -> bytes:
         got += len(b)
     return b"".join(chunks)
 
-def read_samples(proc, window_size):
+def read_samples(proc, window_size) -> numpy.ndarray[numpy.float32]:
     """Читаем из потока подпроцесса блок данных"""
     window_bytes = window_size * 2  # s16le
 

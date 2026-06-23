@@ -1,9 +1,10 @@
 """Модуль загрузки моделей onnx"""
 import sherpa_onnx
 import config
+from vad_utils import BaseVAD, SherpaVADAdapter
 
 def load_vad(vad_model: str, threshold: float, min_silence: float, min_speech: float,
-            max_speech: float):
+            max_speech: float) -> tuple[BaseVAD, int]:
     """Загружает модель VAD"""
     cfg = sherpa_onnx.VadModelConfig()
     cfg.silero_vad.model = vad_model
@@ -15,7 +16,9 @@ def load_vad(vad_model: str, threshold: float, min_silence: float, min_speech: f
     cfg.provider = "cpu"
     if not cfg.validate():
         raise ValueError(f"Invalid VoiceActivityDetectorConfig: {cfg}")
-    vad = sherpa_onnx.VoiceActivityDetector(cfg, buffer_size_in_seconds=100)
+    # Создаем обертку над VoiceActivityDetector
+    vad = SherpaVADAdapter(config = cfg, buffer_size_in_seconds = 30)
+    # vad = sherpa_onnx.VoiceActivityDetector(cfg, buffer_size_in_seconds = 30)
     window_size = cfg.silero_vad.window_size  # in samples
     return vad, window_size
 

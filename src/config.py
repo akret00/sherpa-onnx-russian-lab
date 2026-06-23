@@ -102,6 +102,10 @@ class PipelineConfig:
     vad_max_speech: float = 10.0
     # Embedding параметры для speaker ID
     spk_threshold: float = 0.4
+    # Режимы для Oracle (VAD, ASR, Diarization)
+    is_oracle_vad : bool = False    # Если истинно, то у VAD включается режим Оракула
+    is_oracle_asr: bool = False
+    is_oracle_diarization: bool = False
 
 
 # Создаем экземпляр (синглтон) для импорта в другие файлы

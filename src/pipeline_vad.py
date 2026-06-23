@@ -19,22 +19,26 @@ class BaseVadPipeline:
         self._speakers = speakers
         self.pipeline_result: PipelineResult | None = None
         self._speaker_resolver: SpeakerResolver | None = None
+        # Список сегментов разметки для режимов OracleVAD, OracleASR, OracleDiarization
+        self.markup_segments: list[AudioSegment] | None = None
         self._init_models()
 
     def _init_models(self):
         """Инициализация моделей"""
         # Инициализируем VAD
-        self._vad, self._window_size = model_utils.load_vad(
-            vad_model = self._config.get_vad_model()['model'],
-            threshold = self._pl_config.vad_threshold,
-            min_silence = self._pl_config.vad_min_silence,
-            min_speech = self._pl_config.vad_min_speech,
-            max_speech = self._pl_config.vad_max_speech,
-        )
-
-        # print(f"Загружено спикеров: {len(speaker_resolver.get_speakers())}")
-        # for spk in speaker_resolver.get_speakers():
-        #     print(f"ID: {spk.id}  Name: {spk.name}  Total count: {spk.total_count}")
+        if self._pl_config.is_oracle_vad:
+            # Создаем OracleVAD
+            self._vad = vad_utils.OracleVAD(buffer_size_in_seconds = 100, padding_seconds = 0.0)
+            self._window_size = 512
+        else:
+            # Создаем оригинальный VAD ()
+            self._vad, self._window_size = model_utils.load_vad(
+                vad_model = self._config.get_vad_model()['model'],
+                threshold = self._pl_config.vad_threshold,
+                min_silence = self._pl_config.vad_min_silence,
+                min_speech = self._pl_config.vad_min_speech,
+                max_speech = self._pl_config.vad_max_speech,
+            )
 
         # Инициализируем ASR распознаватель
         self._recognizer = model_utils.load_asr(
@@ -42,9 +46,25 @@ class BaseVadPipeline:
             provider = self._pl_config.provider
         )
 
-    def run_as_stream(self, audio_path: str = "mic") -> Generator[AudioSegment, None, None]:
-        """Запуск пайплайна для аудио с источником в audio_path"""
+    def set_markup_segments(self, markup_segments: list[AudioSegment] | None = None):
+        """Устанавливает эталонную разметку во всех Оракулах пайплайна, которые включены"""
+        # Если пайплайн в режиме OracleVAD, устанавливаем эталонную разметку
+        if self._pl_config.is_oracle_vad:
+            self.markup_segments = markup_segments
+            self._vad.set_markup_segments(markup_segments)
+
+    def run_as_stream(
+        self, audio_path: str = "mic",
+        markup_segments: list[AudioSegment] | None = None,
+    ) -> Generator[AudioSegment, None, None]:
+        """
+        Запуск пайплайна для аудио с источником в audio_path
+        и эталонной разметкой в markup_segments для режима Оракула
+        """
         self.pipeline_result = None
+        # Вызываем установку эталонной разметки для Оракулов, которые включены
+        self.set_markup_segments(markup_segments)
+        self._vad.reset() # Сброс внутреннего состояния VAD в исходное
 
         if audio_path == "mic":
             proc = ffmpeg_utils.make_ffmpeg_proc_for_pulse_default()
@@ -123,10 +143,13 @@ class BaseVadPipeline:
             segments = segments,
         )
 
-    def run(self, audio_path: str = "mic") -> PipelineResult:
+    def run(
+        self, audio_path: str = "mic",
+        markup_segments: list[AudioSegment] | None = None,
+    ) -> PipelineResult:
         """Метод сразу возвращает конечный результат"""
         # Истощает собственный генератор и возвращает готовый результат
-        for _ in self.run_as_stream(audio_path):
+        for _ in self.run_as_stream(audio_path = audio_path, markup_segments = markup_segments):
             pass
 
         return self.pipeline_result
@@ -139,7 +162,7 @@ class AsrPipeline(BaseVadPipeline):
         # Запуск инициализации моделей в родительском классе
         super()._init_models()
 
-        #Инициализируем распознаватель голоса
+        #Инициализируем распознаватель голоса в холостом режиме SpeakerResolvingMode.NONE
         self._speaker_resolver = SpeakerResolver(
             num_threads = self._pl_config.num_threads,
             spk_threshold = self._pl_config.spk_threshold,
