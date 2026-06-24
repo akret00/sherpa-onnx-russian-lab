@@ -141,11 +141,9 @@ class OracleVAD(BaseVAD):
 
     def set_markup_segments(self, markup_segments: list[AudioSegment]) -> None:
         """Специфичный метод Оракула для загрузки ручной разметки фраз."""
-        self.markup_segments = sorted(markup_segments, key=lambda x: x.start_time)
-
         # Проверка на слишком длинные фразы
         max_segment_duration = self.buffer_size_in_seconds
-        for i, seg in enumerate(self.markup_segments):
+        for _, seg in enumerate(markup_segments):
             duration = seg.end_time - seg.start_time
             if duration > max_segment_duration:
                 raise ValueError(
@@ -153,12 +151,9 @@ class OracleVAD(BaseVAD):
                     f"длиной {duration:.2f}с превышает буфер {max_segment_duration}с"
                 )
 
-        # Проверка на отрицательную длительность
-        for i, seg in enumerate(self.markup_segments):
-            if seg.start_time > seg.end_time:
-                raise ValueError(
-                    f"Сегмент {i}: start_time ({seg.start_time}) > end_time ({seg.end_time})"
-                )
+        # Список markup_segments уже должен быть отсортирован по времени начала сегмента
+        # и проверен на отрицательную длительность сегментов
+        self.markup_segments = markup_segments
 
         self.reset() # Сброс количестка накопленных сэмплов меток в ноль
 

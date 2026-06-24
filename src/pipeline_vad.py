@@ -48,10 +48,19 @@ class BaseVadPipeline:
 
     def set_markup_segments(self, markup_segments: list[AudioSegment] | None = None):
         """Устанавливает эталонную разметку во всех Оракулах пайплайна, которые включены"""
-        self.markup_segments = markup_segments
+        # Проверка на отрицательную или нулевую длительность
+        for i, seg in enumerate(markup_segments):
+            if seg.start_time >= seg.end_time:
+                raise ValueError(
+                    f"Сегмент {i}: start_time ({seg.start_time}) >= end_time ({seg.end_time})"
+                )
+
+        # Сортируем сегменты по start_time в порядке возрастания
+        self.markup_segments = sorted(markup_segments, key=lambda x: x.start_time)
+
         # Если пайплайн в режиме OracleVAD, устанавливаем эталонную разметку
         if self._pl_config.use_oracle_vad:
-            self._vad.set_markup_segments(markup_segments)
+            self._vad.set_markup_segments(self.markup_segments)
 
     def run_as_stream(
         self, audio_path: str = "mic",
@@ -142,6 +151,7 @@ class BaseVadPipeline:
             speakers = self._speakers,
             file = audio_file,
             segments = segments,
+            markup_segments = self.markup_segments
         )
 
     def run(

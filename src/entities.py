@@ -43,3 +43,4 @@ class PipelineResult:
     file: AudioFile | None
     segments: list[AudioSegment] | None
     run_time: float = 0
+    markup_segments: list[AudioSegment] | None = None
