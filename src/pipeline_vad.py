@@ -26,7 +26,7 @@ class BaseVadPipeline:
     def _init_models(self):
         """Инициализация моделей"""
         # Инициализируем VAD
-        if self._pl_config.is_oracle_vad:
+        if self._pl_config.use_oracle_vad:
             # Создаем OracleVAD
             self._vad = vad_utils.OracleVAD(buffer_size_in_seconds = 100, padding_seconds = 0.0)
             self._window_size = 512
@@ -48,9 +48,9 @@ class BaseVadPipeline:
 
     def set_markup_segments(self, markup_segments: list[AudioSegment] | None = None):
         """Устанавливает эталонную разметку во всех Оракулах пайплайна, которые включены"""
+        self.markup_segments = markup_segments
         # Если пайплайн в режиме OracleVAD, устанавливаем эталонную разметку
-        if self._pl_config.is_oracle_vad:
-            self.markup_segments = markup_segments
+        if self._pl_config.use_oracle_vad:
             self._vad.set_markup_segments(markup_segments)
 
     def run_as_stream(
@@ -64,7 +64,8 @@ class BaseVadPipeline:
         self.pipeline_result = None
         # Вызываем установку эталонной разметки для Оракулов, которые включены
         self.set_markup_segments(markup_segments)
-        self._vad.reset() # Сброс внутреннего состояния VAD в исходное
+        # Сброс внутреннего состояния VAD в исходное
+        self._vad.reset()
 
         if audio_path == "mic":
             proc = ffmpeg_utils.make_ffmpeg_proc_for_pulse_default()

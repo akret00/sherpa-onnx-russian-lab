@@ -6,7 +6,6 @@ import time
 from pathlib import Path
 from config import pl_conf, BASE_DIR
 import args_utils
-import speaker_storage
 import common_utils
 from pipeline_vad import AsrPipeline
 
@@ -17,12 +16,8 @@ def main():
     # Засекаем время начала инициализации
     start_time = time.perf_counter()
 
-    # Создаем репозитарий для спикеров и загружаем базу спикеров
-    db_repo = speaker_storage.VoiceDbRepository()
-    speakers = db_repo.load_speakers()
-
     # Инициализация пайплайна
-    pl = AsrPipeline(pl_config = pl_conf, speakers = speakers)
+    pl = AsrPipeline(pl_config = pl_conf)
 
     # Определяем путь к аудио файлу
     if args.mic:
@@ -58,12 +53,6 @@ def main():
     # Засекаем время окончания распознавания
     end_time = time.perf_counter()
     print(f"Время распознавания: {end_time - start_time:.6f} секунд")
-
-    # Сохраняем обновленную базу спикеров
-    db_repo.save_speakers(
-        pl.pipeline_result.speakers,
-        update_mode = speaker_storage.SpeakerUpdateMode.UPDATE_ALL
-    )
 
 
 if __name__ == "__main__":

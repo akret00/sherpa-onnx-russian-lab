@@ -132,12 +132,12 @@ class OracleVAD(BaseVAD):
         self.phrase_ready = False
 
         # Создаем публичный атрибут front, как у оригинального VAD
-        self.front = FakeSpeechSegment()
+        self._front = FakeSpeechSegment()
 
     @property
     def front(self):
         """Чтение атрибута из оригинального класса"""
-        return self.front
+        return self._front
 
     def set_markup_segments(self, markup_segments: list[AudioSegment]) -> None:
         """Специфичный метод Оракула для загрузки ручной разметки фраз."""
@@ -213,8 +213,8 @@ class OracleVAD(BaseVAD):
                 # Фраза закончилась
                 self.in_phrase = False
                 # Заполняем объект front, из которого получают результат
-                self.front.start = int(self.phrase_start_sample)
-                self.front.samples = self.speech_buffer[:write_pointer].copy()
+                self._front.start = int(self.phrase_start_sample)
+                self._front.samples = self.speech_buffer[:write_pointer].copy()
                 self.phrase_ready = True # Фраза готова
                 # Определяем следующий ожидаемый сегмент разметки
                 while True:
@@ -243,7 +243,7 @@ class OracleVAD(BaseVAD):
         self.phrase_ready = False
         self.in_phrase = False
         self.phrase_start_sample = -1
-        self.front = FakeSpeechSegment()
+        self._front = FakeSpeechSegment()
 
     def reset(self) -> None:
         self.phrase_ready = False  # Сброс флага готовности
@@ -252,4 +252,4 @@ class OracleVAD(BaseVAD):
         self.last_sample_num = 0
         self.current_markup_segment_num = 0
         # self.speech_buffer.fill(0.0)
-        self.front = FakeSpeechSegment()
+        self._front = FakeSpeechSegment()

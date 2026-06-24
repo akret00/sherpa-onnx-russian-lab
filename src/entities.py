@@ -42,3 +42,4 @@ class PipelineResult:
     speakers: list[Speaker]
     file: AudioFile | None
     segments: list[AudioSegment] | None
+    run_time: float = 0
