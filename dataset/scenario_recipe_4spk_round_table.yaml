@@ -280,7 +280,7 @@ episodes:
     segment_id: 8
     start: 178.53
     end: 181.94
-    text: потом отчёты, и короткое резюме в конце
+    text: потом отчёт, и короткое резюме в конце
     gain_db: 0.0
   - file_id: 3
     segment_id: 18

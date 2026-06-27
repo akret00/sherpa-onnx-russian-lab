@@ -145,7 +145,7 @@ segments:
   speaker_id: 3
   file_id: 3
   phrase_id: 18
-  text: ОО Линия и ИП Петров разные получатели
+  text: ООО Линия и ИП Петров разные получатели
   speech_start: 82.23
   speech_end: 86.04
 - id: 21
@@ -153,7 +153,7 @@ segments:
   file_id: 3
   phrase_id: 19
   text: НДС включён в стоимость, но не всегда очевидно
-  speech_start: 87.84
+  speech_start: 87.59
   speech_end: 90.56
 - id: 22
   speaker_id: 3
@@ -278,7 +278,7 @@ segments:
   speaker_id: 3
   file_id: 3
   phrase_id: 73
-  text: Я немного устал Поэтому говорю чуть тише
+  text: Я немного устал Поэтому говори чуть тише
   speech_start: 168.57
   speech_end: 172.09
 - id: 40

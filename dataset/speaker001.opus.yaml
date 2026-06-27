@@ -75,7 +75,7 @@ segments:
   speaker_id: 1
   file_id: 1
   phrase_id: 10
-  text: Сохрани, как ваф шеснадцать килогерц моно
+  text: Сохрани, как ваф шестнадцать килогерц моно
   speech_start: 52.6
   speech_end: 56.51
 - id: 11
@@ -335,8 +335,8 @@ segments:
   file_id: 1
   phrase_id: 48
   text: М-м
-  speech_start: 256.22
-  speech_end: 258.01
+  speech_start: 255.72
+  speech_end: 257.51
 - id: 48
   speaker_id: 1
   file_id: 1

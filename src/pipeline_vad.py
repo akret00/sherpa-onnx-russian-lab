@@ -110,17 +110,17 @@ class BaseVadPipeline:
                     # Распознаем спикера
                     resolve_result = self._speaker_resolver.resolve(segment, t_start, t_end)
 
-                    if text:
-                        segment = AudioSegment(
-                            audio_file = audio_file,
-                            speaker = resolve_result.speaker,
-                            cos_similarity = resolve_result.cos_similarity,
-                            start_time = t_start,
-                            end_time = t_end,
-                            text = text,
-                        )
-                        segments.append(segment)
-                        yield segment
+                    # if text:
+                    segment = AudioSegment(
+                        audio_file = audio_file,
+                        speaker = resolve_result.speaker,
+                        cos_similarity = resolve_result.cos_similarity,
+                        start_time = t_start,
+                        end_time = t_end,
+                        text = text,
+                    )
+                    segments.append(segment)
+                    yield segment
 
             # Проталкиваем в VAD последнюю неоконченную фразу 1 секундой тишины (нулевые данные)
             zeros = np.zeros(self._window_size, dtype=np.float32)

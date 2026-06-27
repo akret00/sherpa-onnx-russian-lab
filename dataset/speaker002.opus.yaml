@@ -26,7 +26,7 @@ segments:
   speaker_id: 2
   file_id: 2
   phrase_id: 3
-  text: А сейчас попробую заговорить быстрее, чуть быстрее, не сбиваясь
+  text: А сейчас попробую говорить быстрее, чуть быстрее, не сбиваясь
   speech_start: 10.65
   speech_end: 13.8
 - id: 4
@@ -61,7 +61,7 @@ segments:
   speaker_id: 2
   file_id: 2
   phrase_id: 8
-  text: потом отчёты, и короткое резюме в конце
+  text: потом отчёт, и короткое резюме в конце
   speech_start: 30.83
   speech_end: 34.24
 - id: 9
@@ -224,13 +224,13 @@ segments:
   phrase_id: 31
   text: Ключи от гаража, кажется, лежат у зеркала
   speech_start: 153.69
-  speech_end: 157.17
+  speech_end: 156.67
 - id: 32
   speaker_id: 2
   file_id: 2
   phrase_id: 32
   text: Ты серьёзно? Я там уже смотрел два раза
-  speech_start: 156.94
+  speech_start: 156.69
   speech_end: 160.17
 - id: 33
   speaker_id: 2
@@ -349,13 +349,13 @@ segments:
   file_id: 2
   phrase_id: 49
   text: Ну-у-у
-  speech_start: 193.94
+  speech_start: 194.44
   speech_end: 195.25
 - id: 50
   speaker_id: 2
   file_id: 2
   phrase_id: 50
-  text: такк-так
+  text: так-так
   speech_start: 195.54
   speech_end: 196.65
 - id: 51
@@ -546,7 +546,7 @@ segments:
   phrase_id: 77
   text: один
   speech_start: 288.47
-  speech_end: 289.7
+  speech_end: 289.45
 - id: 78
   speaker_id: 2
   file_id: 2

@@ -44,6 +44,8 @@ class BenchmarkRunner:
             # То загружаем эталонную разметку из рзметки исходного аудиофайла
             _, audio_file = load_markup_from_yaml(gt_file_path)
             gt_markup = audio_file.segments
+            # Создаем новый список без объектов с phrase_id == 0
+            gt_markup = [seg for seg in gt_markup if seg.phrase_id != 0]
         else:
             gt_markup: list[AudioSegment] = []
             # Загружаем эталонную размету из сценария

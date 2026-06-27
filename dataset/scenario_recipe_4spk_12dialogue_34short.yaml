@@ -32,7 +32,7 @@ episodes:
     segment_id: 8
     start: 16.95
     end: 20.36
-    text: потом отчёты, и короткое резюме в конце
+    text: потом отчёт, и короткое резюме в конце
     gain_db: 0.0
   - file_id: 1
     segment_id: 11

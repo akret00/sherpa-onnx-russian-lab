@@ -261,3 +261,27 @@ def export_scenario_to_yaml(file_path: str, scenario: Scenario) -> None:
             allow_unicode=True,
             sort_keys=False,
         )
+
+
+def export_cache_to_yaml(file_path: str, references: list[str], hypothesis: list[str]) -> None:
+    """Сохраняет два списка строк в YAML-файл."""
+    data = {"references": references, "hypothesis": hypothesis}
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        yaml.dump(data, f, allow_unicode=True, sort_keys=False)
+
+def load_cache_from_yaml(file_path: str) -> tuple[list[str], list[str]] | None:
+    """Загружает два списка строк из YAML-файл.
+    Если файл не существует, возвращает None.
+    """
+    if not os.path.exists(file_path):
+        return None
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+
+    # Извлекаем списки, возвращая пустые списки по умолчанию, если ключей нет
+    ref_list = data.get("references", [])
+    hyp_list = data.get("hypothesis", [])
+
+    return ref_list, hyp_list
