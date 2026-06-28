@@ -3,9 +3,8 @@
 from pathlib import Path
 import numpy as np
 import soundfile as sf
-from benchmark.entities_dataset import Scenario
-from benchmark.markup_storage import load_scenario_from_yaml, load_markup_from_yaml
-from entities import AudioFile
+from benchmark.dataset_entities import Scenario, AudioFileMarkup
+from benchmark.dataset_storage import load_scenario_from_yaml, load_markup_from_yaml
 from ffmpeg_utils import read_all_samples, convert_wav_to_opus
 import args_utils
 
@@ -22,7 +21,7 @@ OUTPUT_SCENE_BASE_PATH = "dataset"
 
 def build_audio_scene(
     scenario: Scenario,
-    audio_files: list[AudioFile],
+    audio_files: list[AudioFileMarkup],
     src_audio_data: list[np.ndarray]
 ) -> np.ndarray:
     """Собирает единый аудиомассив сценария из исходных аудиоданных спикеров.
@@ -183,7 +182,7 @@ def main():
     )
 
     # 3. Загрузка разметки сегментов для всех четырех аудиофайлов
-    audio_files: list[AudioFile] = []
+    audio_files: list[AudioFileMarkup] = []
     print(f"Загрузка {len(MARKUP_FILES)} файлов разметки спикеров...")
 
     for path_str in MARKUP_FILES:
@@ -191,12 +190,12 @@ def main():
         if not yaml_path.exists():
             raise FileNotFoundError(f"Файл разметки не найден: {yaml_path.resolve()}")
 
-        # load_markup_from_yaml возвращает tuple[list[Speaker], AudioFile]
-        # Нам нужен только второй элемент (AudioFile)
+        # load_markup_from_yaml возвращает tuple[list[Speaker], AudioFileMarkup]
+        # Нам нужен только второй элемент (AudioFileMarkup)
         _, audio_file = load_markup_from_yaml(yaml_path)
         audio_files.append(audio_file)
 
-        # Небольшая валидация, что внутри AudioFile есть сегменты разметки
+        # Небольшая валидация, что внутри AudioFileMarkup есть сегменты разметки
         segments_count = len(audio_file.segments) if audio_file.segments else 0
         print(f" -> Загружен файл для спикера. Сегментов найдено: {segments_count}")
 

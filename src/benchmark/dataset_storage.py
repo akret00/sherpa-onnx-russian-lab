@@ -3,16 +3,16 @@ from pathlib import Path
 import os
 import dataclasses
 import yaml
-from entities import Speaker, AudioFile
-from benchmark.entities_dataset import (
-    AudioSegmentMarkup, Recipe, RecipeStep,
+from entities import Speaker
+from benchmark.dataset_entities import (
+    AudioSegmentMarkup, AudioFileMarkup, Recipe, RecipeStep,
     Scenario, ScenarioEpisode, ScenarioEvent, NoiseConfig
 )
 
 def export_markup_to_yaml(
     yaml_path: str | Path,
     speakers: list[Speaker] | None,
-    audio_file: AudioFile,
+    audio_file: AudioFileMarkup,
 ) -> None:
     """Экспорт датаклассов в чистый человекочитаемый YAML."""
     default_spk_id = 1
@@ -59,7 +59,7 @@ def export_markup_to_yaml(
 
     # Собираем финальный документ
     data_to_save = {
-        "dataset_version": "0.1",
+        "dataset_version": audio_file.dataset_version,
         "sample_rate": "16000",
         "speakers": yaml_speakers,
         "files": yaml_files,
@@ -77,7 +77,7 @@ def export_markup_to_yaml(
         )
 
 
-def load_markup_from_yaml(yaml_path: str | Path) -> tuple[list[Speaker], AudioFile]:
+def load_markup_from_yaml(yaml_path: str | Path) -> tuple[list[Speaker], AudioFileMarkup]:
     """Загрузка из YAML и восстановление связей в датаклассах."""
     with open(yaml_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
@@ -93,9 +93,10 @@ def load_markup_from_yaml(yaml_path: str | Path) -> tuple[list[Speaker], AudioFi
 
     # 2. Восстанавливаем файлы
     file_data = data.get("files", [])[0]
-    audio_file = AudioFile(
+    audio_file = AudioFileMarkup(
         id = int(file_data["id"]),
         file_path = file_data["file_path"],
+        dataset_version = file_data["dataset_version"],
         segments = []
     )
 
@@ -227,7 +228,7 @@ def load_scenario_from_yaml(file_path: str) -> Scenario:
 
     # Возвращаем финальный корневой объект сценария
     return Scenario(
-        dataset_version=float(data.get("dataset_version", 0.1)),
+        dataset_version=str(data.get("dataset_version", "0.1")),
         sample_rate=int(data.get("sample_rate", 16000)),
         episodes=parsed_episodes,
     )

@@ -1,46 +1,24 @@
 """Модуль с раннером бенчмарков"""
 # Запуск: PYTHONPATH=src python src/benchmark/experiment_runner.py
-from dataclasses import dataclass
+from dataclasses import asdict
 from pathlib import Path
 from config import PipelineConfig, config
 from pipeline_vad import AsrPipeline
-from entities import PipelineResult, AudioSegment
 import common_utils
-from benchmark.markup_storage import load_scenario_from_yaml, load_markup_from_yaml
+from benchmark.dataset_storage import (
+    AudioSegmentMarkup,
+    load_scenario_from_yaml,
+    load_markup_from_yaml,
+)
+from benchmark.experiment_entities import ExperimentSpec, PipelineResultExperiment
 
-@dataclass
-class ExperimentSpec:
-    """
-    Атомарная спецификация для тестирования одного аудиофайла.
-    Полностью описывает КТО, ЧТО и КАК обрабатывает.
-    """
-    spec_id: str        # Уникальный ID задачи (например, "sample_001__all_oracle")
-    # Данные
-    audio_path: Path
-    ground_truth_path: Path | None = None       # Путь к эталонной разметке (JSON/RTTM)
-    # Символические имена моделей из конфига
-    asr_model_name: str | None = None           # Например: "whisper-large-v3"
-    embedding_model_name: str | None = None     # Например: "pyannote-wespeaker"
-    vad_model_name: str = "silero"              # По умолчанию Silero
-    # Матрица включения Оракулов
-    use_oracle_vad: bool = False
-    use_oracle_asr: bool = False
-    use_oracle_diarization: bool = False
-    # Профиль настроек гиперпараметров из конфига
-    profile: str | None = None              # Например: meeting или noisy_environment
-    # Метаданные для аналитики метрик
-    metadata: dict[str, any] | None = None  # {"dataset_name": "voxceleb", "snr_level": "low"}
-    # Датасет
-    # Пайплайн
-    # Профиль нормализации текста (наверное это на попозже)
-    # Метрики (wer, cer, der)
 
 class ExperimentRunner:
     """Класс обеспечивает запуск бенчмарков"""
     def __init__(self, experiment_specs: list[ExperimentSpec]):
         self.experiment_specs = experiment_specs
 
-    def load_ground_truth(self, gt_file_path: Path) -> list[AudioSegment]:
+    def load_ground_truth(self, gt_file_path: Path) -> list[AudioSegmentMarkup]:
         """Загружает эталонную разметку по пути к файлу с разметкой"""
         if "speaker00" in str(gt_file_path) and ".opus.yaml" in str(gt_file_path):
             # Если в имени файла есть фрагменты имени исходных аудиофайлов
@@ -50,14 +28,14 @@ class ExperimentRunner:
             # Создаем новый список без объектов с phrase_id == 0
             gt_markup = [seg for seg in gt_markup if seg.phrase_id != 0]
         else:
-            gt_markup: list[AudioSegment] = []
+            gt_markup: list[AudioSegmentMarkup] = []
             # Загружаем эталонную размету из сценария
             gt_scenario = load_scenario_from_yaml(gt_file_path)
             # Конвертируем эталонную разметку в список AudioSegment
             for gt_episode in gt_scenario.episodes:
                 for gt_event in gt_episode.events:
                     gt_markup.append(
-                        AudioSegment(
+                        AudioSegmentMarkup(
                             start_time = gt_event.start,
                             end_time = gt_event.end,
                             text = gt_event.text,
@@ -73,9 +51,9 @@ class ExperimentRunner:
 
         return pl_config
 
-    def run_single_combination(self) -> list[PipelineResult]:
+    def run_single_combination(self) -> list[PipelineResultExperiment]:
         """Запуск одной конкретной конфигурации на всем датасете."""
-        results: list[PipelineResult] = []
+        results: list[PipelineResultExperiment] = []
         print(f"Начинаем перебор и запуск всех experiment_specs, {len(self.experiment_specs)} штук")
         for exp_spec in self.experiment_specs:
             print(f"Начинаем бенчмарк: {exp_spec.spec_id}")
@@ -103,11 +81,13 @@ class ExperimentRunner:
                 ts_start = common_utils.format_timestamp(seg.start_time)
                 ts_end = common_utils.format_timestamp(seg.end_time)
                 print(f"[{ts_start}-{ts_end}] {seg.text}")
-            pipeline_result = pl.pipeline_result
+            # Конвертирует результат пайплайна в PipelineResultExperiment
+            pipeline_result_exp = PipelineResultExperiment(**asdict(pl.pipeline_result))
+            pipeline_result_exp.dataset_version = exp_spec.dataset_version
 
-            print(f"Время распознавания: {pipeline_result.proc_time:.6f} секунд")
+            print(f"Время распознавания: {pipeline_result_exp.proc_time:.6f} секунд")
 
-            results.append(pipeline_result)
+            results.append(pipeline_result_exp)
         return results
 
 def generate_experiment_suite(audio_path: Path, gt_file: Path) -> list[ExperimentSpec]:

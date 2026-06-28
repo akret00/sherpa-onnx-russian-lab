@@ -18,7 +18,7 @@
 from pathlib import Path
 import jiwer
 from benchmark.experiment_runner import generate_experiment_suite, ExperimentRunner
-from benchmark.markup_storage import load_cache_from_yaml, export_cache_to_yaml
+from benchmark.dataset_storage import load_cache_from_yaml, export_cache_to_yaml
 
 CACHE_FILE_PATH = "cache004.yaml"
 AUDIO_PATH = "dataset/speaker004.opus"

@@ -1,11 +1,16 @@
 """Модуль с датаклассами для разметки, рецептов и сценариев"""
 from dataclasses import dataclass
-from entities import AudioSegment
+from entities import AudioSegment, AudioFile
 
 @dataclass
 class AudioSegmentMarkup(AudioSegment):
     """Модель аудиосегмента для разметки"""
     phrase_id: int | None = None
+
+@dataclass
+class AudioFileMarkup(AudioFile):
+    """Модель айдиофайла для разметки"""
+    dataset_version: str = "0.1"
 
 @dataclass
 class RecipeStep:
@@ -50,6 +55,6 @@ class ScenarioEpisode:
 @dataclass
 class Scenario:
     """Модель для описания сценария"""
-    dataset_version: float = 0.1
+    dataset_version: str = "0.1"
     sample_rate: int = 16000
     episodes: list[ScenarioEpisode] | None = None

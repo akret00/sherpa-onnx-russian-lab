@@ -1,5 +1,6 @@
 """Модуль для общих утилит"""
 from pathlib import Path
+from importlib.metadata import version, PackageNotFoundError
 from config import DEFAULT_OUTPUT_DIR
 
 def get_output_path(args, base_dir: Path) -> Path:
@@ -24,3 +25,13 @@ def format_timestamp(seconds: float) -> str:
     m, s = divmod(s, 60)
     h, m = divmod(m, 60)
     return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
+
+def get_package_version(package_name: str) -> str | None:
+    """
+    Функция возвращает версию пакета по его имени, без его импорта.
+    Если пакет не найден, возвращается None
+    """
+    try:
+        return version(package_name)
+    except PackageNotFoundError:
+        return None

@@ -8,7 +8,7 @@ import args_utils
 import speaker_storage
 import common_utils
 from pipeline_vad import CentroidDiarizationPipeline
-import benchmark.markup_storage
+import benchmark.dataset_storage
 
 def main():
     """Основная функция"""
@@ -64,7 +64,7 @@ def main():
     #     update_mode = speaker_storage.SpeakerUpdateMode.UPDATE_ALL
     # )
 
-    benchmark.markup_storage.export_markup_to_yaml(
+    benchmark.dataset_storage.export_markup_to_yaml(
         yaml_path = output_file_path,
         speakers = None,
         audio_file = pl.pipeline_result.file,

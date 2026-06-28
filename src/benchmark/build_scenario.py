@@ -1,14 +1,14 @@
 """Модуль для генерации сценариев на основе рецепта"""
 # Запуск: PYTHONPATH=src python src/benchmark/build_scenario.py --input yaml_recipe_file_path
 from pathlib import Path
-from entities import AudioFile
-from benchmark.entities_dataset import (
+from benchmark.dataset_entities import (
     AudioSegmentMarkup,
+    AudioFileMarkup,
     Recipe,
     Scenario, ScenarioEpisode, ScenarioEvent,
     NoiseConfig,
 )
-from benchmark.markup_storage import (
+from benchmark.dataset_storage import (
     load_recipe_from_yaml,
     load_markup_from_yaml,
     export_scenario_to_yaml,
@@ -29,14 +29,14 @@ MARKUP_FILES = [
 # Имя выходного файла сценария (можно генерировать динамически или захардкодить)
 OUTPUT_SCENARIO_BASE_PATH = "dataset"
 
-def generate_scenario(recipe: Recipe, audio_files: list[AudioFile]) -> Scenario:
+def generate_scenario(recipe: Recipe, audio_files: list[AudioFileMarkup]) -> Scenario:
     """
     Генерирует сценарий на основе рецепта и списка аудио файлов
-    В audio_files должен быть список AudioFile в порядке: индекс в массиве == speaker_id - 1
-    То есть AudioFile должны идти в порядке для speaker1, speaker2, speaker3, speaker4
+    В audio_files должен быть список AudioFileMarkup в порядке: индекс в массиве == speaker_id - 1
+    То есть AudioFileMarkup должны идти в порядке для speaker1, speaker2, speaker3, speaker4
     """
     # 1. Индексация данных для быстрого поиска: (speaker_id, phrase_id) -> AudioSegmentMarkup
-    # Предполагаем, что в каждом AudioFile.segments лежат объекты AudioSegmentMarkup
+    # Предполагаем, что в каждом AudioFileMarkup.segments лежат объекты AudioSegmentMarkup
     phrase_index: dict[int, dict[int, AudioSegmentMarkup]] = {}
 
     for audio_file in audio_files:
@@ -161,7 +161,7 @@ def main():
     )
 
     # 3. Загрузка разметки сегментов для всех четырех аудиофайлов
-    audio_files: list[AudioFile] = []
+    audio_files: list[AudioFileMarkup] = []
     print(f"Загрузка {len(MARKUP_FILES)} файлов разметки спикеров...")
 
     for path_str in MARKUP_FILES:
@@ -169,12 +169,12 @@ def main():
         if not yaml_path.exists():
             raise FileNotFoundError(f"Файл разметки не найден: {yaml_path.resolve()}")
 
-        # load_markup_from_yaml возвращает tuple[list[Speaker], AudioFile]
-        # Нам нужен только второй элемент (AudioFile)
+        # load_markup_from_yaml возвращает tuple[list[Speaker], AudioFileMarkup]
+        # Нам нужен только второй элемент (AudioFileMarkup)
         _, audio_file = load_markup_from_yaml(yaml_path)
         audio_files.append(audio_file)
 
-        # Небольшая валидация, что внутри AudioFile есть сегменты разметки
+        # Небольшая валидация, что внутри AudioFileMarkup есть сегменты разметки
         segments_count = len(audio_file.segments) if audio_file.segments else 0
         print(f" -> Загружен файл для спикера. Сегментов найдено: {segments_count}")
 

@@ -11,6 +11,7 @@ from speaker_storage import Speaker, AudioFile, AudioSegment
 from diarization_utils import SpeakerResolver, SpeakerResolvingMode
 import vad_utils
 import asr_utils
+from common_utils import get_package_version
 
 class BaseVadPipeline:
     """Базовый пайплайн для распознавания и диаризации при помощи VAD"""
@@ -162,6 +163,7 @@ class BaseVadPipeline:
             markup_segments = self.markup_segments,
             proc_time = pl_end_time - pl_start_time,
             total_ram = None,   # Расчет пикового потребления ОЗУ отложен на потом
+            sherpa_version = get_package_version("sherpa_onnx"),
         )
 
     def run(

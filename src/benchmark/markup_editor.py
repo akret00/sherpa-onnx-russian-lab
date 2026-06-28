@@ -5,9 +5,9 @@ import os
 import platform
 import numpy
 import sounddevice
-from entities import AudioSegment
+from benchmark.dataset_entities import AudioSegmentMarkup
 import args_utils
-from benchmark.markup_storage import load_markup_from_yaml, export_markup_to_yaml
+from benchmark.dataset_storage import load_markup_from_yaml, export_markup_to_yaml
 import ffmpeg_utils
 from config import SR
 
@@ -22,7 +22,7 @@ class AudioSegmentEditor:
         self.audio_data: numpy.ndarray | None = None
 
     @property
-    def current(self) -> AudioSegment:
+    def current(self) -> AudioSegmentMarkup:
         """Возвращает текущий сегмент аудио"""
         return self.segments[self.index]
 
@@ -125,7 +125,7 @@ class AudioSegmentEditor:
         # self.clear_screen()
         print(f"\n=== Сегмент {self.index + 1} из {len(self.segments)} ===")
         seg = self.current
-        print(f"ID: {seg.id} Speaker.id: {seg.speaker.id} AudioFile.id: {seg.audio_file.id}")
+        print(f"ID: {seg.id} Speaker.id: {seg.speaker.id} AudioFileMarkup.id: {seg.audio_file.id}")
         print(
             f"Таймкоды: {seg.start_time:.2f}s -> {seg.end_time:.2f}s "
             f"[Длительность: {seg.end_time - seg.start_time:.2f}s]"
@@ -232,7 +232,7 @@ class AudioSegmentEditor:
         midpoint = round((seg.start_time + seg.end_time) / 2, 2)
 
         # Создаем второй сегмент (копируем метаданные)
-        new_seg = AudioSegment(
+        new_seg = AudioSegmentMarkup(
             id = seg.id + 10000,
             audio_file_id = seg.audio_file_id,
             audio_file = seg.audio_file,

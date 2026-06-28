@@ -16,7 +16,7 @@ class Speaker:
 class AudioFile:
     """Модель метаданных аудиофайла."""
     id: int | None = None
-    file_path: str = ""
+    file_path: str | None = None
     duration_seconds: float = 0.0
     processed_at: str | None = None
     segments: list[AudioSegment] | None = None
@@ -43,5 +43,6 @@ class PipelineResult:
     file: AudioFile | None
     segments: list[AudioSegment] | None
     markup_segments: list[AudioSegment] | None = None
-    proc_time: float | None = None        # Время работы пайплайна
-    total_ram: float | None = None        # Объем занимаемой памяти в ОЗУ, в МБ
+    proc_time: float | None = None          # Время работы пайплайна
+    total_ram: float | None = None          # Объем занимаемой памяти в ОЗУ, в МБ
+    sherpa_version: str | None = None       # Номер версии пакета sherpa_onnx
