@@ -1,5 +1,6 @@
 """Пайплан для распознавания и диаризации при помощи VAD и центроидов"""
 import sys
+import time
 from collections.abc import Generator
 import numpy as np
 from config import PipelineConfig, SR
@@ -70,6 +71,9 @@ class BaseVadPipeline:
         Запуск пайплайна для аудио с источником в audio_path
         и эталонной разметкой в markup_segments для режима Оракула
         """
+        # Засекаем время запуска пайплайна
+        pl_start_time = time.perf_counter()
+
         self.pipeline_result = None
         # Вызываем установку эталонной разметки для Оракулов, которые включены
         self.set_markup_segments(markup_segments)
@@ -146,12 +150,18 @@ class BaseVadPipeline:
         finally:
             ffmpeg_utils.close_ffmpeg_proc(proc)
 
+        # Засекаем время окончания работы пайплайна
+        pl_end_time = time.perf_counter()
+
+        # Формируем результат работы пайплайна
         self.pipeline_result = PipelineResult(
             pipeline_type = None,
             speakers = self._speakers,
             file = audio_file,
             segments = segments,
-            markup_segments = self.markup_segments
+            markup_segments = self.markup_segments,
+            proc_time = pl_end_time - pl_start_time,
+            total_ram = None,   # Расчет пикового потребления ОЗУ отложен на потом
         )
 
     def run(

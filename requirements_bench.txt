@@ -1,0 +1,9 @@
+-r requirements.txt
+sounddevice
+soundfile
+jiwer
+# psutil
+# ru-normalizr
+# spyder
+# simpleder
+# pyannote.metrics

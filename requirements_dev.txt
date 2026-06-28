@@ -1,11 +1,4 @@
--r requirements.txt
+-r requirements_bench.txt
 pytest
 pylint-pytest
 pytest-cov
-sounddevice
-soundfile
-jiwer
-# ru-normalizr
-# spyder
-# simpleder
-# pyannote.metrics

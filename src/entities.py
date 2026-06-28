@@ -42,5 +42,6 @@ class PipelineResult:
     speakers: list[Speaker]
     file: AudioFile | None
     segments: list[AudioSegment] | None
-    run_time: float = 0
     markup_segments: list[AudioSegment] | None = None
+    proc_time: float | None = None        # Время работы пайплайна
+    total_ram: float | None = None        # Объем занимаемой памяти в ОЗУ, в МБ

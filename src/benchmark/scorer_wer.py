@@ -14,10 +14,10 @@
     Если WER высокий, а CER низкий — модель ошибается лишь в отдельных буквах
     (окончаниях, падежах), и ее можно брать в работу.
 """
-# Запуск: PYTHONPATH=src python src/benchmark/calc_wer_metrics.py
+# Запуск: PYTHONPATH=src python src/benchmark/scorer_wer.py
 from pathlib import Path
 import jiwer
-from benchmark.benchmark_runner import generate_benchmark_suite, BenchmarkRunner
+from benchmark.experiment_runner import generate_experiment_suite, ExperimentRunner
 from benchmark.markup_storage import load_cache_from_yaml, export_cache_to_yaml
 
 CACHE_FILE_PATH = "cache004.yaml"
@@ -120,14 +120,14 @@ def main():
         references, hypothesis = results
     else: # Кэша пока нет, запускаем бенчмарк и сохраняем результаты в кэш
         print("Кэш отсутствует, запускается бенчмарк...")
-        bm_spesc = generate_benchmark_suite(
+        exp_spesc = generate_experiment_suite(
             audio_path = Path(AUDIO_PATH),
             gt_file = Path(GT_PATH)
             )
-        bm_spesc[0].use_oracle_vad = True
-        # Отправляем bm_spesc в очередь на выполнение...
-        bm_runner = BenchmarkRunner(bm_spesc)
-        pl_results = bm_runner.run_single_combination()
+        exp_spesc[0].use_oracle_vad = True
+        # Отправляем exp_specs в очередь на выполнение...
+        exp_runner = ExperimentRunner(exp_spesc)
+        pl_results = exp_runner.run_single_combination()
 
         # Готовим списки эталоных фраз и гипотез
         references: list[str] = []
@@ -165,7 +165,7 @@ def main():
     # Поиск фраз с ошибками
     err_strs_count = 0
     zipped_data = zip(output.references, output.hypotheses, output.alignments)
-    for idx, (ref, hyp, alignment) in enumerate(zipped_data, start = 0):
+    for idx, (_, _, alignment) in enumerate(zipped_data, start = 0):
         # В jiwer alignment — это список объектов AlignmentChunk для конкретной фразы.
         # Если в списке есть элементы с типом, отличным от 'equal', значит есть ошибки.
         has_errors = any(chunk.type != "equal" for chunk in alignment)
