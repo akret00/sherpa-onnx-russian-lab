@@ -1,12 +1,12 @@
 """Модуль для общих утилит"""
 from pathlib import Path
 from importlib.metadata import version, PackageNotFoundError
-from config import DEFAULT_OUTPUT_DIR
+from config import DEFAULT_OUTPUT_DIR, pl_conf
 
 def get_output_path(args, base_dir: Path) -> Path:
     """Определяет путь к папке для хранения файлов с распознанным текстом"""
     # Если аргумент не передан (None), берем папку по умолчанию
-    raw_val = args.output_dir if args.output_dir else DEFAULT_OUTPUT_DIR
+    raw_val = pl_conf.output_dir if pl_conf.output_dir else DEFAULT_OUTPUT_DIR
 
     raw_path = Path(raw_val)
 

@@ -38,10 +38,10 @@ class Config:
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
             self._data = yaml.safe_load(f)
         # Определяем рабочие модели
-        self._vad_model_name = self._data['work']['vad_model_name']
-        self._embed_model_name = self._data['work']['embed_model_name']
-        self._asr_model_name = self._data['work']['asr_model_name']
-        self._segmentation_model_name = self._data['work']['segmentation_model_name']
+        self.vad_model_name = self._data['work']['vad_model_name']
+        self.embed_model_name = self._data['work']['embed_model_name']
+        self.asr_model_name = self._data['work']['asr_model_name']
+        self.segmentation_model_name = self._data['work']['segmentation_model_name']
 
     # @property
     def get_work(self):
@@ -60,19 +60,19 @@ class Config:
 
     def get_vad_model(self):
         """Возвращает настройки рабочей модели VAD"""
-        return self._data["models"]["vad"][self._vad_model_name]
+        return self._data["models"]["vad"][self.vad_model_name]
 
     def get_embedding_model(self):
         """Возвращает настройки рабочей модели embedding"""
-        return self._data["models"]["embedding"][self._embed_model_name]
+        return self._data["models"]["embedding"][self.embed_model_name]
 
     def get_asr_model(self):
         """Возвращает настройки рабочей модели ASR"""
-        return self._data["models"]["asr"][self._asr_model_name]
+        return self._data["models"]["asr"][self.asr_model_name]
 
     def get_segmentation_model(self):
         """Возвращает настройки рабочей модели сегментации"""
-        return self._data["models"]["segmentation"][self._segmentation_model_name]
+        return self._data["models"]["segmentation"][self.segmentation_model_name]
 
     def get_default_args(self):
         """Возвращает список параметров и их значений по умолчанию"""
@@ -93,21 +93,70 @@ class Config:
 @dataclass
 class PipelineConfig:
     """Конфигурация пайплайна"""
-    config: Config
-    num_threads = 1
-    provider = "cpu"
+    num_threads: int = 1
+    provider: str = "cpu"
+    vad_model_name: str | None = None
+    vad_model_path: str | None = None
     vad_threshold: float = 0.4 # 0.4 Было 0.3
     vad_min_silence: float = 0.1 # 0.1 Было 0.25
     vad_min_speech: float = 0.2 # 0.2 Было 0.25
     vad_max_speech: float = 10.0
+    embedding_model_name: str | None = None
+    embedding_model_path: str | None = None
+    asr_model_name: str | None = None
+    asr_model_type: str | None = None
+    # nemo_ctc секция
+    asr_model_path: str | None = None
+    asr_tokens_path: str | None = None
+    # qwen3 секция
+    conv_frontend_path: str | None = None
+    encoder_path: str | None = None
+    decoder_path: str | None = None
+    tokenizer_path: str | None = None
+
+    segmentation_model_name: str | None = None
+    segmentation_model_path: str | None = None
     # Embedding параметры для speaker ID
-    spk_threshold: float = 0.4
+    spk_threshold: float | None = None  # cosine-sim threshold inside manager.search
+    min_seg_sec: float | None = None    # Пропускать сегменты короче указанного
     # Режимы для Oracle (VAD, ASR, Diarization)
     use_oracle_vad : bool = False    # Если истинно, то у VAD включается режим Оракула
     use_oracle_asr: bool = False
     use_oracle_diarization: bool = False
-
+    output_dir: str | None = None   # Путь к папке с с файлами с распознанным текстом
+    no_timestamps: bool = False     # Запрещает вывод меток времени в распознанный текст
+    # Кластеризация
+    num_speakers: int = -1  # Если знаете количество спикеров, задайте его. Иначе оставьте -1
+    cluster_threshold: float = 0.5  # Используется при --num-speakers=-1. Меньше => больше спикеров,
+                                    # больше => меньше спикеров
+    # Формат вывода
+    pad_sec: float | None = None    # Защитный интервал для сегментов +/- секунд перед ASR
+                                    # (что бы не обрезать слова)
+    merge_gap: float | None = None  # Объединять соседние фразы одного спикера, если пауза между
+                                    # ними <= merge-gap
+    min_turn_sec: float | None = None # Пропустить диаризацию фраз, короче, чем --min-turn-sec
+    show_progress: bool = False     # Показывать прогресс диаризации
 
 # Создаем экземпляр (синглтон) для импорта в другие файлы
 config = Config()
-pl_conf = PipelineConfig(config = config)
+# pl_conf = PipelineConfig(config = config)
+pl_conf = PipelineConfig(
+    provider = config.get_work()["provider"],
+    vad_model_name = config.vad_model_name,
+    vad_model_path = config.get_vad_model()['model'],
+    embedding_model_name = config.embed_model_name,
+    embedding_model_path = config.get_embedding_model()["model"],
+    asr_model_name = config.asr_model_name,
+    asr_model_type = config.get_asr_model()["asr_type"],
+    # ctc-nemo
+    asr_model_path = config.get_asr_model().get("model", None),
+    asr_tokens_path = config.get_asr_model().get("tokens", None),
+    # qwen3 секция
+    conv_frontend_path = config.get_asr_model().get("conv_frontend", None),
+    encoder_path = config.get_asr_model().get("encoder", None),
+    decoder_path = config.get_asr_model().get("decoder", None),
+    tokenizer_path = config.get_asr_model().get("tokenizer_dir", None),
+
+    segmentation_model_name = config.segmentation_model_name,
+    segmentation_model_path = config.get_segmentation_model()["model"],
+)

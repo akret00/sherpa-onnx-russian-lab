@@ -35,7 +35,7 @@ class BaseVadPipeline:
         else:
             # Создаем оригинальный VAD ()
             self._vad, self._window_size = model_utils.load_vad(
-                vad_model = self._config.get_vad_model()['model'],
+                vad_model = self._pl_config.vad_model_path,
                 threshold = self._pl_config.vad_threshold,
                 min_silence = self._pl_config.vad_min_silence,
                 min_speech = self._pl_config.vad_min_speech,

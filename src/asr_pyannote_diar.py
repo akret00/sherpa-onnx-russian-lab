@@ -14,7 +14,7 @@ from typing import List
 import model_utils
 import args_utils
 import ffmpeg_utils
-import config
+from config import pl_conf, SR
 import asr_utils
 
 
@@ -87,7 +87,10 @@ def main():
     sd = model_utils.load_pyannote_diarization()
 
     # 2) Create ASR recognizer once (hot instance).
-    recognizer = model_utils.load_asr(num_threads = args.num_threads, provider = args.provider)
+    recognizer = model_utils.load_asr(
+        num_threads = pl_conf.num_threads,
+        provider = pl_conf.provider
+    )
 
     # Засекаем время окончания инициализации
     init_end_time = time.perf_counter()
@@ -101,8 +104,8 @@ def main():
 
     # 4) Run diarization.
     print("Начинается диаризация, это может занять много времени...")
-    args.show_progress = True
-    if args.show_progress:
+    pl_conf.show_progress = True
+    if pl_conf.show_progress:
         diar = sd.process(audio, callback=progress_callback).sort_by_start_time()
     else:
         diar = sd.process(audio).sort_by_start_time()
@@ -115,26 +118,26 @@ def main():
     print("Результаты диаризации:")
     for r in diar:
         # dur = r.end - r.start
-        # if dur >= args.min_turn_sec:
+        # if dur >= pl_conf.min_turn_sec:
         turns.append(Turn(start=float(r.start), end=float(r.end), speaker=int(r.speaker)))
         print(f"[{fmt_ts(r.start)} - {fmt_ts(r.end)}] SPK_{r.speaker:02d}")
 
-    # turns = merge_adjacent_turns(turns, max_gap = args.merge_gap)
+    # turns = merge_adjacent_turns(turns, max_gap = pl_conf.merge_gap)
 
     # Засекаем время начала распознавания
     asr_start_time = time.perf_counter()
 
     # 5) ASR per turn and print result with timing + speaker label.
     print("Начинается распознавание речи...")
-    pad = args.pad_sec
+    pad = pl_conf.pad_sec
     audio_len = len(audio)
 
     for t in turns:
         s = max(0.0, t.start - pad)
-        e = min(len(audio) / config.SR, t.end + pad)
+        e = min(len(audio) / SR, t.end + pad)
 
-        i0 = clamp(int(s * config.SR), 0, audio_len)
-        i1 = clamp(int(e * config.SR), 0, audio_len)
+        i0 = clamp(int(s * SR), 0, audio_len)
+        i1 = clamp(int(e * SR), 0, audio_len)
         if i1 <= i0:
             continue
 
