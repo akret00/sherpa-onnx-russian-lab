@@ -43,10 +43,7 @@ class BaseVadPipeline:
             )
 
         # Инициализируем ASR распознаватель
-        self._recognizer = model_utils.load_asr(
-            num_threads = self._pl_config.num_threads,
-            provider = self._pl_config.provider
-        )
+        self._recognizer = model_utils.load_asr()
 
     def set_markup_segments(self, markup_segments: list[AudioSegment] | None = None):
         """Устанавливает эталонную разметку во всех Оракулах пайплайна, которые включены"""

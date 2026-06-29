@@ -87,10 +87,7 @@ def main():
     sd = model_utils.load_pyannote_diarization()
 
     # 2) Create ASR recognizer once (hot instance).
-    recognizer = model_utils.load_asr(
-        num_threads = pl_conf.num_threads,
-        provider = pl_conf.provider
-    )
+    recognizer = model_utils.load_asr()
 
     # Засекаем время окончания инициализации
     init_end_time = time.perf_counter()

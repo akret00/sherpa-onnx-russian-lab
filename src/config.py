@@ -100,7 +100,7 @@ class PipelineConfig:
     vad_threshold: float = 0.4 # 0.4 Было 0.3
     vad_min_silence: float = 0.1 # 0.1 Было 0.25
     vad_min_speech: float = 0.2 # 0.2 Было 0.25
-    vad_max_speech: float = 10.0
+    vad_max_speech: float = 20.0
     embedding_model_name: str | None = None
     embedding_model_path: str | None = None
     asr_model_name: str | None = None
@@ -117,25 +117,25 @@ class PipelineConfig:
     segmentation_model_name: str | None = None
     segmentation_model_path: str | None = None
     # Embedding параметры для speaker ID
-    spk_threshold: float | None = None  # cosine-sim threshold inside manager.search
-    min_seg_sec: float | None = None    # Пропускать сегменты короче указанного
+    spk_threshold: float = 0.4      # cosine-sim threshold inside manager.search
+    min_seg_sec: float = 0.5        # Пропускать сегменты короче указанного
     # Режимы для Oracle (VAD, ASR, Diarization)
-    use_oracle_vad : bool = False    # Если истинно, то у VAD включается режим Оракула
+    use_oracle_vad : bool = False           # Если истинно, то у VAD включается режим Оракула
     use_oracle_asr: bool = False
     use_oracle_diarization: bool = False
-    output_dir: str | None = None   # Путь к папке с с файлами с распознанным текстом
-    no_timestamps: bool = False     # Запрещает вывод меток времени в распознанный текст
+    output_dir: str = DEFAULT_OUTPUT_DIR    # Путь к папке с с файлами с распознанным текстом
+    no_timestamps: bool = False             # Запрещает вывод меток времени в распознанный текст
     # Кластеризация
     num_speakers: int = -1  # Если знаете количество спикеров, задайте его. Иначе оставьте -1
     cluster_threshold: float = 0.5  # Используется при --num-speakers=-1. Меньше => больше спикеров,
                                     # больше => меньше спикеров
     # Формат вывода
-    pad_sec: float | None = None    # Защитный интервал для сегментов +/- секунд перед ASR
-                                    # (что бы не обрезать слова)
-    merge_gap: float | None = None  # Объединять соседние фразы одного спикера, если пауза между
-                                    # ними <= merge-gap
-    min_turn_sec: float | None = None # Пропустить диаризацию фраз, короче, чем --min-turn-sec
-    show_progress: bool = False     # Показывать прогресс диаризации
+    pad_sec: float = 0.2        # Защитный интервал для сегментов +/- секунд перед ASR
+                                # (что бы не обрезать слова)
+    merge_gap: float = 0.25     # Объединять соседние фразы одного спикера, если пауза между
+                                # ними <= merge-gap
+    min_turn_sec: float = 0.6   # Пропустить диаризацию фраз, короче, чем --min-turn-sec
+    show_progress: bool = False # Показывать прогресс диаризации
 
 # Создаем экземпляр (синглтон) для импорта в другие файлы
 config = Config()

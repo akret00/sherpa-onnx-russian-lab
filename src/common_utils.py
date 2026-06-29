@@ -1,20 +1,12 @@
 """Модуль для общих утилит"""
 from pathlib import Path
 from importlib.metadata import version, PackageNotFoundError
-from config import DEFAULT_OUTPUT_DIR, pl_conf
+from config import DEFAULT_OUTPUT_DIR, BASE_DIR, pl_conf
 
-def get_output_path(args, base_dir: Path) -> Path:
+def get_output_dir() -> Path:
     """Определяет путь к папке для хранения файлов с распознанным текстом"""
-    # Если аргумент не передан (None), берем папку по умолчанию
-    raw_val = pl_conf.output_dir if pl_conf.output_dir else DEFAULT_OUTPUT_DIR
-
-    raw_path = Path(raw_val)
-
-    if raw_path.is_absolute():
-        # Если это DEFAULT_OUTPUT_DIR, он уже абсолютный (от BASE_DIR)
-        return raw_path
-    # Если это относительный путь от пользователя — приклеиваем к BASE_DIR
-    return base_dir / raw_path
+    raw_val = pl_conf.output_dir or DEFAULT_OUTPUT_DIR
+    return (BASE_DIR / raw_val).resolve()
 
 def format_timestamp(seconds: float) -> str:
     """Красивый таймкод  HH:MM:SS.mmm"""

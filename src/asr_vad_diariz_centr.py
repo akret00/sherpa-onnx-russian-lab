@@ -5,7 +5,7 @@
 """
 import time
 from pathlib import Path
-from config import pl_conf, BASE_DIR
+from config import pl_conf
 import args_utils
 import speaker_storage
 import common_utils
@@ -32,7 +32,7 @@ def main():
         a_path = args.input
 
     # Определяем директорию для хранения файлов с результатом
-    output_dir = common_utils.get_output_path(args, BASE_DIR)
+    output_dir = common_utils.get_output_dir()
     # Определяем  имя файла с результатом распознавания
     output_file_path = output_dir / f"{Path(a_path).name}.txt"
     # Создаем директорию, если ее еще нет и открываем файл

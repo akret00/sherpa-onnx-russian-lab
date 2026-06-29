@@ -36,7 +36,7 @@ def load_embedder(model: str, num_threads: int, provider: str = "cpu", debug: bo
     manager = sherpa_onnx.SpeakerEmbeddingManager(extractor.dim)
     return extractor, manager
 
-def load_asr(num_threads: int = 1, provider: str = "cpu"):
+def load_asr():
     """Загружает модель ASR"""
     if pl_conf.asr_model_type == "nemo_ctc":
         return sherpa_onnx.OfflineRecognizer.from_nemo_ctc(

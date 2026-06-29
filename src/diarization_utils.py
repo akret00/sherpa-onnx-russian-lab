@@ -43,7 +43,7 @@ class SpeakerResolver:
         # Норма примерно 0.5 - 0.6, если есть похожие голоса, то нужно повышать до 0.65+
         # если шум, эхо, порог придется снижать, но тогда могут дробиться реальные спикеры
         self._spk_threshold = spk_threshold
-        self._spk_model = config.pl_conf.embedding_model
+        self._spk_model = config.pl_conf.embedding_model_path
         self._provider = config.pl_conf.provider
         # Список спикеров с векторами и количеством накопленных фраз
         if speakers is None:
