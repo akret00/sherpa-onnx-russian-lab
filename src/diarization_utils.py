@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import numpy
 import model_utils
 import asr_utils
-import config
+from config import pl_conf, SR, MIN_SEARCH_SEG_LEN, MAX_PAUSE_FOR_INERTIA
 import segment_utils
 from speaker_storage import Speaker
 
@@ -43,8 +43,8 @@ class SpeakerResolver:
         # Норма примерно 0.5 - 0.6, если есть похожие голоса, то нужно повышать до 0.65+
         # если шум, эхо, порог придется снижать, но тогда могут дробиться реальные спикеры
         self._spk_threshold = spk_threshold
-        self._spk_model = config.pl_conf.embedding_model_path
-        self._provider = config.pl_conf.provider
+        self._spk_model = pl_conf.embed.model_path
+        self._provider = pl_conf.runtime.provider
         # Список спикеров с векторами и количеством накопленных фраз
         if speakers is None:
             self._speakers: list[Speaker] = []
@@ -128,7 +128,7 @@ class SpeakerResolver:
         if best_score > self._spk_threshold:
             spk = best_spk
             # Обновляем профиль только если фраза длинная (> 2 сек) = качественная
-            if len(seg) > 2.0 * config.SR:
+            if len(seg) > 2.0 * SR:
                 self._update_speaker_profile(spk, emb)
         else:
             # Создаем нового и добавляем к базе
@@ -167,19 +167,19 @@ class SpeakerResolver:
         elif self._resolving_mode == SpeakerResolvingMode.VAD_SIMPLE_CENTROID:
             # 1. Сброс инерции при длинной паузе
             pause_duration = t_start - self._last_end_time
-            if pause_duration > config.MAX_PAUSE_FOR_INERTIA:
+            if pause_duration > MAX_PAUSE_FOR_INERTIA:
                 self._last_spk = None
             self._last_end_time = t_end # Делать для всех или только качественных сегментов?
 
             # 2. Обрезка правого края с тишиной для коротких фраз
-            if len(seg) <= int(1.5 * config.SR):
+            if len(seg) <= int(1.5 * SR):
                 vad_seg = segment_utils.trim_silence_fix_end(seg)
                 # segment_utils.visualize_segment_energy(vad_seg)
             else:
                 vad_seg = seg
 
             # 3. Логика определения спикера (только для качественных сегментов)
-            if len(vad_seg) >= int(config.MIN_SEARCH_SEG_LEN * config.SR):
+            if len(vad_seg) >= int(MIN_SEARCH_SEG_LEN * SR):
                 emb = self._normalize_vector(asr_utils.compute_embedding(self._extractor, vad_seg))
                 resolve_result = self._search_or_create_speaker_centriod(vad_seg, emb)
                 resolve_result.speaker.count += 1

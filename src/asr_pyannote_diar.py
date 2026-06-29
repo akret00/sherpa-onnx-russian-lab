@@ -101,8 +101,8 @@ def main():
 
     # 4) Run diarization.
     print("Начинается диаризация, это может занять много времени...")
-    pl_conf.show_progress = True
-    if pl_conf.show_progress:
+    pl_conf.segmentation.show_progress = True
+    if pl_conf.segmentation.show_progress:
         diar = sd.process(audio, callback=progress_callback).sort_by_start_time()
     else:
         diar = sd.process(audio).sort_by_start_time()
@@ -115,18 +115,18 @@ def main():
     print("Результаты диаризации:")
     for r in diar:
         # dur = r.end - r.start
-        # if dur >= pl_conf.min_turn_sec:
+        # if dur >= pl_conf.segmentation.min_turn_sec:
         turns.append(Turn(start=float(r.start), end=float(r.end), speaker=int(r.speaker)))
         print(f"[{fmt_ts(r.start)} - {fmt_ts(r.end)}] SPK_{r.speaker:02d}")
 
-    # turns = merge_adjacent_turns(turns, max_gap = pl_conf.merge_gap)
+    # turns = merge_adjacent_turns(turns, max_gap = pl_conf.segmentation.merge_gap)
 
     # Засекаем время начала распознавания
     asr_start_time = time.perf_counter()
 
     # 5) ASR per turn and print result with timing + speaker label.
     print("Начинается распознавание речи...")
-    pad = pl_conf.pad_sec
+    pad = pl_conf.segmentation.pad_sec
     audio_len = len(audio)
 
     for t in turns:

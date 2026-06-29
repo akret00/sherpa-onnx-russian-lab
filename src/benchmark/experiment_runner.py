@@ -45,9 +45,9 @@ class ExperimentRunner:
 
     def build_pl_config(self, exp_spec: ExperimentSpec | None = None) -> PipelineConfig:
         """Создает конфиг пайплайна на основе спецификации бенчмарка"""
-        pl_config = PipelineConfig(config = config)
+        pl_config = config.get_new_pipeline_config()
         if exp_spec:
-            pl_config.use_oracle_vad = exp_spec.use_oracle_vad
+            pl_config.vad.use_oracle = exp_spec.use_oracle_vad
 
         return pl_config
 

@@ -56,44 +56,44 @@ def parse_args():
 
     args = ap.parse_args()
 
-    # Записываем нужные аргументы в конфигурация пайплайна pl_conf
+    # Записываем нужные аргументы в конфигурацию пайплайна pl_conf
     if args.provider:
-        pl_conf.provider = args.provider
+        pl_conf.runtime.provider = args.provider
     if args.num_threads:
-        pl_conf.num_threads = int(args.num_threads)
+        pl_conf.runtime.num_threads = int(args.num_threads)
     if args.output_dir: # Путь к папке с с файлами с распознанным текстом
-        pl_conf.output_dir = args.output_dir
+        pl_conf.runtime.output_dir = args.output_dir
     if args.no_timestamps: # Запрещает вывод меток времени в распознанный текст
-        pl_conf.no_timestamps = True
+        pl_conf.runtime.no_timestamps = True
     # VAD параметры
     if args.vad_threshold:
-        pl_conf.vad_threshold = float(args.vad_threshold)
+        pl_conf.vad.threshold = float(args.vad_threshold)
     if args.vad_min_silence:
-        pl_conf.vad_min_silence = float(args.vad_min_silence)
+        pl_conf.vad.min_silence = float(args.vad_min_silence)
     if args.vad_min_speech:
-        pl_conf.vad_min_speech = float(args.vad_min_speech)
+        pl_conf.vad.min_speech = float(args.vad_min_speech)
     if args.vad_max_speech:
-        pl_conf.vad_max_speech = float(args.vad_max_speech)
+        pl_conf.vad.max_speech = float(args.vad_max_speech)
     # Embedding параметры для speaker ID
     if args.spk_threshold: # cosine-sim threshold inside manager.search
-        pl_conf.spk_threshold = float(args.spk_threshold)
+        pl_conf.segmentation.spk_threshold = float(args.spk_threshold)
     if args.min_seg_sec: # Пропускать сегменты короче указанного
-        pl_conf.min_seg_sec = float(args.min_seg_sec)
+        pl_conf.segmentation.min_seg_sec = float(args.min_seg_sec)
     # Кластеризация
     if args.num_speakers: # Если знаете количество спикеров, задайте его. Иначе оставьте -1
-        pl_conf.num_speakers = int(args.num_speakers)
+        pl_conf.segmentation.num_speakers = int(args.num_speakers)
     if args.cluster_threshold: # Используется при --num-speakers=-1. Меньше => больше спикеров
-        pl_conf.cluster_threshold = float(args.cluster_threshold)
+        pl_conf.segmentation.cluster_threshold = float(args.cluster_threshold)
     # Формат вывода
     if args.pad_sec:    # Защитный интервал для сегментов +/- секунд перед ASR
                         # (что бы не обрезать слова)
-        pl_conf.pad_sec = float(args.pad_sec)
+        pl_conf.segmentation.pad_sec = float(args.pad_sec)
     if args.merge_gap:  # Объединять соседние фразы одного спикера, если пауза между
                         # ними <= merge-gap
-        pl_conf.merge_gap = float(args.merge_gap)
+        pl_conf.segmentation.merge_gap = float(args.merge_gap)
     if args.min_turn_sec: # Пропустить диаризацию фраз, короче, чем --min-turn-sec
-        pl_conf.min_turn_sec = float(args.min_turn_sec)
+        pl_conf.segmentation.min_turn_sec = float(args.min_turn_sec)
     if args.show_progress: # Показывать прогресс диаризации
-        pl_conf.show_progress = True
+        pl_conf.segmentation.show_progress = True
 
     return args

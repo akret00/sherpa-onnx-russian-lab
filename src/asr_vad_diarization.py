@@ -54,7 +54,7 @@ def main():
             ts_start = common_utils.format_timestamp(seg.start_time)
             ts_end = common_utils.format_timestamp(seg.end_time)
             print(f"[{ts_start}-{ts_end}] {spk_name}: {seg.text}")
-            if pl_conf.no_timestamps:
+            if pl_conf.runtime.no_timestamps:
                 f.write(f"{spk_name}: {seg.text}" + "\n")
             else:
                 f.write(f"[{ts_start}-{ts_end}] {spk_name}: {seg.text}" + "\n")

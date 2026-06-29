@@ -96,7 +96,7 @@ def load_markup_from_yaml(yaml_path: str | Path) -> tuple[list[Speaker], AudioFi
     audio_file = AudioFileMarkup(
         id = int(file_data["id"]),
         file_path = file_data["file_path"],
-        dataset_version = file_data["dataset_version"],
+        dataset_version = data["dataset_version"],
         segments = []
     )
 

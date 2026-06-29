@@ -6,8 +6,8 @@ import platform
 import numpy
 import sounddevice
 from benchmark.dataset_entities import AudioSegmentMarkup
-import args_utils
 from benchmark.dataset_storage import load_markup_from_yaml, export_markup_to_yaml
+import args_utils
 import ffmpeg_utils
 from config import SR
 

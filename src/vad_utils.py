@@ -132,7 +132,7 @@ class OracleVAD(BaseVAD):
         self.phrase_ready = False
 
         # Создаем публичный атрибут front, как у оригинального VAD
-        self._front = FakeSpeechSegment()
+        self._front: FakeSpeechSegment | None = FakeSpeechSegment()
 
     @property
     def front(self):

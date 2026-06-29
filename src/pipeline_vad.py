@@ -17,10 +17,9 @@ class BaseVadPipeline:
     """Базовый пайплайн для распознавания и диаризации при помощи VAD"""
     def __init__(self, pl_config: PipelineConfig, speakers: list[Speaker] | None = None):
         self._pl_config = pl_config
-        self._config = pl_config.config
         self._speakers = speakers
-        self.pipeline_result: PipelineResult | None = None
         self._speaker_resolver: SpeakerResolver | None = None
+        self.pipeline_result: PipelineResult | None = None
         # Список сегментов разметки для режимов OracleVAD, OracleASR, OracleDiarization
         self.markup_segments: list[AudioSegment] | None = None
         self._init_models()
@@ -28,18 +27,18 @@ class BaseVadPipeline:
     def _init_models(self):
         """Инициализация моделей"""
         # Инициализируем VAD
-        if self._pl_config.use_oracle_vad:
+        if self._pl_config.vad.use_oracle:
             # Создаем OracleVAD
             self._vad = vad_utils.OracleVAD(buffer_size_in_seconds = 100, padding_seconds = 0.0)
             self._window_size = 512
         else:
             # Создаем оригинальный VAD ()
             self._vad, self._window_size = model_utils.load_vad(
-                vad_model = self._pl_config.vad_model_path,
-                threshold = self._pl_config.vad_threshold,
-                min_silence = self._pl_config.vad_min_silence,
-                min_speech = self._pl_config.vad_min_speech,
-                max_speech = self._pl_config.vad_max_speech,
+                vad_model = self._pl_config.vad.model_path,
+                threshold = self._pl_config.vad.threshold,
+                min_silence = self._pl_config.vad.min_silence,
+                min_speech = self._pl_config.vad.min_speech,
+                max_speech = self._pl_config.vad.max_speech,
             )
 
         # Инициализируем ASR распознаватель
@@ -47,6 +46,9 @@ class BaseVadPipeline:
 
     def set_markup_segments(self, markup_segments: list[AudioSegment] | None = None):
         """Устанавливает эталонную разметку во всех Оракулах пайплайна, которые включены"""
+        # Если markup_segments не задан, то пропускаем установку
+        if markup_segments is None:
+            return
         # Проверка на отрицательную или нулевую длительность
         for i, seg in enumerate(markup_segments):
             if seg.start_time >= seg.end_time:
@@ -58,7 +60,7 @@ class BaseVadPipeline:
         self.markup_segments = sorted(markup_segments, key=lambda x: x.start_time)
 
         # Если пайплайн в режиме OracleVAD, устанавливаем эталонную разметку
-        if self._pl_config.use_oracle_vad:
+        if self._pl_config.vad.use_oracle:
             self._vad.set_markup_segments(self.markup_segments)
 
     def run_as_stream(
@@ -184,8 +186,8 @@ class AsrPipeline(BaseVadPipeline):
 
         #Инициализируем распознаватель голоса в холостом режиме SpeakerResolvingMode.NONE
         self._speaker_resolver = SpeakerResolver(
-            num_threads = self._pl_config.num_threads,
-            spk_threshold = self._pl_config.spk_threshold,
+            num_threads = self._pl_config.runtime.num_threads,
+            spk_threshold = self._pl_config.diar_vad.spk_threshold,
             resolving_mode = SpeakerResolvingMode.NONE,
             speakers = self._speakers,
         )
@@ -199,8 +201,8 @@ class ManagerDiarizationPipeline(BaseVadPipeline):
 
         #Инициализируем распознаватель голоса
         self._speaker_resolver = SpeakerResolver(
-            num_threads = self._pl_config.num_threads,
-            spk_threshold = self._pl_config.spk_threshold,
+            num_threads = self._pl_config.runtime.num_threads,
+            spk_threshold = self._pl_config.diar_vad.spk_threshold,
             resolving_mode = SpeakerResolvingMode.VAD_SPEAKER_MANAGER,
             speakers = self._speakers,
         )
@@ -214,8 +216,8 @@ class CentroidDiarizationPipeline(BaseVadPipeline):
 
         #Инициализируем распознаватель голоса
         self._speaker_resolver = SpeakerResolver(
-            num_threads = self._pl_config.num_threads,
-            spk_threshold = self._pl_config.spk_threshold,
+            num_threads = self._pl_config.runtime.num_threads,
+            spk_threshold = self._pl_config.diar_vad.spk_threshold,
             resolving_mode = SpeakerResolvingMode.VAD_SIMPLE_CENTROID,
             speakers = self._speakers,
         )

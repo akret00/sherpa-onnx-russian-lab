@@ -5,7 +5,7 @@ from config import DEFAULT_OUTPUT_DIR, BASE_DIR, pl_conf
 
 def get_output_dir() -> Path:
     """Определяет путь к папке для хранения файлов с распознанным текстом"""
-    raw_val = pl_conf.output_dir or DEFAULT_OUTPUT_DIR
+    raw_val = pl_conf.runtime.output_dir or DEFAULT_OUTPUT_DIR
     return (BASE_DIR / raw_val).resolve()
 
 def format_timestamp(seconds: float) -> str:

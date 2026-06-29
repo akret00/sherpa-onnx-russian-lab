@@ -13,7 +13,7 @@ def load_vad(vad_model: str, threshold: float, min_silence: float, min_speech: f
     cfg.silero_vad.min_speech_duration = min_speech
     cfg.silero_vad.max_speech_duration = max_speech
     cfg.sample_rate = SR
-    cfg.provider = pl_conf.provider
+    cfg.provider = pl_conf.runtime.provider
     if not cfg.validate():
         raise ValueError(f"Invalid VoiceActivityDetectorConfig: {cfg}")
     # Создаем обертку над VoiceActivityDetector
@@ -38,29 +38,29 @@ def load_embedder(model: str, num_threads: int, provider: str = "cpu", debug: bo
 
 def load_asr():
     """Загружает модель ASR"""
-    if pl_conf.asr_model_type == "nemo_ctc":
+    if pl_conf.asr.model_type == "nemo_ctc":
         return sherpa_onnx.OfflineRecognizer.from_nemo_ctc(
-            model = pl_conf.asr_model_path,
-            tokens = pl_conf.asr_tokens_path,
-            num_threads = pl_conf.num_threads,
+            model = pl_conf.asr.nemo_model_path,
+            tokens = pl_conf.asr.nemo_tokens_path,
+            num_threads = pl_conf.runtime.num_threads,
             sample_rate = SR,
             feature_dim = 80,
-            provider = pl_conf.provider,
+            provider = pl_conf.runtime.provider,
         )
 
-    if pl_conf.asr_model_type == "qwen3":
+    if pl_conf.asr.model_type == "qwen3":
         return sherpa_onnx.OfflineRecognizer.from_qwen3_asr(
-            conv_frontend = pl_conf.conv_frontend_path,
-            encoder = pl_conf.encoder_path,
-            decoder = pl_conf.decoder_path,
-            tokenizer = pl_conf.tokenizer_path,
-            num_threads = pl_conf.num_threads,
+            conv_frontend = pl_conf.asr.qwen3_conv_frontend_path,
+            encoder = pl_conf.asr.qwen3_encoder_path,
+            decoder = pl_conf.asr.qwen3_decoder_path,
+            tokenizer = pl_conf.asr.qwen3_tokenizer_path,
+            num_threads = pl_conf.runtime.num_threads,
             sample_rate = SR,
             feature_dim = 128,
-            provider = pl_conf.provider,
+            provider = pl_conf.runtime.provider,
         )
 
-    raise ValueError(f"Unknown ASR type: {pl_conf.asr_model_type}")
+    raise ValueError(f"Unknown ASR type: {pl_conf.asr.model_type}")
 
 def load_pyannote_diarization(num_speakers: int = -1, cluster_threshold: float = 0.6):
     """
@@ -75,11 +75,11 @@ def load_pyannote_diarization(num_speakers: int = -1, cluster_threshold: float =
     pyannote_diariz_conf = sherpa_onnx.OfflineSpeakerDiarizationConfig(
         segmentation=sherpa_onnx.OfflineSpeakerSegmentationModelConfig(
             pyannote=sherpa_onnx.OfflineSpeakerSegmentationPyannoteModelConfig(
-                model = pl_conf.segmentation_model_path
+                model = pl_conf.segmentation.model_path
             ),
         ),
         embedding=sherpa_onnx.SpeakerEmbeddingExtractorConfig(
-            model = pl_conf.embedding_model_path
+            model = pl_conf.embed.model_path
         ),
         clustering=sherpa_onnx.FastClusteringConfig(
             num_clusters = num_speakers,
