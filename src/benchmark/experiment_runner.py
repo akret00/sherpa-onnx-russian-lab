@@ -3,7 +3,12 @@
 from dataclasses import asdict
 from pathlib import Path
 from config import PipelineConfig, config
-from pipeline_vad import AsrPipeline
+from pipeline_vad import (
+    PipelineType,
+    AsrPipeline,
+    ManagerDiarizationPipeline,
+    CentroidDiarizationPipeline,
+)
 import common_utils
 from benchmark.dataset_storage import (
     AudioSegmentMarkup,
@@ -45,9 +50,18 @@ class ExperimentRunner:
 
     def build_pl_config(self, exp_spec: ExperimentSpec | None = None) -> PipelineConfig:
         """Создает конфиг пайплайна на основе спецификации бенчмарка"""
-        pl_config = config.get_new_pipeline_config()
         if exp_spec:
+            pl_config = config.get_new_pipeline_config(
+                vad_model_name = exp_spec.vad_model_name,
+                asr_model_name = exp_spec.asr_model_name,
+                embed_model_name = exp_spec.embed_model_name,
+                segmentation_model_name = exp_spec.segmentation_model_name,
+            )
             pl_config.vad.use_oracle = exp_spec.use_oracle_vad
+            pl_config.asr.use_oracle = exp_spec.use_oracle_asr
+            pl_config.diar_vad.use_oracle = exp_spec.use_oracle_diarization
+        else:
+            pl_config = config.get_new_pipeline_config()
 
         return pl_config
 
@@ -62,7 +76,14 @@ class ExperimentRunner:
 
             # Создаем пайплайны под конкретный аудиофайл с его GT (для оракулов)
             pl_config = self.build_pl_config(exp_spec = exp_spec)
-            pl = AsrPipeline(pl_config = pl_config)
+            if exp_spec.pipeline_type == PipelineType.ASR_PIPELINE:
+                pl = AsrPipeline(pl_config = pl_config)
+            elif exp_spec.pipeline_type == PipelineType.MANAGER_DIARIZ_PIPELINE:
+                pl = ManagerDiarizationPipeline(pl_config = pl_config)
+            elif exp_spec.pipeline_type == PipelineType.CENTRIOD_DIARIZ_PIPELINE:
+                pl = CentroidDiarizationPipeline(pl_config = pl_config)
+            else:
+                raise ValueError("Неизвестный тип пайплайна: {exp_spec.pipeline_type}")
 
             # Если включен режим Оракула, то загружаем эталонную разметку
             if (
@@ -83,40 +104,30 @@ class ExperimentRunner:
                 print(f"[{ts_start}-{ts_end}] {seg.text}")
             # Конвертирует результат пайплайна в PipelineResultExperiment
             pipeline_result_exp = PipelineResultExperiment(**asdict(pl.pipeline_result))
-            pipeline_result_exp.dataset_version = exp_spec.dataset_version
+            pipeline_result_exp.exp_spec = exp_spec
 
             print(f"Время распознавания: {pipeline_result_exp.proc_time:.6f} секунд")
 
             results.append(pipeline_result_exp)
         return results
 
-def generate_experiment_suite(audio_path: Path, gt_file: Path) -> list[ExperimentSpec]:
-    """Генерирует матрицу тестов для одного файла."""
-    # Создаем комбинации: только реальный пайплайн и полностью оракульный
-    return [
+def main():
+    """Точка входа для тестирования в ходе разработки"""
+    # Оркестратор просто итерируется по плоскому списку спецификаций
+    # audio_path = Path("dataset/scenario_recipe_1spk_monologue.opus")
+    # gt_file = Path("dataset/scenario_recipe_1spk_monologue.yaml")
+    audio_path = Path("dataset/speaker002.opus")
+    gt_file = Path("dataset/speaker002.opus.yaml")
+    exp_spec = [
         ExperimentSpec(
             spec_id = f"{audio_path.stem}_oracle_vad_only",
             audio_path = audio_path,
             ground_truth_path = gt_file,
-        )
+            use_oracle_vad = True,
+            pipeline_type = PipelineType.ASR_PIPELINE,
+        ),
     ]
 
-def main():
-    """Точка входа для тестирования в ходе разработки"""
-    # Оркестратор просто итерируется по плоскому списку спецификаций
-    # exp_spec = generate_experiment_suite(
-    #     audio_path = Path("dataset/scenario_recipe_1spk_monologue.opus"),
-    #     gt_file = Path("dataset/scenario_recipe_1spk_monologue.yaml")
-    #     )
-    # exp_spec = generate_experiment_suite(
-    #     audio_path = Path("dataset/speaker001.opus"),
-    #     gt_file = Path("dataset/speaker001.opus.yaml")
-    #     )
-    exp_spec = generate_experiment_suite(
-        audio_path = Path("dataset/speaker002.opus"),
-        gt_file = Path("dataset/speaker002.opus.yaml")
-        )
-    exp_spec[0].use_oracle_vad = True
     # Отправляем specs_pool в пул потоков/процессов на выполнение...
     exp_runner = ExperimentRunner(exp_spec)
     exp_runner.run_single_combination()

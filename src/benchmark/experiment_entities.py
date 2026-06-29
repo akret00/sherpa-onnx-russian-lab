@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 from entities import PipelineResult
+from pipeline_vad import PipelineType
 
 
 @dataclass
@@ -16,8 +17,9 @@ class ExperimentSpec:
     ground_truth_path: Path | None = None       # Путь к эталонной разметке (JSON/RTTM)
     # Символические имена моделей из конфига
     asr_model_name: str | None = None           # Например: "whisper-large-v3"
-    embedding_model_name: str | None = None     # Например: "pyannote-wespeaker"
+    embed_model_name: str | None = None         # Например: "pyannote-wespeaker"
     vad_model_name: str = "silero"              # По умолчанию Silero
+    segmentation_model_name: str | None = None  # Например: "pyannote-int8"
     # Матрица включения Оракулов
     use_oracle_vad: bool = False
     use_oracle_asr: bool = False
@@ -29,10 +31,14 @@ class ExperimentSpec:
     # Датасет
     dataset_version: str = "0.1"
     # Пайплайн
+    pipeline_type: PipelineType | None = PipelineType.ASR_PIPELINE
     # Профиль нормализации текста (наверное это на попозже)
     # Метрики (wer, cer, der)
+    use_wer: bool = False
+    use_cer: bool = False
+    use_der:bool = False
 
 @dataclass
 class PipelineResultExperiment(PipelineResult):
     """Модель для результатов эксперимента"""
-    dataset_version: str = "0.1"
+    exp_spec: ExperimentSpec | None = None

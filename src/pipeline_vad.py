@@ -2,6 +2,7 @@
 import sys
 import time
 from collections.abc import Generator
+from enum import Enum
 import numpy as np
 from config import PipelineConfig, SR
 from entities import PipelineResult
@@ -12,6 +13,12 @@ from diarization_utils import SpeakerResolver, SpeakerResolvingMode
 import vad_utils
 import asr_utils
 from common_utils import get_package_version
+
+class PipelineType(Enum):
+    """Содержит типы пайплайнов"""
+    ASR_PIPELINE = "asr_pipeline"
+    MANAGER_DIARIZ_PIPELINE = "manager_diariz_pipeline"
+    CENTRIOD_DIARIZ_PIPELINE = "centriod_diariz_pipeline"
 
 class BaseVadPipeline:
     """Базовый пайплайн для распознавания и диаризации при помощи VAD"""
