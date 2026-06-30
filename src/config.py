@@ -4,6 +4,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 import os
+from enum import Enum
 import yaml
 
 # Частота дискретизации
@@ -31,6 +32,12 @@ if BIN_DIR.is_dir() and str(BIN_DIR) not in os.environ["PATH"]:
 # Определяем пути к файлу с базой данных и файлу со структурой базы данных
 DB_DEFAULT_PATH = BASE_DIR / "db" / "speaker.sqlite3"
 DB_DEFAULT_SCHEME_PATH = BASE_DIR / "src" / "db_scheme.sql"
+
+class PipelineType(Enum):
+    """Содержит типы пайплайнов"""
+    ASR_PIPELINE = "asr"
+    MANAGER_DIARIZ_PIPELINE = "dman"
+    CENTRIOD_DIARIZ_PIPELINE = "dcentr"
 
 class Config:
     """Класс загрузчика конфигурации"""
@@ -61,6 +68,7 @@ class Config:
         model_data = self._data["models"]["vad"][model_name]
         return VadConfig(
             model_name = model_name,
+            model_short_name = model_data["short_name"],
             model_path = model_data["model"],
         )
 
@@ -71,6 +79,7 @@ class Config:
         model_data = self._data["models"]["asr"][model_name]
         return AsrConfig(
             model_name = model_name,
+            model_short_name = model_data["short_name"],
             model_type = model_data["asr_type"],
             # NeMo CTC
             nemo_model_path = model_data.get("model", None),
@@ -89,6 +98,7 @@ class Config:
         model_data = self._data["models"]["embedding"][model_name]
         return EmbeddingConfig(
             model_name = model_name,
+            model_short_name = model_data["short_name"],
             model_path = model_data["model"],
         )
 
@@ -103,6 +113,7 @@ class Config:
         model_data = self._data["models"]["segmentation"][model_name]
         return EmbeddingConfig(
             model_name = model_name,
+            model_short_name = model_data["short_name"],
             model_path = model_data["model"],
         )
 
@@ -126,6 +137,7 @@ class Config:
 @dataclass
 class RuntimeConfig:
     """Общие настройки окружения и выполнения"""
+    pipeline_type: PipelineType = PipelineType.ASR_PIPELINE
     num_threads: int = 1
     provider: str = "cpu"
     output_dir: str = DEFAULT_OUTPUT_DIR    # Путь к папке с с файлами с распознанным текстом
@@ -136,6 +148,7 @@ class VadConfig:
     """Настройки модели Voice Activity Detection (обнаружение речи)"""
     use_oracle: bool = False
     model_name: str | None = None
+    model_short_name: str | None = None
     model_path: str | None = None
     threshold: float = 0.4 # 0.4 Было 0.3
     min_silence: float = 0.1 # 0.1 Было 0.25
@@ -147,6 +160,7 @@ class AsrConfig:
     """Настройки модели распознавания речи (ASR)"""
     use_oracle: bool = False
     model_name: str | None = None
+    model_short_name: str | None = None
     model_type: str | None = None
     # NeMo CTC
     nemo_model_path: str | None = None
@@ -162,6 +176,7 @@ class EmbeddingConfig:
     """Настройки модели эмбуддинга"""
     use_oracle: bool = False
     model_name: str | None = None
+    model_short_name: str | None = None
     model_path: str | None = None
 
 @dataclass
@@ -175,6 +190,7 @@ class SegmentationConfig:
     """Настройки модели сегментации"""
     use_oracle: bool = False
     model_name: str | None = None
+    model_short_name: str | None = None
     model_path: str | None = None
     spk_threshold: float = 0.4
     min_seg_sec: float = 0.5

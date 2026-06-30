@@ -2,9 +2,8 @@
 # Запуск: PYTHONPATH=src python src/benchmark/experiment_runner.py
 from dataclasses import asdict
 from pathlib import Path
-from config import PipelineConfig, config
+from config import PipelineType, PipelineConfig, config
 from pipeline_vad import (
-    PipelineType,
     AsrPipeline,
     ManagerDiarizationPipeline,
     CentroidDiarizationPipeline,
@@ -60,6 +59,7 @@ class ExperimentRunner:
             pl_config.vad.use_oracle = exp_spec.use_oracle_vad
             pl_config.asr.use_oracle = exp_spec.use_oracle_asr
             pl_config.diar_vad.use_oracle = exp_spec.use_oracle_diarization
+            pl_config.runtime.pipeline_type = exp_spec.pipeline_type,
         else:
             pl_config = config.get_new_pipeline_config()
 
@@ -76,11 +76,11 @@ class ExperimentRunner:
 
             # Создаем пайплайны под конкретный аудиофайл с его GT (для оракулов)
             pl_config = self.build_pl_config(exp_spec = exp_spec)
-            if exp_spec.pipeline_type == PipelineType.ASR_PIPELINE:
+            if pl_config.runtime.pipeline_type == PipelineType.ASR_PIPELINE:
                 pl = AsrPipeline(pl_config = pl_config)
-            elif exp_spec.pipeline_type == PipelineType.MANAGER_DIARIZ_PIPELINE:
+            elif pl_config.runtime.pipeline_type == PipelineType.MANAGER_DIARIZ_PIPELINE:
                 pl = ManagerDiarizationPipeline(pl_config = pl_config)
-            elif exp_spec.pipeline_type == PipelineType.CENTRIOD_DIARIZ_PIPELINE:
+            elif pl_config.runtime.pipeline_type == PipelineType.CENTRIOD_DIARIZ_PIPELINE:
                 pl = CentroidDiarizationPipeline(pl_config = pl_config)
             else:
                 raise ValueError("Неизвестный тип пайплайна: {exp_spec.pipeline_type}")

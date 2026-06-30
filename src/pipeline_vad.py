@@ -1,8 +1,8 @@
 """Пайплан для распознавания и диаризации при помощи VAD и центроидов"""
 import sys
 import time
+from datetime import datetime
 from collections.abc import Generator
-from enum import Enum
 import numpy as np
 from config import PipelineConfig, SR
 from entities import PipelineResult
@@ -13,12 +13,6 @@ from diarization_utils import SpeakerResolver, SpeakerResolvingMode
 import vad_utils
 import asr_utils
 from common_utils import get_package_version
-
-class PipelineType(Enum):
-    """Содержит типы пайплайнов"""
-    ASR_PIPELINE = "asr_pipeline"
-    MANAGER_DIARIZ_PIPELINE = "manager_diariz_pipeline"
-    CENTRIOD_DIARIZ_PIPELINE = "centriod_diariz_pipeline"
 
 class BaseVadPipeline:
     """Базовый пайплайн для распознавания и диаризации при помощи VAD"""
@@ -80,6 +74,7 @@ class BaseVadPipeline:
         """
         # Засекаем время запуска пайплайна
         pl_start_time = time.perf_counter()
+        pl_start_datetime = datetime.now()
 
         self.pipeline_result = None
         # Вызываем установку эталонной разметки для Оракулов, которые включены
@@ -162,11 +157,13 @@ class BaseVadPipeline:
 
         # Формируем результат работы пайплайна
         self.pipeline_result = PipelineResult(
+            pl_config = self._pl_config,
             pipeline_type = None,
             speakers = self._speakers,
             file = audio_file,
             segments = segments,
             markup_segments = self.markup_segments,
+            start_time = pl_start_datetime,
             proc_time = pl_end_time - pl_start_time,
             total_ram = None,   # Расчет пикового потребления ОЗУ отложен на потом
             sherpa_version = get_package_version("sherpa_onnx"),

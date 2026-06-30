@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 from entities import PipelineResult
-from pipeline_vad import PipelineType
+from config import PipelineType
 
 
 @dataclass
@@ -30,6 +30,7 @@ class ExperimentSpec:
     metadata: dict[str, any] | None = None  # {"dataset_name": "voxceleb", "snr_level": "low"}
     # Датасет
     dataset_version: str = "0.1"
+    dataset_view: str = "Unknown"
     # Пайплайн
     pipeline_type: PipelineType | None = PipelineType.ASR_PIPELINE
     # Профиль нормализации текста (наверное это на попозже)
@@ -37,6 +38,7 @@ class ExperimentSpec:
     use_wer: bool = False
     use_cer: bool = False
     use_der:bool = False
+    # Способ обрезки сегментов VAD: способ обрезки (фикс или адаптивный), если фикс, то сколько
 
 @dataclass
 class PipelineResultExperiment(PipelineResult):

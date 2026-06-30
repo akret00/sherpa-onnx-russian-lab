@@ -1,6 +1,8 @@
 """ КЛАССЫ ДАННЫХ (ОБЪЕКТНЫЕ МОДЕЛИ) """
 from dataclasses import dataclass
+from datetime import datetime
 import numpy
+from config import PipelineConfig
 
 @dataclass
 class Speaker:
@@ -38,11 +40,12 @@ class AudioSegment:
 @dataclass
 class PipelineResult:
     """Модель с результатами работы пайплайна"""
-    pipeline_type: str | None
-    speakers: list[Speaker]
-    file: AudioFile | None
-    segments: list[AudioSegment] | None
+    pl_config : PipelineConfig | None = None
+    speakers: list[Speaker] | None = None
+    file: AudioFile | None = None
+    segments: list[AudioSegment] | None = None
     markup_segments: list[AudioSegment] | None = None
+    start_time: datetime | None = None      # Время запуска пайплайна
     proc_time: float | None = None          # Время работы пайплайна
     total_ram: float | None = None          # Объем занимаемой памяти в ОЗУ, в МБ
     sherpa_version: str | None = None       # Номер версии пакета sherpa_onnx
