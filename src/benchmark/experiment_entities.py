@@ -44,3 +44,40 @@ class ExperimentSpec:
 class PipelineResultExperiment(PipelineResult):
     """Модель для результатов эксперимента"""
     exp_spec: ExperimentSpec | None = None
+
+
+@dataclass
+class MetricWER:
+    """Содержит метрику WER"""
+    obj_id: str = ""         # ИД метрики внутри эксперимента, может быть ИД или номер сегмента
+    wer: float = 0.0
+    words_count: int = 0
+    substitutions: int = 0
+    deletions: int = 0
+    insertions: int = 0
+    visualize: str | None = None
+
+@dataclass
+class MetricCER:
+    """Содержит метрику CER"""
+    obj_id: str = ""         # ИД метрики внутри эксперимента, может быть ИД или номер сегмента
+    cer: float = 0.0
+    char_count: int = 0
+    substitutions: int = 0
+    deletions: int = 0
+    insertions: int = 0
+    visualize: str | None = None
+
+@dataclass
+class MetricExpWER:
+    """Содержит метрики WER и CER эксперимента"""
+    exp_wer: MetricWER | None = None    # WER для всего эксперимента
+    exp_cer: MetricCER | None = None    # CER для всего эксперимента
+    err_segments_wer: list[MetricWER] | None = None # Содержит метрики для сегментов с ошибками
+    err_segments_cer: list[MetricCER] | None = None # Содержит метрики для сегментов с ошибками
+
+@dataclass
+class MetricDER:
+    """Содержит метрику DER"""
+    obj_id: str = ""         # ИД метрики внутри эксперимента, может быть ИД или номер сегмента
+    der: float = 0.0

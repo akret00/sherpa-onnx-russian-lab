@@ -17,7 +17,9 @@
 # Запуск: PYTHONPATH=src python src/benchmark/scorer_wer.py
 from pathlib import Path
 import jiwer
-from benchmark.experiment_runner import generate_experiment_suite, ExperimentRunner
+from config import PipelineType
+from benchmark.experiment_runner import ExperimentRunner
+from benchmark.experiment_entities import ExperimentSpec
 from benchmark.dataset_storage import load_cache_from_yaml, export_cache_to_yaml
 
 CACHE_FILE_PATH = "cache004.yaml"
@@ -120,13 +122,21 @@ def main():
         references, hypothesis = results
     else: # Кэша пока нет, запускаем бенчмарк и сохраняем результаты в кэш
         print("Кэш отсутствует, запускается бенчмарк...")
-        exp_spesc = generate_experiment_suite(
-            audio_path = Path(AUDIO_PATH),
-            gt_file = Path(GT_PATH)
-            )
-        exp_spesc[0].use_oracle_vad = True
+        audio_path = Path(AUDIO_PATH)
+        gt_file = Path(GT_PATH)
+        exp_specs = [
+            ExperimentSpec(
+                spec_id = f"{audio_path.stem}_oracle_vad_only",
+                audio_path = audio_path,
+                ground_truth_path = gt_file,
+                use_oracle_vad = True,
+                pipeline_type = PipelineType.ASR_PIPELINE,
+            ),
+        ]
+
+        exp_specs[0].use_oracle_vad = True
         # Отправляем exp_specs в очередь на выполнение...
-        exp_runner = ExperimentRunner(exp_spesc)
+        exp_runner = ExperimentRunner(exp_specs)
         pl_results = exp_runner.run_single_combination()
 
         # Готовим списки эталоных фраз и гипотез

@@ -20,10 +20,14 @@ from datetime import datetime
 import yaml
 from config import PipelineConfig
 from entities import Speaker, AudioFile, AudioSegment
-from benchmark.experiment_entities import PipelineResultExperiment, ExperimentSpec
+from benchmark.experiment_entities import (
+    PipelineResultExperiment, ExperimentSpec,
+    MetricWER, MetricCER, MetricExpWER,
+)
 
 EXP_SPEC_FILE_NAME = "exp_spec.yaml"
 PL_RESULT_FILE_NAME = "pl_result.yaml"
+METRICS_WER_FILE_NAME = "metrics_wer.yaml"
 
 def get_result_folder_path(plres: PipelineResultExperiment) -> Path:
     """Конструирует имя папки на основе данных из результатов эксперимента"""
@@ -390,3 +394,38 @@ def load_plres_exp_from_yaml(folder_path: Path) -> PipelineResultExperiment:
     plres = load_pipeline_result_from_yaml(file_path = folder_path / PL_RESULT_FILE_NAME)
     plres.exp_spec = load_experiment_spec_from_yaml(file_path = folder_path / EXP_SPEC_FILE_NAME)
     return plres
+
+
+# ----- Секция экспорта в yaml и загрузки метрик -----
+
+def save_metrics_to_yaml(metrics_exp_wer: MetricExpWER, folder_path: Path) -> None:
+    """Сохраняет объект MetricExpWER в YAML-файл."""
+    file_path = folder_path / METRICS_WER_FILE_NAME
+    # asdict автоматически превращает датакласс и все вложенные списки/классы в dict
+    metrics_dict = dataclasses.asdict(metrics_exp_wer)
+
+    with open(file_path, 'w', encoding='utf-8') as f:
+        # allow_unicode=True сохраняет кириллицу/символы в визуализации как текст,
+        # а не кодировку (\u0440)
+        # sort_keys=False сохраняет порядок полей ровно как в датаклассе
+        yaml.safe_dump(metrics_dict, f, allow_unicode=True, sort_keys=False)
+
+def load_metrics_from_yaml(folder_path: Path) -> MetricExpWER:
+    """Загружает данные из YAML-файла и возвращает объект MetricExpWER."""
+    file_path = folder_path / METRICS_WER_FILE_NAME
+    with open(file_path, 'r', encoding='utf-8') as f:
+        data = yaml.safe_dump_load = yaml.safe_load(f)
+
+    if not data:
+        return MetricExpWER()
+
+    # Восстанавливаем вложенные объекты из словарей
+    exp_wer_data = data.get('exp_wer') or {}
+    exp_cer_data = data.get('exp_cer') or {}
+
+    return MetricExpWER(
+        exp_wer=MetricWER(**exp_wer_data),
+        exp_cer=MetricCER(**exp_cer_data),
+        err_segments_wer=[MetricWER(**seg) for seg in data.get('err_segments_wer', [])],
+        err_segments_cer=[MetricCER(**seg) for seg in data.get('err_segments_cer', [])]
+    )
