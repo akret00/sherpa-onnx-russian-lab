@@ -18,27 +18,18 @@ from enum import Enum
 from typing import Type, TypeVar
 from datetime import datetime
 import yaml
-from config import PipelineConfig
+from config import PipelineConfig, BASE_DIR
 from entities import Speaker, AudioFile, AudioSegment
 from benchmark.experiment_entities import (
     PipelineResultExperiment, ExperimentSpec,
     MetricWER, MetricCER, MetricExpWER,
 )
 
+EXP_BASE_DIR = BASE_DIR / "experiments"
+EXP_RUNS_BASE_DIR = EXP_BASE_DIR / "runs"
 EXP_SPEC_FILE_NAME = "exp_spec.yaml"
 PL_RESULT_FILE_NAME = "pl_result.yaml"
 METRICS_WER_FILE_NAME = "metrics_wer.yaml"
-
-def get_result_folder_path(plres: PipelineResultExperiment) -> Path:
-    """Конструирует имя папки на основе данных из результатов эксперимента"""
-    time = plres.start_time.strftime("%Y%m%d_%H%M%S")
-    dataset = plres.exp_spec.dataset_view
-    pl_type = plres.pl_config.runtime.pipeline_type.value
-    vad = plres.pl_config.vad.model_short_name
-    asr = plres.pl_config.asr.model_short_name
-    embed = plres.pl_config.embed.model_short_name
-    folder_path = f"{time}_{dataset}_{pl_type}_{vad}_{asr}_{embed}"
-    return Path(folder_path)
 
 # --- Сериализаторы для вложенных классов PipilineResult ---
 def _serialize_pl_config(pl_config: PipelineConfig) -> dict | None:
@@ -83,6 +74,15 @@ def _serialize_audio_file(audio_file: AudioFile | None) -> dict | None:
     # Удаляем связь со списком сегментов
     file_dict.pop("segments", None)
 
+    # Обрабатываем специфичные типы, которые YAML не умеет писать красиво из коробки
+    for key, value in file_dict.items():
+        # Конвертируем Path в обычные строки
+        if isinstance(value, Path):
+            file_dict[key] = str(value)
+        # Конвертируем Enum в строковые значения
+        if isinstance(value, Enum):
+            file_dict[key] = value.value
+
     return file_dict
 
 def _serialize_speakers(speakers: list[Speaker]) -> list[dict]:
@@ -90,6 +90,9 @@ def _serialize_speakers(speakers: list[Speaker]) -> list[dict]:
     Сериализует список объектов Speaker.
     Исключает тяжелое бинарное поле 'embedding'.
     """
+    if speakers is None:
+        return None
+
     serialized_speakers = []
 
     for speaker in speakers:
@@ -130,23 +133,21 @@ def _serialize_segments(segments: list[AudioSegment] | None) -> list[dict] | Non
     return serialized_segments
 
 # --- ФУНКЦИЯ ВЕРХНЕГО УРОВНЯ ---
-def export_pipeline_result_to_yaml(
-    file_path: Path | str,
-    pl_result: PipelineResultExperiment
-) -> None:
+def export_pipeline_result_to_yaml(pl_result: PipelineResultExperiment) -> None:
     """
     Экспортирует объект PipelineResultExperiment (без спецификации эксперимента) в YAML файл.
     """
-    file_path = Path(file_path)
+    file_path = EXP_RUNS_BASE_DIR / pl_result.exp_id / PL_RESULT_FILE_NAME
     # Собираем словарь верхнего уровня вручную
     result_dict = {
         # 1. Метаданные запуска
-        "start_time": pl_result.start_time.isoformat,
+        "start_time": pl_result.start_time.isoformat(),
         "proc_time": pl_result.proc_time,
         "total_ram_mb": pl_result.total_ram,
         "sherpa_version": pl_result.sherpa_version,
 
         # 2. Конфигурация пайплайна
+        "exp_id": pl_result.exp_id,
         "pl_config": _serialize_pl_config(pl_result.pl_config),
 
         # 3. Информация о файле
@@ -242,21 +243,19 @@ def _safe_instantiate(cls: Type[T], data: dict | None) -> T | None:
 
     return cls(**init_kwargs)
 
-def load_pipeline_result_from_yaml(file_path: Path | str) -> PipelineResultExperiment | None:
+def load_pipeline_result_from_yaml(exp_id: str) -> PipelineResultExperiment:
     """
     Загружает и восстанавливает объект PipelineResultExperiment из YAML.
     Устойчив к изменениям в структуре классов (удаление/добавление полей).
     """
-    file_path = Path(file_path)
-    if not file_path.exists():
-        return None
+    file_path = EXP_RUNS_BASE_DIR / exp_id / PL_RESULT_FILE_NAME
 
     with open(file_path, "r", encoding="utf-8") as f:
         # safe_load возвращает чистые питоновские dict/list/базовые типы
         raw_data = yaml.safe_load(f)
 
     if not raw_data or not isinstance(raw_data, dict):
-        return None
+        raise ValueError(f"Неверная структура yaml файла: {file_path}")
 
     # 1. Восстанавливаем плоские метаданные верхнего уровня
     start_time_raw = raw_data.get("start_time")
@@ -285,7 +284,7 @@ def load_pipeline_result_from_yaml(file_path: Path | str) -> PipelineResultExper
             speakers.append(spk_obj)
 
     # 5. Восстанавливаем списки сегментов (гипотеза и эталон)
-    def restore_segments(raw_list) -> list[AudioSegment] | None:
+    def restore_segments(raw_list: list[str]) -> list[AudioSegment] | None:
         if raw_list is None:
             return None
         segments = []
@@ -295,7 +294,7 @@ def load_pipeline_result_from_yaml(file_path: Path | str) -> PipelineResultExper
                 segments.append(seg_obj)
         return segments
 
-    segments = restore_segments(raw_data.get("segments"))
+    segments = restore_segments(raw_data.get("hypo_segments"))
     markup_segments = restore_segments(raw_data.get("markup_segments"))
 
     # 6. Собираем финальный PipelineResultExperiment
@@ -308,14 +307,17 @@ def load_pipeline_result_from_yaml(file_path: Path | str) -> PipelineResultExper
         start_time=start_time,
         proc_time=raw_data.get("proc_time"),
         total_ram=raw_data.get("total_ram_mb"),  # Маппим старое имя ключа в поле класса
-        sherpa_version=raw_data.get("sherpa_version")
+        sherpa_version=raw_data.get("sherpa_version"),
+        exp_id = raw_data.get("exp_id"),
     )
 
-def export_experiment_spec_to_yaml(file_path: Path, exp_spec: ExperimentSpec) -> None:
+def export_experiment_spec_to_yaml(exp_id: str, exp_spec: ExperimentSpec) -> None:
     """
     Экспортирует объект ExperimentSpec в YAML-файл.
     Корректно обрабатывает типы Path и Enum.
     """
+    file_path = EXP_RUNS_BASE_DIR / exp_id / EXP_SPEC_FILE_NAME
+
     # Превращаем в плоский словарь «в лоб»
     spec_dict = dataclasses.asdict(exp_spec)
 
@@ -325,10 +327,9 @@ def export_experiment_spec_to_yaml(file_path: Path, exp_spec: ExperimentSpec) ->
         if isinstance(value, Path):
             spec_dict[key] = str(value)
         # Конвертируем Enum в строковые значения
-        elif isinstance(value, Enum):
+        if isinstance(value, Enum):
             spec_dict[key] = value.value
 
-    file_path = Path(file_path)
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(file_path, "w", encoding="utf-8") as f:
@@ -339,12 +340,12 @@ def export_experiment_spec_to_yaml(file_path: Path, exp_spec: ExperimentSpec) ->
             sort_keys=False
         )
 
-def load_experiment_spec_from_yaml(file_path: Path) -> ExperimentSpec | None:
+def load_experiment_spec_from_yaml(exp_id: str) -> ExperimentSpec | None:
     """
     Загружает и восстанавливает объект ExperimentSpec из YAML.
     Устойчив к любым изменениям структуры полей в классе ExperimentSpec.
     """
-    file_path = Path(file_path)
+    file_path = EXP_RUNS_BASE_DIR / exp_id / EXP_SPEC_FILE_NAME
     if not file_path.exists():
         return None
 
@@ -363,44 +364,33 @@ def load_experiment_spec_from_yaml(file_path: Path) -> ExperimentSpec | None:
     if spec_obj is None:
         return None
 
-    # Пост-обработка: восстанавливаем типы Path, так как _safe_instantiate
-    # воспринял их как обычные строки (field_type у них Path, а не str/int/float)
-    if spec_obj.audio_path and not isinstance(spec_obj.audio_path, Path):
-        spec_obj.audio_path = Path(spec_obj.audio_path)
-
-    if spec_obj.ground_truth_path and not isinstance(spec_obj.ground_truth_path, Path):
-        spec_obj.ground_truth_path = Path(spec_obj.ground_truth_path)
-
     return spec_obj
 
 def export_plres_exp_to_yaml(plres: PipelineResultExperiment) -> None:
     """Сохраняет результат экспериментов в yaml файлы"""
-    # Конструирование имени папки
-    folder_path = get_result_folder_path(plres = plres)
     # Экспорт спецификации эксперимента
     export_experiment_spec_to_yaml(
-        file_path = folder_path / EXP_SPEC_FILE_NAME,
+        exp_id = plres.exp_id,
         exp_spec = plres.exp_spec
     )
     # Экспорт результатов эксперимента
     export_pipeline_result_to_yaml(
-        file_path = folder_path / PL_RESULT_FILE_NAME,
         pl_result = plres
     )
 
-def load_plres_exp_from_yaml(folder_path: Path) -> PipelineResultExperiment:
+def load_plres_exp_from_yaml(exp_id: str) -> PipelineResultExperiment:
     """Загружает результат экспериментов из yaml файлов"""
     # Импорт спецификации эксперимента
-    plres = load_pipeline_result_from_yaml(file_path = folder_path / PL_RESULT_FILE_NAME)
-    plres.exp_spec = load_experiment_spec_from_yaml(file_path = folder_path / EXP_SPEC_FILE_NAME)
+    plres = load_pipeline_result_from_yaml(exp_id = exp_id)
+    plres.exp_spec = load_experiment_spec_from_yaml(exp_id = exp_id)
     return plres
 
 
 # ----- Секция экспорта в yaml и загрузки метрик -----
 
-def save_metrics_to_yaml(metrics_exp_wer: MetricExpWER, folder_path: Path) -> None:
+def export_metrics_wer_to_yaml(metrics_exp_wer: MetricExpWER, exp_id: str) -> None:
     """Сохраняет объект MetricExpWER в YAML-файл."""
-    file_path = folder_path / METRICS_WER_FILE_NAME
+    file_path = EXP_RUNS_BASE_DIR / exp_id / METRICS_WER_FILE_NAME
     # asdict автоматически превращает датакласс и все вложенные списки/классы в dict
     metrics_dict = dataclasses.asdict(metrics_exp_wer)
 
@@ -410,9 +400,9 @@ def save_metrics_to_yaml(metrics_exp_wer: MetricExpWER, folder_path: Path) -> No
         # sort_keys=False сохраняет порядок полей ровно как в датаклассе
         yaml.safe_dump(metrics_dict, f, allow_unicode=True, sort_keys=False)
 
-def load_metrics_from_yaml(folder_path: Path) -> MetricExpWER:
+def load_metrics_wer_from_yaml(exp_id: str) -> MetricExpWER:
     """Загружает данные из YAML-файла и возвращает объект MetricExpWER."""
-    file_path = folder_path / METRICS_WER_FILE_NAME
+    file_path = EXP_RUNS_BASE_DIR / exp_id / METRICS_WER_FILE_NAME
     with open(file_path, 'r', encoding='utf-8') as f:
         data = yaml.safe_dump_load = yaml.safe_load(f)
 

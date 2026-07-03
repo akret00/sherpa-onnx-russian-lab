@@ -5,10 +5,9 @@ from datetime import datetime
 from collections.abc import Generator
 import numpy as np
 from config import PipelineConfig, SR
-from entities import PipelineResult
 import ffmpeg_utils
 import model_utils
-from speaker_storage import Speaker, AudioFile, AudioSegment
+from entities import Speaker, AudioFile, AudioSegment, PipelineResult
 from diarization_utils import SpeakerResolver, SpeakerResolvingMode
 import vad_utils
 import asr_utils
@@ -25,7 +24,7 @@ class BaseVadPipeline:
         self.markup_segments: list[AudioSegment] | None = None
         self._init_models()
 
-    def _init_models(self):
+    def _init_models(self) -> None:
         """Инициализация моделей"""
         # Инициализируем VAD
         if self._pl_config.vad.use_oracle:
@@ -45,7 +44,7 @@ class BaseVadPipeline:
         # Инициализируем ASR распознаватель
         self._recognizer = model_utils.load_asr()
 
-    def set_markup_segments(self, markup_segments: list[AudioSegment] | None = None):
+    def set_markup_segments(self, markup_segments: list[AudioSegment] | None = None) -> None:
         """Устанавливает эталонную разметку во всех Оракулах пайплайна, которые включены"""
         # Если markup_segments не задан, то пропускаем установку
         if markup_segments is None:
@@ -118,7 +117,7 @@ class BaseVadPipeline:
 
                     # if text:
                     segment = AudioSegment(
-                        audio_file = audio_file,
+                        # audio_file = audio_file,
                         speaker = resolve_result.speaker,
                         cos_similarity = resolve_result.cos_similarity,
                         start_time = t_start,
@@ -140,7 +139,7 @@ class BaseVadPipeline:
 
                     if text:
                         segment = AudioSegment(
-                            audio_file = audio_file,
+                            # audio_file = audio_file,
                             speaker = resolve_result.speaker,
                             cos_similarity = resolve_result.cos_similarity,
                             start_time = t_start,
@@ -158,7 +157,6 @@ class BaseVadPipeline:
         # Формируем результат работы пайплайна
         self.pipeline_result = PipelineResult(
             pl_config = self._pl_config,
-            pipeline_type = None,
             speakers = self._speakers,
             file = audio_file,
             segments = segments,
@@ -183,7 +181,7 @@ class BaseVadPipeline:
 
 class AsrPipeline(BaseVadPipeline):
     """Пайплайн для распознавания при помощи VAD"""
-    def _init_models(self):
+    def _init_models(self) -> None:
         """Инициализация моделей"""
         # Запуск инициализации моделей в родительском классе
         super()._init_models()
@@ -198,7 +196,7 @@ class AsrPipeline(BaseVadPipeline):
 
 class ManagerDiarizationPipeline(BaseVadPipeline):
     """Пайплайн для распознавания и диаризации при помощи VAD и менеджера спикеров"""
-    def _init_models(self):
+    def _init_models(self) -> None:
         """Инициализация моделей"""
         # Запуск инициализации моделей в родительском классе
         super()._init_models()
@@ -213,7 +211,7 @@ class ManagerDiarizationPipeline(BaseVadPipeline):
 
 class CentroidDiarizationPipeline(BaseVadPipeline):
     """Пайплайн для распознавания и диаризации при помощи VAD и центроидов"""
-    def _init_models(self):
+    def _init_models(self) -> None:
         """Инициализация моделей"""
         # Запуск инициализации моделей в родительском классе
         super()._init_models()

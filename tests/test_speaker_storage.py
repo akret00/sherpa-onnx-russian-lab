@@ -1,5 +1,7 @@
 """Тест модуля src/speaker_storage.py"""
 import sqlite3
+from pathlib import Path
+from collections.abc import Generator
 import pytest
 import numpy
 from entities import (
@@ -17,7 +19,7 @@ from speaker_storage import (
 # ==========================================
 
 @pytest.fixture
-def db_repo(tmp_path):
+def db_repo(tmp_path: Path) -> Generator[VoiceDbRepository]:
     """Фикстура, которая возвращает объект VoiceDbRepository"""
     repo = VoiceDbRepository(db_path=str(tmp_path / "test_voice.db"))
 
@@ -26,7 +28,7 @@ def db_repo(tmp_path):
 
 
 @pytest.fixture
-def sample_speakers(db_repo):
+def sample_speakers(db_repo: VoiceDbRepository) -> Generator[tuple[Speaker, Speaker]]:
     """Наполняет базу базовыми спикерами для тестов чтения и обновлений."""
     # Генерируем случайный вектор из 128 чисел типа float32
     mock_embedding1 = numpy.random.rand(128).astype(numpy.float32)
@@ -41,7 +43,7 @@ def sample_speakers(db_repo):
 # ТЕСТЫ: СОХРАНЕНИЕ И АВТОИНКРЕМЕНТ
 # ==========================================
 
-def test_save_new_speakers_generates_ids(db_repo):
+def test_save_new_speakers_generates_ids(db_repo: VoiceDbRepository) -> None:
     """Проверяет, что у новых спикеров корректно заполняется ID из базы."""
     mock_embedding1 = numpy.random.rand(128).astype(numpy.float32)
     mock_embedding2 = numpy.random.rand(128).astype(numpy.float32)
@@ -54,12 +56,14 @@ def test_save_new_speakers_generates_ids(db_repo):
     db_repo.save_speakers([spk1, spk2])
 
     # Проверяем мутацию объектов (ID должны проставиться)
-    assert spk1.id == 1
-    assert spk2.id == 2
+    spk1_id = spk1.id
+    spk2_id = spk2.id
+    assert spk1_id is not None and spk1_id == 1
+    assert spk2_id is not None and spk2_id == 2
 
     # Вычитываем из базы заново и проверяем правильность данных
-    updated_spk1 = db_repo.load_speakers(speaker_ids=[spk1.id])[0]
-    updated_spk2 = db_repo.load_speakers(speaker_ids=[spk2.id])[0]
+    updated_spk1 = db_repo.load_speakers(speaker_ids=[spk1_id])[0]
+    updated_spk2 = db_repo.load_speakers(speaker_ids=[spk2_id])[0]
     assert updated_spk1.id == spk1.id
     assert updated_spk1.name == "Unknown SPEAKER_00"
     assert numpy.array_equal(updated_spk1.embedding, mock_embedding1)
@@ -71,7 +75,10 @@ def test_save_new_speakers_generates_ids(db_repo):
     assert updated_spk2.total_count == 22
 
 
-def test_save_audio_file_and_segments(db_repo, sample_speakers):
+def test_save_audio_file_and_segments(
+    db_repo: VoiceDbRepository,
+    sample_speakers: tuple[Speaker, Speaker]
+) -> None:
     """Проверяет сквозной процесс сохранения карточки файла и его сегментов."""
     spk1, spk2 = sample_speakers
 
@@ -117,7 +124,10 @@ def test_save_audio_file_and_segments(db_repo, sample_speakers):
 # ТЕСТЫ: РЕЖИМЫ ОБНОВЛЕНИЯ СПИКЕРОВ (UPDATE MODES)
 # ==========================================
 
-def test_update_mode_all(db_repo, sample_speakers):
+def test_update_mode_all(
+    db_repo: VoiceDbRepository,
+    sample_speakers: tuple[Speaker, Speaker]
+) -> None:
     """Проверяет обновление метаданных без изменения вектора."""
     spk1, _ = sample_speakers
 
@@ -130,14 +140,21 @@ def test_update_mode_all(db_repo, sample_speakers):
     db_repo.save_speakers([spk1], update_mode=SpeakerUpdateMode.UPDATE_ALL)
 
     # Вычитываем из базы заново
-    updated_spk = db_repo.load_speakers(speaker_ids=[spk1.id])[0]
+    spk1_id = spk1.id
+    assert spk1_id is not None
+    updated_spk = db_repo.load_speakers(speaker_ids=[spk1_id])[0]
 
+    updated_embeding = updated_spk.embedding
+    assert updated_embeding is not None
     assert updated_spk.name == "Алексей Переименованный"
-    assert numpy.array_equal(updated_spk.embedding, mock_embedding3)
+    assert numpy.array_equal(updated_embeding, mock_embedding3)
     assert updated_spk.total_count == 33
 
 
-def test_update_mode_all_except_embedding(db_repo, sample_speakers):
+def test_update_mode_all_except_embedding(
+    db_repo: VoiceDbRepository,
+    sample_speakers: tuple[Speaker, Speaker]
+) -> None:
     """Проверяет обновление метаданных без изменения вектора."""
     spk1, _ = sample_speakers
 
@@ -151,15 +168,23 @@ def test_update_mode_all_except_embedding(db_repo, sample_speakers):
     db_repo.save_speakers([spk1], update_mode=SpeakerUpdateMode.UPDATE_ALL_EXCEPT_EMBEDDING)
 
     # Вычитываем из базы заново
-    updated_spk = db_repo.load_speakers(speaker_ids=[spk1.id])[0]
+    spk1_id = spk1.id
+    assert spk1_id is not None
+    updated_spk = db_repo.load_speakers(speaker_ids=[spk1_id])[0]
 
     assert updated_spk.name == "Алексей Переименованный"
     # Эмбеддинг должен остаться СТАРЫМ
-    assert numpy.array_equal(updated_spk.embedding, old_embedding1)
+    updated_embeding = updated_spk.embedding
+    assert updated_embeding is not None
+    assert old_embedding1 is not None
+    assert numpy.array_equal(updated_embeding, old_embedding1)
     assert updated_spk.total_count == 33
 
 
-def test_update_mode_embeddings_only(db_repo, sample_speakers):
+def test_update_mode_embeddings_only(
+    db_repo: VoiceDbRepository,
+    sample_speakers: tuple[Speaker, Speaker]
+) -> None:
     """Проверяет обновление только векторов без изменения метаданных."""
     spk1, _ = sample_speakers
 
@@ -171,14 +196,21 @@ def test_update_mode_embeddings_only(db_repo, sample_speakers):
     db_repo.save_speakers([spk1], update_mode=SpeakerUpdateMode.UPDATE_EMBEDDINGS_ONLY)
 
     # Вычитываем из базы заново
-    updated_spk = db_repo.load_speakers(speaker_ids=[spk1.id])[0]
+    spk1_id = spk1.id
+    assert spk1_id is not None
+    updated_spk = db_repo.load_speakers(speaker_ids=[spk1_id])[0]
 
     assert updated_spk.name == "Алексей"  # Имя должно остаться СТАРЫМ
-    assert numpy.array_equal(updated_spk.embedding, mock_embedding3) # Эмбеддинг обновился
+    updated_embeding = updated_spk.embedding
+    assert updated_embeding is not None
+    assert numpy.array_equal(updated_embeding, mock_embedding3) # Эмбеддинг обновился
     assert updated_spk.total_count == 11 # Счетчик должен остаться старым
 
 
-def test_update_mode_no_update(db_repo, sample_speakers):
+def test_update_mode_no_update(
+    db_repo: VoiceDbRepository,
+    sample_speakers: tuple[Speaker, Speaker]
+) -> None:
     """Проверяет режим полного игнорирования обновлений старых спикеров."""
     spk1, _ = sample_speakers
 
@@ -194,7 +226,9 @@ def test_update_mode_no_update(db_repo, sample_speakers):
     db_repo.save_speakers([spk1, new_spk], update_mode=SpeakerUpdateMode.NO_UPDATE)
 
     # Проверяем старого
-    old_spk_db = db_repo.load_speakers(speaker_ids=[spk1.id])[0]
+    spk1_id = spk1.id
+    assert spk1_id is not None
+    old_spk_db = db_repo.load_speakers(speaker_ids=[spk1_id])[0]
 
     assert old_spk_db.name == "Алексей" # Данные не изменились
     assert old_spk_db.total_count == 11 # Счетчик должен остаться старым
@@ -205,7 +239,9 @@ def test_update_mode_no_update(db_repo, sample_speakers):
     # Загружаем нового и проверяем
     new_spk_from_db = db_repo.load_speakers(speaker_ids=[new_spk.id])[0]
     assert new_spk_from_db.name == "Новичок"
-    assert numpy.array_equal(new_spk_from_db.embedding, mock_embedding4)
+    new_spk_embeding = new_spk_from_db.embedding
+    assert new_spk_embeding is not None
+    assert numpy.array_equal(new_spk_embeding, mock_embedding4)
     assert new_spk_from_db.total_count == 44
 
     assert len(db_repo.load_speakers()) == 3
@@ -215,12 +251,17 @@ def test_update_mode_no_update(db_repo, sample_speakers):
 # ТЕСТЫ: ФИЛЬТРАЦИЯ И ПОИСК (READ POOL)
 # ==========================================
 
-def test_load_speakers_with_filters(db_repo, sample_speakers):
+def test_load_speakers_with_filters(
+    db_repo: VoiceDbRepository,
+    sample_speakers: tuple[Speaker, Speaker]
+) -> None:
     """Проверяет работу фильтрации по ID и части имени LIKE."""
     spk1, spk2 = sample_speakers
 
     # Поиск по списку ID
-    res_ids = db_repo.load_speakers(speaker_ids=[spk2.id])
+    spk2_id = spk2.id
+    assert spk2_id is not None
+    res_ids = db_repo.load_speakers(speaker_ids=[spk2_id])
     assert len(res_ids) == 1
     assert res_ids[0].name == "Мария"
 
@@ -230,7 +271,7 @@ def test_load_speakers_with_filters(db_repo, sample_speakers):
     assert res_name[0].id == spk1.id
 
 
-def test_load_audio_file_by_filters(db_repo):
+def test_load_audio_file_by_filters(db_repo: VoiceDbRepository) -> None:
     """Проверяет поиск аудиофайла по ID и уникальному пути."""
     path = "/var/audio/test_file.mp3"
     audio = AudioFile(file_path=path, duration_seconds=12.5)
@@ -243,14 +284,17 @@ def test_load_audio_file_by_filters(db_repo):
 
     # Ищем по ID
     file_by_id = db_repo.load_audio_file(file_id=audio.id)
-    assert file_by_id.file_path == path
+    assert file_by_id is not None
+    file_path = file_by_id.file_path
+    assert file_path is not None
+    assert file_path == path
 
 
 # ==========================================
 # ТЕСТЫ: ЦЕЛОСТНОСТЬ И ОГРАНИЧЕНИЯ (CONSTRAINTS)
 # ==========================================
 
-def test_audio_file_path_uniqueness(db_repo):
+def test_audio_file_path_uniqueness(db_repo: VoiceDbRepository) -> None:
     """Проверяет, что база вызовет ошибку при попытке дублировать путь к файлу."""
     audio1 = AudioFile(file_path="/dup/path.wav", duration_seconds=10)
     audio2 = AudioFile(file_path="/dup/path.wav", duration_seconds=20)

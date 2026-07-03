@@ -15,206 +15,254 @@
     (окончаниях, падежах), и ее можно брать в работу.
 """
 # Запуск: PYTHONPATH=src python src/benchmark/scorer_wer.py
-from pathlib import Path
 import jiwer
-from config import PipelineType
+from config import PipelineType, BASE_DIR
 from benchmark.experiment_runner import ExperimentRunner
-from benchmark.experiment_entities import ExperimentSpec
-from benchmark.dataset_storage import load_cache_from_yaml, export_cache_to_yaml
+from benchmark.experiment_entities import (
+    ExperimentSpec, PipelineResultExperiment,
+    MetricExpWER, MetricWER, MetricCER,
+)
+from benchmark.experiment_storage import (
+    load_plres_exp_from_yaml, export_plres_exp_to_yaml,
+    export_metrics_wer_to_yaml,
+    EXP_RUNS_BASE_DIR
+)
 
-CACHE_FILE_PATH = "cache004.yaml"
-AUDIO_PATH = "dataset/speaker004.opus"
-GT_PATH = "dataset/speaker004.opus.yaml"
+class CustomNormalisationTransform(jiwer.AbstractTransform):
+    """Кастомный класс для нормализации."""
+    def process_list(self, inp: list[str]) -> list[str]:
+        # Логика обработки списка строк
+        return [self.process_string(text) for text in inp]
 
-def custon_normalisation(text: list[str] | str) -> str:
-    """Кастомная функция для нормализации."""
-    if isinstance(text, list):
-        return [custon_normalisation(t) for t in text]
+    def process_string(self, s: str) -> str:
+        # Логика обработки одной строки
+        norm_text = s
+        if "о'кей" in norm_text:
+            norm_text = norm_text.replace("о'кей", "окей")
+        if "кгц" in norm_text:
+            norm_text = norm_text.replace("кгц", "килогерц")
+        if "19:45" in norm_text:
+            norm_text = norm_text.replace("19:45", "девятнадцать сорок пять")
+        if "3 450" in norm_text:
+            norm_text = norm_text.replace("3 450", "три тысячи четыреста пятьдесят")
+        if "7701" in norm_text:
+            norm_text = norm_text.replace("7701", "семьдесят семь ноль один")
+        if "2024" in norm_text:
+            norm_text = norm_text.replace("2024", "два ноль два четыре")
+        if "500" in norm_text:
+            norm_text = norm_text.replace("500", "пятьсот")
+        if "101" in norm_text:
+            norm_text = norm_text.replace("101", "сто один")
+        if "102" in norm_text:
+            norm_text = norm_text.replace("102", "сто два")
+        if "103" in norm_text:
+            norm_text = norm_text.replace("103", "сто три")
+        if "001" in norm_text:
+            norm_text = norm_text.replace("001", " ноль ноль один")
+        if "16" in norm_text:
+            norm_text = norm_text.replace("16", "шестнадцать")
+        if "12" in norm_text:
+            norm_text = norm_text.replace("12", "двенадцать")
+        if "10" in norm_text:
+            norm_text = norm_text.replace("10", "десять")
+        if "2" in norm_text:
+            norm_text = norm_text.replace("2", "два")
+        if "7" in norm_text:
+            norm_text = norm_text.replace("7", "семь")
+        if "9" in norm_text:
+            norm_text = norm_text.replace("9", "девять")
+        if "₽" in norm_text:
+            norm_text = norm_text.replace("₽", "рублей")
+        if "%" in norm_text:
+            norm_text = norm_text.replace("%", " процентов")
 
-    norm_text = text
-    if "о'кей" in norm_text:
-        norm_text = norm_text.replace("о'кей", "окей")
-    if "кгц" in norm_text:
-        norm_text = norm_text.replace("кгц", "килогерц")
-    if "19:45" in norm_text:
-        norm_text = norm_text.replace("19:45", "девятнадцать сорок пять")
-    if "3 450" in norm_text:
-        norm_text = norm_text.replace("3 450", "три тысячи четыреста пятьдесят")
-    if "7701" in norm_text:
-        norm_text = norm_text.replace("7701", "семьдесят семь ноль один")
-    if "2024" in norm_text:
-        norm_text = norm_text.replace("2024", "два ноль два четыре")
-    if "500" in norm_text:
-        norm_text = norm_text.replace("500", "пятьсот")
-    if "101" in norm_text:
-        norm_text = norm_text.replace("101", "сто один")
-    if "102" in norm_text:
-        norm_text = norm_text.replace("102", "сто два")
-    if "103" in norm_text:
-        norm_text = norm_text.replace("103", "сто три")
-    if "001" in norm_text:
-        norm_text = norm_text.replace("001", " ноль ноль один")
-    if "16" in norm_text:
-        norm_text = norm_text.replace("16", "шестнадцать")
-    if "12" in norm_text:
-        norm_text = norm_text.replace("12", "двенадцать")
-    if "10" in norm_text:
-        norm_text = norm_text.replace("10", "десять")
-    if "2" in norm_text:
-        norm_text = norm_text.replace("2", "два")
-    if "7" in norm_text:
-        norm_text = norm_text.replace("7", "семь")
-    if "9" in norm_text:
-        norm_text = norm_text.replace("9", "девять")
-    if "₽" in norm_text:
-        norm_text = norm_text.replace("₽", "рублей")
-    if "%" in norm_text:
-        norm_text = norm_text.replace("%", " процентов")
+        return norm_text
 
-    return norm_text
+# Создаем базовый нормализатор
+base_transformation = jiwer.Compose([
+    jiwer.ToLowerCase(),
+    CustomNormalisationTransform(),
+    jiwer.SubstituteRegexes({r"[^\w\s]": " "}), # Заменяет любой знак пунктуации на пробел
+    # jiwer.RemovePunctuation(),
+    jiwer.RemoveMultipleSpaces(),
+    jiwer.Strip(),
+])
 
-def test_wer():
-    """Тест jiwer, что бы посмотреть как и что выглядит"""
-    reference = "мама мыла чисто раму вчера днем а папа читал газету"
-    hypothesis = "мама мыла быстро раму днем папа читал вечернюю газету"
 
-    print(f"Эталон: {reference}")
-    print(f"Гипотеза: {hypothesis}")
+def calc_wer(
+    clean_ref: str | list[str],
+    clean_hyp: str | list[str],
+    obj_id: str | None = None,
+    use_align: bool = False
+) -> MetricWER:
+    """Считает метрику WER"""
+    output_wer = jiwer.process_words(reference = clean_ref, hypothesis = clean_hyp)
+    alignment = None
+    if use_align:
+        alignment = jiwer.visualize_alignment(output = output_wer, show_measures = False)
 
-    # Получаем детальный анализ на уровне слов
-    output = jiwer.process_words(reference, hypothesis)
+    return MetricWER(
+        obj_id = obj_id,
+        wer = output_wer.wer,
+        gt_words_count = output_wer.hits + output_wer.substitutions + output_wer.deletions,
+        substitutions = output_wer.substitutions,
+        deletions = output_wer.deletions,
+        insertions = output_wer.deletions,
+        alignment = alignment,
+    )
 
-    print(f"Итоговый WER: {output.wer * 100:.1f}%")
-    print(f"Замен (S): {output.substitutions}")
-    print(f"Пропусков (D): {output.deletions}")
-    print(f"Вставок (I): {output.insertions}")
-    print(jiwer.visualize_alignment(output))
+def calc_cer(
+    clean_ref: str | list[str],
+    clean_hyp: str | list[str],
+    obj_id: str | None = None,
+    use_align: bool = False
+) -> MetricCER:
+    """Считает метрику CER"""
+    output_cer = jiwer.process_characters(reference = clean_ref, hypothesis = clean_hyp)
+    alignment = None
+    if use_align:
+        alignment = jiwer.visualize_alignment(output = output_cer, show_measures = False)
 
-    # Для CER (посимвольно) используется аналогичный простой вызов:
-    cer_value = jiwer.cer(reference, hypothesis)
-    print(f"Итоговый CER: {cer_value * 100:.1f}%")
+    return MetricCER(
+        obj_id = obj_id,
+        cer = output_cer.cer,
+        gt_chars_count = output_cer.hits + output_cer.substitutions + output_cer.deletions,
+        substitutions = output_cer.substitutions,
+        deletions = output_cer.deletions,
+        insertions = output_cer.deletions,
+        alignment = alignment,
+    )
 
-    # Получаем детальный объект разбора символов
-    char_output = jiwer.process_characters(reference, hypothesis)
+def calc_wer_total(pl_res_exp: PipelineResultExperiment) -> MetricExpWER:
+    """Рассчитывает общие и построчные метрики WER и CER для pl_res_exp или exp_id"""
+    references: list[str] = []
+    hypothesis: list[str] = []
 
-    # 1. Извлекаем конкретные числа из объекта
-    substitutions = char_output.substitutions  # Замены
-    insertions = char_output.insertions        # Вставки
-    deletions = char_output.deletions          # Удаления
-    cer = char_output.cer                      # Сам CER (0.42105...)
+    # Готовим списки эталоных фраз и гипотез
+    for seg in pl_res_exp.markup_segments:
+        references.append(seg.text)
+    for seg in pl_res_exp.segments:
+        hypothesis.append(seg.text)
 
-    print(f"CER: {cer * 100:.2f}%")
-    print(f"Замены (Substitutions): {substitutions}")
-    print(f"Вставки (Insertions): {insertions}")
-    print(f"Удаления (Deletions): {deletions}")
+    clean_ref = base_transformation(references)
+    clean_hyp = base_transformation(hypothesis)
 
-    print("\n" + "="*30 + " Наглядная визуализация " + "="*30)
-    # 2. Красивое выравнивание строк по символам (выведет REF, HYP и тип ошибки)
-    print(jiwer.visualize_alignment(char_output))
+    # Рассчет общих метрик
+    exp_wer = calc_wer(
+        clean_ref = clean_ref,
+        clean_hyp = clean_hyp,
+        obj_id = pl_res_exp.exp_id,
+        use_align = False
+    )
 
-def main():
+    exp_cer = calc_cer(
+        clean_ref = clean_ref,
+        clean_hyp = clean_hyp,
+        obj_id = pl_res_exp.exp_id,
+        use_align = False
+    )
+
+    # Расчет метрик для фраз с ошибками
+    err_segments_wer: list[MetricWER] = []
+    err_segments_cer: list[MetricCER] = []
+
+    for idx, (ref, hyp) in enumerate(zip(clean_ref, clean_hyp)):
+        seg_wer = calc_wer(
+            clean_ref = ref,
+            clean_hyp = hyp,
+            obj_id = str(idx),
+            use_align = True
+        )
+
+        seg_cer = calc_cer(
+            clean_ref = ref,
+            clean_hyp = hyp,
+            obj_id = str(idx),
+            use_align = True
+        )
+
+        # Выявление фраз с ошибками
+        if seg_wer.substitutions + seg_wer.deletions + seg_wer.insertions > 0:
+            err_segments_wer.append(seg_wer)
+
+        if seg_cer.substitutions + seg_cer.deletions + seg_cer.insertions > 0:
+            err_segments_cer.append(seg_cer)
+
+    return MetricExpWER(
+        obj_id = pl_res_exp.exp_id,
+        seg_count = len(pl_res_exp.segments),
+        exp_wer = exp_wer,
+        exp_cer = exp_cer,
+        err_segments_wer = err_segments_wer,
+        err_segments_cer = err_segments_cer,
+    )
+
+
+def main() -> None:
     """Точка входа для тестирования"""
-    # Проверяем наличие кэша для отладки расчетов метрик
-    results = load_cache_from_yaml(CACHE_FILE_PATH)
-    print(f"Попытка загрузки кэша из файла: {CACHE_FILE_PATH}")
-    if results: # Файл с кэшем найден, данные загружены. При неоходимости, кэш очищается вручную
-        print("Кэш загружен, бенчмарк не запускается")
-        references, hypothesis = results
-    else: # Кэша пока нет, запускаем бенчмарк и сохраняем результаты в кэш
-        print("Кэш отсутствует, запускается бенчмарк...")
-        audio_path = Path(AUDIO_PATH)
-        gt_file = Path(GT_PATH)
+    exp_id = "20260703_150916_unknown_asr_sil_gig3pu8_3deres"
+
+    # Проверяем наличие сохраненного результата эксперимента для отладки расчетов метрик
+    runs_dir_path = EXP_RUNS_BASE_DIR / exp_id
+    if runs_dir_path.exists(): # Сохраненные результаты есть
+        pl_result = load_plres_exp_from_yaml(exp_id = exp_id)
+        print(f"Загружены результаты эксперимента: {exp_id}")
+        if pl_result is None:
+            raise ValueError(f"Не найдены результаты эксперимента: {exp_id}")
+        total_wer = calc_wer_total(pl_res_exp = pl_result)
+    else: # Сохраненного результата нет, запускаем бенчмарк и сохраняем результаты
+        print("Сохраненные результаты отсутствуют, запускается бенчмарк...")
+        audio_path = BASE_DIR / "dataset" / "speaker001.opus"
+        gt_file = BASE_DIR / "dataset" / "speaker001.opus.yaml"
         exp_specs = [
             ExperimentSpec(
                 spec_id = f"{audio_path.stem}_oracle_vad_only",
-                audio_path = audio_path,
-                ground_truth_path = gt_file,
+                audio_path = str(audio_path),
+                ground_truth_path = str(gt_file),
                 use_oracle_vad = True,
                 pipeline_type = PipelineType.ASR_PIPELINE,
             ),
         ]
 
-        exp_specs[0].use_oracle_vad = True
         # Отправляем exp_specs в очередь на выполнение...
         exp_runner = ExperimentRunner(exp_specs)
-        pl_results = exp_runner.run_single_combination()
+        pl_result = exp_runner.run_single_combination()[0]
+        exp_id = pl_result.exp_id
 
-        # Готовим списки эталоных фраз и гипотез
-        references: list[str] = []
-        hypothesis: list[str] = []
-        for seg in pl_results[0].markup_segments:
-            references.append(seg.text)
-        for seg in pl_results[0].segments:
-            hypothesis.append(seg.text)
+        # Сохраняем результат в папку runs
+        export_plres_exp_to_yaml(plres = pl_result)
+        print(f"Кэш сохранен в папке: {EXP_RUNS_BASE_DIR / exp_id}")
 
-        # Сохраняем референс и гипотезу в кэш для послежующего использования
-        export_cache_to_yaml(
-            file_path = CACHE_FILE_PATH,
-            references = references,
-            hypothesis = hypothesis
-        )
-        print(f"Кэш сохранен в файл: {CACHE_FILE_PATH}")
+        # Запускаем расчет метрик
+        total_wer = calc_wer_total(pl_res_exp = pl_result)
 
-    # Создаем базовый нормализатор
-    base_transformation = jiwer.Compose([
-        jiwer.ToLowerCase(),
-        custon_normalisation,
-        jiwer.SubstituteRegexes({r"[^\w\s]": " "}), # Заменяет любой знак пунктуации на пробел
-        # jiwer.RemovePunctuation(),
-        jiwer.RemoveMultipleSpaces(),
-        jiwer.Strip(),
-    ])
-    clean_ref = base_transformation(references)
-    clean_hyp = base_transformation(hypothesis)
+    # Сохраняем рассчитанные метрики
+    export_metrics_wer_to_yaml(metrics_exp_wer = total_wer, exp_id = exp_id)
 
-    print(f"Количество ref: {len(references)} hyp: {len(hypothesis)}")
-    output = jiwer.process_words(reference = clean_ref, hypothesis = clean_hyp)
-    output_cer = jiwer.process_characters(reference = clean_ref, hypothesis = clean_hyp)
+    print(f"Количество ref: {len(pl_result.markup_segments)} hyp: {len(pl_result.segments)}")
 
     print("========== Детализация ошибок по фразам ==========")
-    # Поиск фраз с ошибками
-    err_strs_count = 0
-    zipped_data = zip(output.references, output.hypotheses, output.alignments)
-    for idx, (_, _, alignment) in enumerate(zipped_data, start = 0):
-        # В jiwer alignment — это список объектов AlignmentChunk для конкретной фразы.
-        # Если в списке есть элементы с типом, отличным от 'equal', значит есть ошибки.
-        has_errors = any(chunk.type != "equal" for chunk in alignment)
-
-        if has_errors:
-            err_strs_count += 1
-            # Для точечной визуализации передаем конкретную пару строк
-            single_output = jiwer.process_words(
-                reference = [clean_ref[idx]],
-                hypothesis = [clean_hyp[idx]]
-            )
-
-            # Считаем количество ошибок конкретно для этой пары
-            error_count = (
-                single_output.substitutions +
-                single_output.deletions +
-                single_output.insertions
-            )
-
-            print(f"[Фраза: {idx}] Найдено ошибок: {error_count}")
-
-            # Печатаем красивое выравнивание
-            alignment_str = jiwer.visualize_alignment(single_output, show_measures=False)
-            print(alignment_str)
-            print("-" * 40)
+    for idx, seg in enumerate(total_wer.err_segments_wer):
+        print(
+            f"[Фраза: {idx}] Найдено ошибок: {seg.deletions + seg.insertions + seg.substitutions}"
+        )
+        # Печатаем красивое выравнивание
+        print(seg.alignment)
+        print("-" * 40)
 
     print("\n--- ИТОГОВАЯ СТАТИСТИКА КОРПУСА ---")
-    print(f"Общий WER корпуса: {output.wer:.4f}")
-    print(f"Всего слов в эталоне: {output.hits + output.substitutions + output.deletions}")
-    print(f"Всего замен (S): {output.substitutions}")
-    print(f"Всего удалений (D): {output.deletions}")
-    print(f"Всего вставок (I): {output.insertions}")
-    print(f"Всего строк с ошибками: {err_strs_count} из: {len(references)}")
+    print(f"Общий WER корпуса: {total_wer.exp_wer.wer:.4f}")
+    print(f"Всего слов в эталоне: {total_wer.exp_wer.gt_words_count}")
+    print(f"Всего замен (S): {total_wer.exp_wer.substitutions}")
+    print(f"Всего удалений (D): {total_wer.exp_wer.deletions}")
+    print(f"Всего вставок (I): {total_wer.exp_wer.insertions}")
+    print(f"Всего строк с ошибками: {len(total_wer.err_segments_wer)} из {total_wer.seg_count}")
 
-    print(f"Общий CER корпуса: {output_cer.cer:.4f}")
-    print(f"Всего символов в эталоне: {output_cer.hits + output.substitutions + output.deletions}")
-    print(f"Всего замен (S): {output_cer.substitutions}")
-    print(f"Всего удалений (D): {output_cer.deletions}")
-    print(f"Всего вставок (I): {output_cer.insertions}")
+    print(f"Общий CER корпуса: {total_wer.exp_cer.cer:.4f}")
+    print(f"Всего символов в эталоне: {total_wer.exp_cer.gt_chars_count}")
+    print(f"Всего замен (S): {total_wer.exp_cer.substitutions}")
+    print(f"Всего удалений (D): {total_wer.exp_cer.deletions}")
+    print(f"Всего вставок (I): {total_wer.exp_cer.insertions}")
 
 if __name__ == "__main__":
     main()

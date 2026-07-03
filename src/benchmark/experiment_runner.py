@@ -59,11 +59,22 @@ class ExperimentRunner:
             pl_config.vad.use_oracle = exp_spec.use_oracle_vad
             pl_config.asr.use_oracle = exp_spec.use_oracle_asr
             pl_config.diar_vad.use_oracle = exp_spec.use_oracle_diarization
-            pl_config.runtime.pipeline_type = exp_spec.pipeline_type,
+            pl_config.runtime.pipeline_type = exp_spec.pipeline_type
         else:
             pl_config = config.get_new_pipeline_config()
 
         return pl_config
+
+    def get_result_exp_id(self, plres: PipelineResultExperiment) -> str:
+        """Конструирует имя папки на основе данных из результатов эксперимента"""
+        time = plres.start_time.strftime("%Y%m%d_%H%M%S")
+        dataset = plres.exp_spec.dataset_view
+        pl_type = plres.pl_config.runtime.pipeline_type.value
+        vad = plres.pl_config.vad.model_short_name
+        asr = plres.pl_config.asr.model_short_name
+        embed = plres.pl_config.embed.model_short_name
+        exp_id = f"{time}_{dataset}_{pl_type}_{vad}_{asr}_{embed}"
+        return exp_id
 
     def run_single_combination(self) -> list[PipelineResultExperiment]:
         """Запуск одной конкретной конфигурации на всем датасете."""
@@ -76,14 +87,14 @@ class ExperimentRunner:
 
             # Создаем пайплайны под конкретный аудиофайл с его GT (для оракулов)
             pl_config = self.build_pl_config(exp_spec = exp_spec)
-            if pl_config.runtime.pipeline_type == PipelineType.ASR_PIPELINE:
+            if pl_config.runtime.pipeline_type is PipelineType.ASR_PIPELINE:
                 pl = AsrPipeline(pl_config = pl_config)
-            elif pl_config.runtime.pipeline_type == PipelineType.MANAGER_DIARIZ_PIPELINE:
+            elif pl_config.runtime.pipeline_type is PipelineType.MANAGER_DIARIZ_PIPELINE:
                 pl = ManagerDiarizationPipeline(pl_config = pl_config)
-            elif pl_config.runtime.pipeline_type == PipelineType.CENTRIOD_DIARIZ_PIPELINE:
+            elif pl_config.runtime.pipeline_type is PipelineType.CENTRIOD_DIARIZ_PIPELINE:
                 pl = CentroidDiarizationPipeline(pl_config = pl_config)
             else:
-                raise ValueError("Неизвестный тип пайплайна: {exp_spec.pipeline_type}")
+                raise ValueError(f"Неизвестный тип пайплайна: {pl_config.runtime.pipeline_type}")
 
             # Если включен режим Оракула, то загружаем эталонную разметку
             if (
@@ -103,24 +114,25 @@ class ExperimentRunner:
                 ts_end = common_utils.format_timestamp(seg.end_time)
                 print(f"[{ts_start}-{ts_end}] {seg.text}")
             # Конвертирует результат пайплайна в PipelineResultExperiment
-            pipeline_result_exp = PipelineResultExperiment(**asdict(pl.pipeline_result))
+            pipeline_result_exp = PipelineResultExperiment(**pl.pipeline_result.__dict__)
             pipeline_result_exp.exp_spec = exp_spec
+            pipeline_result_exp.exp_id = self.get_result_exp_id(plres = pipeline_result_exp)
 
             print(f"Время распознавания: {pipeline_result_exp.proc_time:.6f} секунд")
 
             results.append(pipeline_result_exp)
         return results
 
-def main():
+def main() -> None:
     """Точка входа для тестирования в ходе разработки"""
     # Оркестратор просто итерируется по плоскому списку спецификаций
-    # audio_path = Path("dataset/scenario_recipe_1spk_monologue.opus")
-    # gt_file = Path("dataset/scenario_recipe_1spk_monologue.yaml")
-    audio_path = Path("dataset/speaker002.opus")
-    gt_file = Path("dataset/speaker002.opus.yaml")
+    # audio_path = "dataset/scenario_recipe_1spk_monologue.opus"
+    # gt_file = "dataset/scenario_recipe_1spk_monologue.yaml"
+    audio_path = "dataset/speaker002.opus"
+    gt_file = "dataset/speaker002.opus.yaml"
     exp_spec = [
         ExperimentSpec(
-            spec_id = f"{audio_path.stem}_oracle_vad_only",
+            spec_id = f"{Path(audio_path).stem}_oracle_vad_only",
             audio_path = audio_path,
             ground_truth_path = gt_file,
             use_oracle_vad = True,

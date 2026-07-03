@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import os
 from enum import Enum
+from typing import Any
 import yaml
 
 # Частота дискретизации
@@ -41,7 +42,7 @@ class PipelineType(Enum):
 
 class Config:
     """Класс загрузчика конфигурации"""
-    def __init__(self):
+    def __init__(self) -> None:
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
             self._data = yaml.safe_load(f)
         # Определяем рабочие модели
@@ -51,7 +52,7 @@ class Config:
         self.segmentation_model_name = self._data["work"]["segmentation_model_name"]
         self.provider = self._data["work"]["provider"]
 
-    def get_profiles(self):
+    def get_profiles(self) -> Any:
         """Возвращает список профилей и их настроек"""
         return self._data.get("profiles", {})
 
@@ -111,7 +112,7 @@ class Config:
         if model_name is None: # Если имя модели не указано, берем имя по умолчанию
             model_name = self.segmentation_model_name
         model_data = self._data["models"]["segmentation"][model_name]
-        return EmbeddingConfig(
+        return SegmentationConfig(
             model_name = model_name,
             model_short_name = model_data["short_name"],
             model_path = model_data["model"],
@@ -140,7 +141,7 @@ class RuntimeConfig:
     pipeline_type: PipelineType = PipelineType.ASR_PIPELINE
     num_threads: int = 1
     provider: str = "cpu"
-    output_dir: str = DEFAULT_OUTPUT_DIR    # Путь к папке с с файлами с распознанным текстом
+    output_dir: str = str(DEFAULT_OUTPUT_DIR)    # Путь к папке с с файлами с распознанным текстом
     no_timestamps: bool = False             # Запрещает вывод меток времени в распознанный текст
 
 @dataclass

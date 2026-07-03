@@ -28,7 +28,7 @@ class AudioSegment:
     """Модель текстового сегмента аудиофайла с таймкодами."""
     id: int | None = None
     audio_file_id: int | None = None
-    audio_file: AudioFile | None = None
+    # audio_file: AudioFile | None = None
     speaker_id: int | None = None
     speaker: Speaker | None = None
     cos_similarity: float = 0.0 # Косинусная схожесть между эмбеддингами спикера и сегмента

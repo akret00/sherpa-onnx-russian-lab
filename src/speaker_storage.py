@@ -2,7 +2,8 @@
 from enum import Enum
 from contextlib import contextmanager
 import sqlite3
-from typing import List
+from typing import Any
+from collections.abc import Generator
 from pathlib import Path
 import numpy
 import config
@@ -48,7 +49,7 @@ class VoiceDbRepository:
             print(f"Создана база данных: {self.db_path}")
 
     @contextmanager
-    def connection_scope(self):
+    def connection_scope(self) -> Generator[sqlite3.Connection]:
         """
         Контекстный менеджер управляет транзакциями.
         Закрывает коннект для БД на диске, или оставляет открытым для БД в ОЗУ.
@@ -68,7 +69,7 @@ class VoiceDbRepository:
             # 2. Закрываем коннект
             conn.close()
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         """Создает структуру таблиц и индексов, которых нет в базе."""
         with self.connection_scope() as conn:
             cursor = conn.cursor()
@@ -89,12 +90,12 @@ class VoiceDbRepository:
     # --- МЕТОДЫ ЗАГРУЗКИ (READ) ---
 
     def load_speakers(self,
-        speaker_ids: List[int] | None = None,
+        speaker_ids: list[int] | None = None,
         name: str | None = None
-    ) -> List[Speaker]:
+    ) -> list[Speaker]:
         """Загружает список спикеров по фильтрам. Без фильтров возвращает ВСЕХ спикеров."""
         query = "SELECT id, name, embedding_blob, total_count, created_at FROM speaker WHERE 1=1"
-        params = []
+        params: list[Any] = []
 
         if speaker_ids:
             placeholders = ",".join(["?"] * len(speaker_ids))
@@ -128,6 +129,7 @@ class VoiceDbRepository:
     ) -> AudioFile | None:
         """Ищет аудиофайл в базе по его ID или по уникальному системному пути."""
         query = "SELECT id, file_path, duration_seconds, processed_at FROM audio_file WHERE "
+        param: Any
         if file_id is not None:
             query += "id = ?"
             param = file_id
@@ -151,12 +153,12 @@ class VoiceDbRepository:
             )
         return None
 
-    def load_file_content(self, audio_file_id: int):
+    def load_file_content(self, audio_file_id: int) -> tuple[list[AudioSegment], list[Speaker]]:
         """
         Возвращает кортеж: (Список объектов AudioSegment, Список объектов Speaker),
         задействованных в файле.
         """
-        segments: List[AudioSegment] = []
+        segments: list[AudioSegment] = []
 
         # 1. Загружаем все сегменты для файла
         with self.connection_scope() as conn:
@@ -192,9 +194,9 @@ class VoiceDbRepository:
 
     def save_speakers(
         self,
-        speakers: List[Speaker],
+        speakers: list[Speaker],
         update_mode: SpeakerUpdateMode = SpeakerUpdateMode.NO_UPDATE
-    ):
+    ) -> None:
         """Сохраняет список спикеров. 
         
         Для новых (id is None) генерирует автоинкремент и мутирует переданный объект.
@@ -211,7 +213,10 @@ class VoiceDbRepository:
                         "VALUES (:name, :embedding_blob, :total_count);",
                         {
                             "name": speaker.name,
-                            "embedding_blob": speaker.embedding.tobytes(),
+                            "embedding_blob": (
+                                speaker.embedding.tobytes()
+                                if speaker.embedding is not None else None
+                            ),
                             "total_count": speaker.total_count,
                         }
                     )
@@ -227,7 +232,10 @@ class VoiceDbRepository:
                             "WHERE id = :id; ",
                             {
                                 "name": speaker.name,
-                                "embedding_blob": speaker.embedding.tobytes(),
+                                "embedding_blob": (
+                                speaker.embedding.tobytes()
+                                if speaker.embedding is not None else None
+                            ),
                                 "total_count": speaker.total_count,
                                 "id": speaker.id
                             }
@@ -249,7 +257,10 @@ class VoiceDbRepository:
                             "SET embedding_blob = :embedding_blob "
                             "WHERE id = :id; ",
                             {
-                                "embedding_blob": speaker.embedding.tobytes(),
+                                "embedding_blob": (
+                                speaker.embedding.tobytes()
+                                if speaker.embedding is not None else None
+                            ),
                                 "id": speaker.id
                             }
                         )
@@ -282,9 +293,12 @@ class VoiceDbRepository:
                     }
                 )
 
-        return audio_file.id
+        audio_file_id = audio_file.id
+        if audio_file_id is None:
+            raise ValueError("audio_file.id не может быть None")
+        return audio_file_id
 
-    def save_audio_segments(self, audio_file_id: int, segments: List[AudioSegment]):
+    def save_audio_segments(self, audio_file_id: int, segments: list[AudioSegment]) -> None:
         """
         Сохраняет пачку сегментов (таймкодов) для конкретного аудиофайла в рамках
         единой транзакции.
@@ -318,14 +332,16 @@ class VoiceDbRepository:
                 VALUES (:audio_file_id, :speaker_id, :start_time, :end_time, :text, :word_count);
             """, data_to_insert)
 
-def usage_sample():
+def usage_sample() -> None:
     """Пример использования функционала класса"""
     # 1. Инициализируем репозиторий (создаст файл 'speech_vault.db', если его нет)
     repo = VoiceDbRepository()
 
     # 2. Создаем тестовых спикеров (один старый, один новый рантайм-спикер)
-    speaker_existing = Speaker(id=1, name="John Doe Modified", embedding=b'\x01\x02\x03')
-    speaker_new_found = Speaker(name="SPEAKER_01 (Unknown)", embedding=b'\x09\x09\x09')
+    mock_embedding1 = numpy.random.rand(128).astype(numpy.float32)
+    mock_embedding2 = numpy.random.rand(128).astype(numpy.float32)
+    speaker_existing = Speaker(id=1, name="John Doe Modified", embedding=mock_embedding1)
+    speaker_new_found = Speaker(name="SPEAKER_01 (Unknown)", embedding=mock_embedding2)
 
     speakers_list = [speaker_existing, speaker_new_found]
 
