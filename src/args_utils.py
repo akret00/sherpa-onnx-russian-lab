@@ -4,7 +4,7 @@
 import argparse
 from config import pl_conf
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """
     Разбирает агрументы командной строки и устанавливает значения по умолчанию, где они есть
     Так же, модифицирует значения параметров в pl_conf

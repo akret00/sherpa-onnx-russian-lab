@@ -12,7 +12,7 @@ PROFILES = {
 def visualize_segment_energy(
     audio_segment: numpy.ndarray,
     num_bars: int = 40,
-    ):
+    ) -> None:
     """
     Визуализирует распределение энергии внутри короткого аудиосегмента в консоли.
     audio_segment: одномерный массив numpy (float32 или int16)
@@ -31,15 +31,15 @@ def visualize_segment_energy(
     chunks = numpy.array_split(audio, num_bars)
 
     # Считаем RMS (среднеквадратичную амплитуду) для каждого чанка
-    energies = []
+    prev_energies = []
     for chunk in chunks:
         if len(chunk) > 0:
             rms = numpy.sqrt(numpy.mean(chunk**2))
-            energies.append(rms)
+            prev_energies.append(rms)
         else:
-            energies.append(0.0)
+            prev_energies.append(0.0)
 
-    energies = numpy.array(energies)
+    energies = numpy.array(prev_energies)
     max_energy = numpy.max(energies)
 
     if max_energy == 0:
@@ -52,7 +52,7 @@ def visualize_segment_energy(
 
     # Символы для построения вертикального графика (блоки разной высоты)
     # Если в консоли не поддерживается UTF-8, можно заменить на '#'
-    bar_chars = [" ", " ", "▂", "▃", "▄", "▅", "▆", "▇", "█", "█", "█"]
+    # bar_chars = [" ", " ", "▂", "▃", "▄", "▅", "▆", "▇", "█", "█", "█"]
 
     print("\n" + "="*50)
     duration = len(audio_segment) / config.SR
@@ -76,7 +76,7 @@ def visualize_segment_energy(
 
 def trim_silence_dyn_end(
     audio_segment: numpy.ndarray,
-    profile_name="low_noise",
+    profile_name: str ="low_noise",
     pad_ms: int = 100
 ) -> numpy.ndarray:
     """

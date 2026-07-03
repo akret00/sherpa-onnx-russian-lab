@@ -7,6 +7,7 @@
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Generator
 from dataclasses import dataclass
 import numpy
 from sherpa_onnx import VadModelConfig, VoiceActivityDetector
@@ -14,7 +15,7 @@ from config import SR
 from entities import AudioSegment
 
 
-def get_speec_segments(vad: BaseVAD):
+def get_speec_segments(vad: BaseVAD) -> Generator[tuple[numpy.ndarray, float, float]]:
     """Извлекает сегменты из VAD и возвращает их как генератор."""
     # Пока VAD не пустой, то есть содержит законченные фразы
     while not vad.empty():
@@ -41,11 +42,11 @@ class BaseVAD(ABC):
     """
     @property
     @abstractmethod
-    def front(self):
+    def front(self) -> FakeSpeechSegment:
         """Возвращает свойство front"""
 
     @abstractmethod
-    def accept_waveform(self, samples: numpy.ndarray[numpy.float32]) -> None:
+    def accept_waveform(self, samples: numpy.ndarray) -> None:
         """
         Принимает новую порцию аудио-сэмплов.
         samples: np.ndarray с dtype=np.float32 и значениями в диапазоне [-1.0, 1.0]
@@ -78,16 +79,19 @@ class SherpaVADAdapter(BaseVAD):
         self._real_vad = VoiceActivityDetector(config, buffer_size_in_seconds)
 
     @property
-    def front(self):
+    def front(self) -> FakeSpeechSegment:
         """Чтение атрибута из оригинального класса"""
-        return self._real_vad.front
+        return FakeSpeechSegment(
+            start = self._real_vad.front.start,
+            samples = self._real_vad.front.samples
+        )
 
     def accept_waveform(self, samples: numpy.ndarray) -> None:
         # Просто пробрасываем вызов в C++ (в оригинальный класс VoiceActivityDetector)
         self._real_vad.accept_waveform(samples)
 
     def empty(self) -> bool:
-        return self._real_vad.empty()
+        return bool(self._real_vad.empty())
 
     def pop(self) -> None:
         self._real_vad.pop()
@@ -116,11 +120,11 @@ class OracleVAD(BaseVAD):
     def __init__(self, buffer_size_in_seconds: int = 100, padding_seconds: float = 0.0):
         self.sample_rate = SR
         self.padding = padding_seconds
-        self.markup_segments: list[AudioSegment] | None = None
+        self.markup_segments: list[AudioSegment] = []
         self.last_sample_num = 0
-        self.current_markup_segment_num : int = 0
+        self.current_markup_segment_num = 0
         self.buffer_size_in_seconds = buffer_size_in_seconds
-        self.speech_buffer: numpy.ndarray[numpy.float32] = numpy.zeros(
+        self.speech_buffer: numpy.ndarray = numpy.zeros(
             buffer_size_in_seconds * SR,
             dtype=numpy.float32
         )
@@ -132,10 +136,10 @@ class OracleVAD(BaseVAD):
         self.phrase_ready = False
 
         # Создаем публичный атрибут front, как у оригинального VAD
-        self._front: FakeSpeechSegment | None = FakeSpeechSegment()
+        self._front: FakeSpeechSegment = FakeSpeechSegment()
 
     @property
-    def front(self):
+    def front(self) -> FakeSpeechSegment:
         """Чтение атрибута из оригинального класса"""
         return self._front
 
@@ -157,7 +161,7 @@ class OracleVAD(BaseVAD):
 
         self.reset() # Сброс количестка накопленных сэмплов меток в ноль
 
-    def accept_waveform(self, samples: numpy.ndarray[numpy.float32]) -> None:
+    def accept_waveform(self, samples: numpy.ndarray) -> None:
         # Считаем временные границы текущего чанка
         num_samples = len(samples)
         start_chunk_time = self.last_sample_num / self.sample_rate

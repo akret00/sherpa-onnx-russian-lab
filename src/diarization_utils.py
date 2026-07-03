@@ -1,12 +1,25 @@
 """Модуль содержит утилиты для разных способов диаризации"""
 from enum import Enum, auto
 from dataclasses import dataclass
+import typing
 import numpy
+import sherpa_onnx
 import model_utils
-import asr_utils
 from config import pl_conf, SR, MIN_SEARCH_SEG_LEN, MAX_PAUSE_FOR_INERTIA
 import segment_utils
-from speaker_storage import Speaker
+from entities import Speaker
+
+def compute_embedding(
+    extractor: sherpa_onnx.SpeakerEmbeddingExtractor,
+    samples_f32: numpy.ndarray
+) -> numpy.ndarray:
+    """Рассчитывает эмбеддинг голоса для сегмента аудио"""
+    stream = extractor.create_stream()
+    stream.accept_waveform(sample_rate = SR, waveform = samples_f32)
+    stream.input_finished()
+    # extractor.is_ready(stream) обычно True, если сегмент не слишком короткий
+    emb = extractor.compute(stream)
+    return numpy.array(emb, dtype=numpy.float32)
 
 @dataclass
 class ResolveResult:
@@ -33,7 +46,7 @@ class SpeakerResolver:
             self,
             num_threads: int,
             spk_threshold: float,
-            resolving_mode: SpeakerResolvingMode = None,
+            resolving_mode: SpeakerResolvingMode | None = None,
             speakers: list[Speaker] | None = None,
     ):
         self._resolving_mode = resolving_mode
@@ -46,10 +59,7 @@ class SpeakerResolver:
         self._spk_model = pl_conf.embed.model_path
         self._provider = pl_conf.runtime.provider
         # Список спикеров с векторами и количеством накопленных фраз
-        if speakers is None:
-            self._speakers: list[Speaker] = []
-        else:
-            self._speakers: list[Speaker] = speakers
+        self._speakers: list[Speaker] = [] if speakers is None else speakers
 
         if self._resolving_mode == SpeakerResolvingMode.VAD_SIMPLE_CENTROID:
             # Переменные для сброса последнего спикера при паузах
@@ -74,21 +84,25 @@ class SpeakerResolver:
         else:
             raise ValueError(f"Тип диаризации {resolving_mode} пока не поддерживается")
 
-    def _normalize_vector(self, vec):
+    def _normalize_vector(self, vec: numpy.ndarray) -> numpy.ndarray:
         norm = numpy.linalg.norm(vec)
         if norm == 0:
             return vec  # Защита от деления на ноль, если вектор пустой
-        return vec / norm
+        return typing.cast(numpy.ndarray, vec / norm)
 
-    def _update_speaker_profile(self, speaker: Speaker, new_emb, alpha=0.1):
+    def _update_speaker_profile(
+        self, speaker: Speaker, new_emb: numpy.ndarray, alpha: float =0.1
+    ) -> None:
         """Мягкое обновление центроида спикера"""
         old_centroid = speaker.embedding
+        if old_centroid is None:
+            raise ValueError("Эмбеддинг не может иметь значение None")
         # Формула экспоненциального сглаживания
         updated_centroid = (1 - alpha) * old_centroid + alpha * new_emb
         # Нормализуем вектор обратно (важно для косинусного сходства)
         speaker.embedding = self._normalize_vector(updated_centroid)
 
-    def _search_or_create_speaker_manager(self, emb) -> ResolveResult:
+    def _search_or_create_speaker_manager(self, emb: numpy.ndarray) -> ResolveResult:
         matched_id = self._manager.search(emb, threshold = self._spk_threshold)
         if not matched_id:
             spk = Speaker(
@@ -107,7 +121,9 @@ class SpeakerResolver:
 
         return ResolveResult(speaker = spk, cos_similarity = score)
 
-    def _search_or_create_speaker_centriod(self, seg, emb) -> ResolveResult:
+    def _search_or_create_speaker_centriod(
+        self, seg: numpy.ndarray, emb: numpy.ndarray
+    ) -> ResolveResult:
         """
         Делает:
             - поиск эмбеддинга фразы спикера среди центроидов
@@ -116,7 +132,7 @@ class SpeakerResolver:
         """
         # Ищем в нашей базе через косинусное сходство
         best_spk = None
-        best_score = -1
+        best_score = -1.0
         for curr_spk in self._speakers:
             score = numpy.dot(curr_spk.embedding, emb) # Косинусное для нормированных векторов
             if score > best_score:
@@ -142,11 +158,11 @@ class SpeakerResolver:
 
         return ResolveResult(speaker = spk, cos_similarity = best_score)
 
-    def get_speakers(self):
+    def get_speakers(self) -> list[Speaker]:
         """Возвращает список спикеров"""
         return self._speakers
 
-    def resolve(self, seg, t_start = 0, t_end = 0):
+    def resolve(self, seg: numpy.ndarray, t_start: float = 0, t_end: float = 0) -> ResolveResult:
         """
             Вычисляет эмбеддинг голоса из фразы.
             Пытается найти соответствие в базе голосов, если находит, то возвращает id спикера.
@@ -158,7 +174,7 @@ class SpeakerResolver:
             resolve_result = ResolveResult(speaker = None, cos_similarity = -1)
         # Расчет эмбеддинга спикера и поиск спикера по эмбеддингам
         elif self._resolving_mode == SpeakerResolvingMode.VAD_SPEAKER_MANAGER:
-            emb = self._normalize_vector(asr_utils.compute_embedding(self._extractor, seg))
+            emb = self._normalize_vector(compute_embedding(self._extractor, seg))
             resolve_result = self._search_or_create_speaker_manager(emb)
             resolve_result.speaker.count += 1
             resolve_result.speaker.total_count += 1
@@ -180,7 +196,7 @@ class SpeakerResolver:
 
             # 3. Логика определения спикера (только для качественных сегментов)
             if len(vad_seg) >= int(MIN_SEARCH_SEG_LEN * SR):
-                emb = self._normalize_vector(asr_utils.compute_embedding(self._extractor, vad_seg))
+                emb = self._normalize_vector(compute_embedding(self._extractor, vad_seg))
                 resolve_result = self._search_or_create_speaker_centriod(vad_seg, emb)
                 resolve_result.speaker.count += 1
                 resolve_result.speaker.total_count += 1

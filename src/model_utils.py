@@ -3,8 +3,13 @@ import sherpa_onnx
 from config import SR, pl_conf, PYANNOTE_MIN_DURATION_OFF, PYANNOTE_MIN_DURATION_ON
 from vad_utils import BaseVAD, SherpaVADAdapter
 
-def load_vad(vad_model: str, threshold: float, min_silence: float, min_speech: float,
-            max_speech: float) -> tuple[BaseVAD, int]:
+def load_vad(
+    vad_model: str,
+    threshold: float,
+    min_silence: float,
+    min_speech: float,
+    max_speech: float
+) -> tuple[BaseVAD, int]:
     """Загружает модель VAD"""
     cfg = sherpa_onnx.VadModelConfig()
     cfg.silero_vad.model = vad_model
@@ -22,7 +27,12 @@ def load_vad(vad_model: str, threshold: float, min_silence: float, min_speech: f
     window_size = cfg.silero_vad.window_size  # in samples
     return vad, window_size
 
-def load_embedder(model: str, num_threads: int, provider: str = "cpu", debug: bool = False):
+def load_embedder(
+    model: str,
+    num_threads: int,
+    provider: str = "cpu",
+    debug: bool = False
+) -> tuple[sherpa_onnx.SpeakerEmbeddingExtractor, sherpa_onnx.SpeakerEmbeddingManager]:
     """Загружает embedding модель"""
     cfg = sherpa_onnx.SpeakerEmbeddingExtractorConfig(
         model=model,
@@ -36,7 +46,7 @@ def load_embedder(model: str, num_threads: int, provider: str = "cpu", debug: bo
     manager = sherpa_onnx.SpeakerEmbeddingManager(extractor.dim)
     return extractor, manager
 
-def load_asr():
+def load_asr() -> sherpa_onnx.OfflineRecognizer:
     """Загружает модель ASR"""
     if pl_conf.asr.model_type == "nemo_ctc":
         return sherpa_onnx.OfflineRecognizer.from_nemo_ctc(
@@ -62,7 +72,10 @@ def load_asr():
 
     raise ValueError(f"Unknown ASR type: {pl_conf.asr.model_type}")
 
-def load_pyannote_diarization(num_speakers: int = -1, cluster_threshold: float = 0.6):
+def load_pyannote_diarization(
+    num_speakers: int = -1,
+    cluster_threshold: float = 0.6
+) -> sherpa_onnx.OfflineSpeakerDiarization:
     """
     Args:
       num_speakers:

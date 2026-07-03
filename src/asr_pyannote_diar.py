@@ -76,7 +76,7 @@ def progress_callback(done: int, total: int) -> int:
         print("", file=sys.stderr)
     return 0
 
-def main():
+def main() -> None:
     """Основная функция"""
     # Засекаем время начала инициализации
     init_start_time = time.perf_counter()

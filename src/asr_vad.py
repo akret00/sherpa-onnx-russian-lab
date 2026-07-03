@@ -9,7 +9,7 @@ import args_utils
 import common_utils
 from pipeline_vad import AsrPipeline
 
-def main():
+def main() -> None:
     """Основная функция"""
     args = args_utils.parse_args()
 

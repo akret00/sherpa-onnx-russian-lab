@@ -140,7 +140,7 @@ def generate_scenario(recipe: Recipe, audio_files: list[AudioFileMarkup]) -> Sce
     # 5. Сборка финального датасета сценариев
     return Scenario(episodes = episodes)
 
-def main():
+def main() -> None:
     """Точка входа скрипта генерации сценария."""
     print("Запуск генератора сценариев...")
 
@@ -154,7 +154,7 @@ def main():
     print(f"Загрузка рецепта из: {yaml_recipe_path}")
 
     # 2. Загрузка рецепта в датакласс Recipe
-    recipe = load_recipe_from_yaml(yaml_recipe_path)
+    recipe = load_recipe_from_yaml(str(yaml_recipe_path))
     print(
         f"Рецепт '{recipe.recipe_id}' успешно загружен. "
         f"Шагов в таймлайне: {len(recipe.timeline)}"

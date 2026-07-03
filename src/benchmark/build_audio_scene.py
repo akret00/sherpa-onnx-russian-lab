@@ -175,7 +175,7 @@ def main() -> None:
     print(f"Загрузка сценария из: {yaml_scenario_path}")
 
     # 2. Загрузка сценария в датакласс Scenarion
-    scenario = load_scenario_from_yaml(yaml_scenario_path)
+    scenario = load_scenario_from_yaml(str(yaml_scenario_path))
     print(
         f"Сценарий '{yaml_scenario_path}' успешно загружен. "
         f"Эпизодов в сценарии: {len(scenario.episodes)}"
@@ -204,7 +204,7 @@ def main() -> None:
     src_audio_data = []
     for af in audio_files:
         audio_file_path = af.file_path
-        src_audio_data.append(read_all_samples(audio_file_path))
+        src_audio_data.append(read_all_samples(str(audio_file_path)))
         print(f" -> Загружен аудиофайл {audio_file_path}")
 
     # 5. Генерация аудио сцены

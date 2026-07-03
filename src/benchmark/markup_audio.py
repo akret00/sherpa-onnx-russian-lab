@@ -10,7 +10,7 @@ import common_utils
 from pipeline_vad import CentroidDiarizationPipeline
 import benchmark.dataset_storage
 
-def main():
+def main() -> None:
     """Основная функция"""
     args = args_utils.parse_args()
 

@@ -205,12 +205,12 @@ class SegmentationConfig:
 @dataclass
 class PipelineConfig:
     """Главный конфигурационный класс пайплайна"""
-    runtime: RuntimeConfig | None = None
-    vad: VadConfig | None = None
-    asr: AsrConfig | None = None
-    embed: EmbeddingConfig | None = None
-    diar_vad: VadDiarizationConfig | None = None
-    segmentation: SegmentationConfig | None = None
+    runtime: RuntimeConfig
+    vad: VadConfig
+    asr: AsrConfig
+    embed: EmbeddingConfig
+    diar_vad: VadDiarizationConfig
+    segmentation: SegmentationConfig
 
 # Создаем экземпляр (синглтон) для импорта в другие файлы
 config = Config()
