@@ -183,6 +183,7 @@ class EmbeddingConfig:
 @dataclass
 class VadDiarizationConfig:
     """Настройки VAD диаризации"""
+    use_oracle: bool = False
     spk_threshold: float = 0.4  # Порог косинусной схожести для поиска спикера
     # min_seg_sec: float = 0.5
 

@@ -220,6 +220,7 @@ def main() -> None:
                 audio_path = str(audio_path),
                 ground_truth_path = str(gt_file),
                 use_oracle_vad = True,
+                use_oracle_asr = True,
                 pipeline_type = PipelineType.ASR_PIPELINE,
             ),
         ]

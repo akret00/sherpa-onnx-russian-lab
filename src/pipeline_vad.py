@@ -27,6 +27,7 @@ class BaseVadPipeline:
     def _init_models(self) -> None:
         """Инициализация моделей"""
         # Инициализируем VAD
+        # ToDo: Переделать как с ASR моделью
         if self._pl_config.vad.use_oracle:
             # Создаем OracleVAD
             self._vad = vad_utils.OracleVAD(buffer_size_in_seconds = 100, padding_seconds = 0.0)
@@ -42,7 +43,13 @@ class BaseVadPipeline:
             )
 
         # Инициализируем ASR распознаватель
-        self._recognizer = model_utils.load_asr()
+        self._asr: asr_utils.BaseASR
+        if self._pl_config.asr.use_oracle:
+            # Создаем OracleASR
+            self._asr = asr_utils.OracleASR()
+        else:
+            # Создаем оригинальный ASR распознаватель
+            self._asr = asr_utils.SherpaASRAdapter(pl_config = self._pl_config)
 
     def set_markup_segments(self, markup_segments: list[AudioSegment] | None = None) -> None:
         """Устанавливает эталонную разметку во всех Оракулах пайплайна, которые включены"""
@@ -62,6 +69,12 @@ class BaseVadPipeline:
         # Если пайплайн в режиме OracleVAD, устанавливаем эталонную разметку
         if self._pl_config.vad.use_oracle:
             self._vad.set_markup_segments(self.markup_segments)
+        # Если пайплайн в режиме OracleASR, устанавливаем эталонную разметку
+        if self._pl_config.asr.use_oracle:
+            if isinstance(self._asr, asr_utils.OracleASR):
+                self._asr.set_markup_segments(self.markup_segments)
+            else:
+                raise ValueError("В режиме Оракула атрибут _asr должен иметь тип OracleASR")
 
     def run_as_stream(
         self, audio_path: str = "mic",
@@ -78,8 +91,12 @@ class BaseVadPipeline:
         self.pipeline_result = None
         # Вызываем установку эталонной разметки для Оракулов, которые включены
         self.set_markup_segments(markup_segments)
-        # Сброс внутреннего состояния VAD в исходное
-        self._vad.reset()
+        # Сброс внутреннего состояния Оракула VAD в исходное
+        if isinstance(self._vad, vad_utils.OracleVAD):
+            self._vad.reset()
+        # Сброс внутреннего состояния Оракула ASR в исходное
+        if isinstance(self._asr, asr_utils.OracleASR):
+            self._asr.reset()
 
         if audio_path == "mic":
             proc = ffmpeg_utils.make_ffmpeg_proc_for_pulse_default()
@@ -109,11 +126,11 @@ class BaseVadPipeline:
                 # После извлечения фразы из VAD методом vad.pop(), VAD становится пустым,
                 # и vad.empty() == True
                 self._vad.accept_waveform(samples)
-                for segment, t_start, t_end in vad_utils.get_speec_segments(self._vad):
+                for vad_seg, t_start, t_end in vad_utils.get_speec_segments(self._vad):
                     # Распознаем (ASR) полученный из VAD сегмент
-                    text = asr_utils.decode_asr(self._recognizer, segment)
+                    text = self._asr.decode_asr(samples_f32 = vad_seg, t_start = t_start)
                     # Распознаем спикера
-                    resolve_result = self._speaker_resolver.resolve(segment, t_start, t_end)
+                    resolve_result = self._speaker_resolver.resolve(vad_seg, t_start, t_end)
 
                     # if text:
                     segment = AudioSegment(
@@ -131,11 +148,11 @@ class BaseVadPipeline:
             zeros = np.zeros(self._window_size, dtype=np.float32)
             for _ in range(int(SR / self._window_size) + 2):
                 self._vad.accept_waveform(zeros)
-                for segment, t_start, t_end in vad_utils.get_speec_segments(self._vad):
+                for vad_seg, t_start, t_end in vad_utils.get_speec_segments(self._vad):
                     # Распознаем (ASR) полученный из VAD сегмент
-                    text = asr_utils.decode_asr(self._recognizer, segment)
+                    text = self._asr.decode_asr(samples_f32 = vad_seg, t_start = t_start)
                     # Распознаем спикера
-                    resolve_result = self._speaker_resolver.resolve(segment, t_start, t_end)
+                    resolve_result = self._speaker_resolver.resolve(vad_seg, t_start, t_end)
 
                     if text:
                         segment = AudioSegment(

@@ -3,6 +3,7 @@ import sherpa_onnx
 from config import SR, pl_conf, PYANNOTE_MIN_DURATION_OFF, PYANNOTE_MIN_DURATION_ON
 from vad_utils import BaseVAD, SherpaVADAdapter
 
+# ToDo: убрать функцию, ибо она продублирована в vad_utils
 def load_vad(
     vad_model: str,
     threshold: float,
@@ -46,6 +47,7 @@ def load_embedder(
     manager = sherpa_onnx.SpeakerEmbeddingManager(extractor.dim)
     return extractor, manager
 
+# ToDo: убрать функцию, ибо она продублирована в asr_utils
 def load_asr() -> sherpa_onnx.OfflineRecognizer:
     """Загружает модель ASR"""
     if pl_conf.asr.model_type == "nemo_ctc":

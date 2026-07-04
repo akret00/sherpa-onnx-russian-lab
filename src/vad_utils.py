@@ -73,6 +73,7 @@ class SherpaVADAdapter(BaseVAD):
     Безопасная обертка над оригинальным бинарным C++ классом sherpa_onnx.
     Приводит его к нашей строгой Python-иерархии.
     """
+    # ToDo: заменить типа аргумента с sherpa_onnx.VadModelConfig на config.VadConfig
     def __init__(self, config: VadModelConfig, buffer_size_in_seconds: int):
         # Инициализируем настоящий бинарный объект внутри
         # self._real_vad = sherpa_onnx.VoiceActivityDetector(config, buffer_size_in_seconds)
@@ -212,7 +213,7 @@ class OracleVAD(BaseVAD):
                 # Фраза закончилась
                 self.in_phrase = False
                 # Заполняем объект front, из которого получают результат
-                self._front.start = int(self.phrase_start_sample)
+                self._front.start = int(seg.start_time * SR)
                 self._front.samples = self.speech_buffer[:write_pointer].copy()
                 self.phrase_ready = True # Фраза готова
                 # Определяем следующий ожидаемый сегмент разметки

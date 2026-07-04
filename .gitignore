@@ -8,6 +8,7 @@ __pycache__/
 dataset/*.opus
 dataset/*bak
 dataset/test*
+experiments/runs/
 notebooks/
 models/
 scripts/
