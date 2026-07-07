@@ -15,8 +15,9 @@
     (окончаниях, падежах), и ее можно брать в работу.
 """
 # Запуск: PYTHONPATH=src python src/benchmark/scorer_wer.py
+from pathlib import Path
 import jiwer
-from config import PipelineType, BASE_DIR
+from config import PipelineType, BASE_DIR, AUDIO_PATH_ORACLE_EMPTY
 from benchmark.experiment_runner import ExperimentRunner
 from benchmark.experiment_entities import (
     ExperimentSpec, PipelineResultExperiment,
@@ -213,6 +214,7 @@ def main() -> None:
     else: # Сохраненного результата нет, запускаем бенчмарк и сохраняем результаты
         print("Сохраненные результаты отсутствуют, запускается бенчмарк...")
         audio_path = BASE_DIR / "dataset" / "speaker001.opus"
+        # audio_path = Path(AUDIO_PATH_ORACLE_EMPTY)
         gt_file = BASE_DIR / "dataset" / "speaker001.opus.yaml"
         exp_specs = [
             ExperimentSpec(

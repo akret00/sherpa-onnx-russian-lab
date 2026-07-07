@@ -22,6 +22,7 @@ class BaseVadPipeline:
         self.pipeline_result: PipelineResult | None = None
         # Список сегментов разметки для режимов OracleVAD, OracleASR, OracleDiarization
         self.markup_segments: list[AudioSegment] | None = None
+        self.test_duration_sec: float = 0.0
         self._init_models()
 
     def _init_models(self) -> None:
@@ -76,6 +77,11 @@ class BaseVadPipeline:
             else:
                 raise ValueError("В режиме Оракула атрибут _asr должен иметь тип OracleASR")
 
+        if self.markup_segments:
+            self.test_duration_sec = self.markup_segments[-1].end_time
+        else:
+            self.test_duration_sec = 0.0
+
     def run_as_stream(
         self, audio_path: str = "mic",
         markup_segments: list[AudioSegment] | None = None,
@@ -98,26 +104,37 @@ class BaseVadPipeline:
         if isinstance(self._asr, asr_utils.OracleASR):
             self._asr.reset()
 
-        if audio_path == "mic":
-            proc = ffmpeg_utils.make_ffmpeg_proc_for_pulse_default()
-        else:
-            proc = ffmpeg_utils.make_ffmpeg_proc_for_file(audio_path)
-        if proc.stdout is None:
-            print("ffmpeg stdout is None", file=sys.stderr)
-            ffmpeg_utils.close_ffmpeg_proc(proc)
-            sys.exit(1)
+        # if audio_path == "mic":
+        #     proc = ffmpeg_utils.make_ffmpeg_proc_for_pulse_default()
+        #     buff_size_secs = self._window_size / SR
+        # else:
+        #     proc = ffmpeg_utils.make_ffmpeg_proc_for_file(audio_path)
+        #     buff_size_secs = 10.0
+        # if proc.stdout is None:
+        #     print("ffmpeg stdout is None", file=sys.stderr)
+        #     ffmpeg_utils.close_ffmpeg_proc(proc)
+        #     sys.exit(1)
 
-        try:
+        # audio_pipe = ffmpeg_utils.AudioPipeBuffer(
+        #     ffmpeg_proc = proc, internal_buff_sec = buff_size_secs
+        # )
+
+        # try:
+        with ffmpeg_utils.AudioStreamReader(
+            path = audio_path, duration_sec = self.test_duration_sec
+        ) as as_reader:
             # Оснвной цикл
             segments: list[AudioSegment] = []
             audio_file = AudioFile(file_path = audio_path, segments = segments)
-            while True:
+            # while True:
+            for samples in as_reader.iter_chunks():
                 # Пробуем прочитать полный блок (window_size == 512) данных (0.032 секунды аудио)
-                samples = ffmpeg_utils.read_samples(proc, self._window_size)
+                # samples = ffmpeg_utils.read_samples(proc, self._window_size)
+                # samples = audio_pipe.get_samples_f32(self._window_size)
                 # Если блок пустой или неполный, то игнорируем его и переходим к выталкиванию
                 # из VAD тишиной последней незавершенной фразы, если она есть
-                if len(samples) == 0 or len(samples) < self._window_size:
-                    break
+                # if len(samples) == 0 or len(samples) < self._window_size:
+                #     break
 
                 # Передает в VAD очередной блок данных. Когда VAD определяет начало фразы, он
                 # начинает накапливать фрагменты фразы до тех пор, пока не определит завершение
@@ -126,27 +143,28 @@ class BaseVadPipeline:
                 # После извлечения фразы из VAD методом vad.pop(), VAD становится пустым,
                 # и vad.empty() == True
                 self._vad.accept_waveform(samples)
-                for vad_seg, t_start, t_end in vad_utils.get_speec_segments(self._vad):
-                    # Распознаем (ASR) полученный из VAD сегмент
-                    text = self._asr.decode_asr(samples_f32 = vad_seg, t_start = t_start)
-                    # Распознаем спикера
-                    resolve_result = self._speaker_resolver.resolve(vad_seg, t_start, t_end)
+                if not self._vad.empty():
+                    for vad_seg, t_start, t_end in vad_utils.get_speec_segments(self._vad):
+                        # Распознаем (ASR) полученный из VAD сегмент
+                        text = self._asr.decode_asr(samples_f32 = vad_seg, t_start = t_start)
+                        # Распознаем спикера
+                        resolve_result = self._speaker_resolver.resolve(vad_seg, t_start, t_end)
 
-                    # if text:
-                    segment = AudioSegment(
-                        # audio_file = audio_file,
-                        speaker = resolve_result.speaker,
-                        cos_similarity = resolve_result.cos_similarity,
-                        start_time = t_start,
-                        end_time = t_end,
-                        text = text,
-                    )
-                    segments.append(segment)
-                    yield segment
+                        # if text:
+                        segment = AudioSegment(
+                            # audio_file = audio_file,
+                            speaker = resolve_result.speaker,
+                            cos_similarity = resolve_result.cos_similarity,
+                            start_time = t_start,
+                            end_time = t_end,
+                            text = text,
+                        )
+                        segments.append(segment)
+                        yield segment
 
-            # Проталкиваем в VAD последнюю неоконченную фразу 1 секундой тишины (нулевые данные)
+            # Проталкиваем в VAD последнюю неоконченную фразу 2 секундами тишины (нулевые данные)
             zeros = np.zeros(self._window_size, dtype=np.float32)
-            for _ in range(int(SR / self._window_size) + 2):
+            for _ in range(int(SR / self._window_size) * 2):
                 self._vad.accept_waveform(zeros)
                 for vad_seg, t_start, t_end in vad_utils.get_speec_segments(self._vad):
                     # Распознаем (ASR) полученный из VAD сегмент
@@ -165,8 +183,8 @@ class BaseVadPipeline:
                         )
                         segments.append(segment)
                         yield segment
-        finally:
-            ffmpeg_utils.close_ffmpeg_proc(proc)
+        # finally:
+        #     ffmpeg_utils.close_ffmpeg_proc(proc)
 
         # Засекаем время окончания работы пайплайна
         pl_end_time = time.perf_counter()

@@ -34,6 +34,9 @@ if BIN_DIR.is_dir() and str(BIN_DIR) not in os.environ["PATH"]:
 DB_DEFAULT_PATH = BASE_DIR / "db" / "speaker.sqlite3"
 DB_DEFAULT_SCHEME_PATH = BASE_DIR / "src" / "db_scheme.sql"
 
+AUDIO_PATH_MIC = "mic"
+AUDIO_PATH_ORACLE_EMPTY = "oracle:empty"
+
 class PipelineType(Enum):
     """Содержит типы пайплайнов"""
     ASR_PIPELINE = "asr"
