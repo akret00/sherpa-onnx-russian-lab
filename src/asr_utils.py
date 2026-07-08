@@ -113,5 +113,5 @@ class OracleASR(BaseASR):
         return " ".join(collected_texts)
 
     def reset(self) -> None:
-        """Сброс состояния Оракула перез новым циклом"""
+        """Сброс состояния Оракула перед новым циклом"""
         self.current_markup_segment_num = 0

@@ -56,6 +56,8 @@ class BaseVadPipeline:
         """Устанавливает эталонную разметку во всех Оракулах пайплайна, которые включены"""
         # Если markup_segments не задан, то пропускаем установку
         if markup_segments is None:
+            self.markup_segments = None
+            self.test_duration_sec = 0.0
             return
         # Проверка на отрицательную или нулевую длительность
         for i, seg in enumerate(markup_segments):
@@ -66,6 +68,8 @@ class BaseVadPipeline:
 
         # Сортируем сегменты по start_time в порядке возрастания
         self.markup_segments = sorted(markup_segments, key=lambda x: x.start_time)
+        # Устанавливаем длительность пустого тестового аудио
+        self.test_duration_sec = self.markup_segments[-1].end_time
 
         # Если пайплайн в режиме OracleVAD, устанавливаем эталонную разметку
         if self._pl_config.vad.use_oracle:
@@ -76,11 +80,9 @@ class BaseVadPipeline:
                 self._asr.set_markup_segments(self.markup_segments)
             else:
                 raise ValueError("В режиме Оракула атрибут _asr должен иметь тип OracleASR")
-
-        if self.markup_segments:
-            self.test_duration_sec = self.markup_segments[-1].end_time
-        else:
-            self.test_duration_sec = 0.0
+        if self._pl_config.diar_vad.use_oracle:
+            if isinstance(self._speaker_resolver, SpeakerResolver):
+                self._speaker_resolver.set_markup_segments(self.markup_segments)
 
     def run_as_stream(
         self, audio_path: str = "mic",
@@ -103,6 +105,9 @@ class BaseVadPipeline:
         # Сброс внутреннего состояния Оракула ASR в исходное
         if isinstance(self._asr, asr_utils.OracleASR):
             self._asr.reset()
+        # Сброс состояния Оракула резольвера спикеров в исходное состояние
+        if isinstance(self._speaker_resolver, SpeakerResolver):
+            self._speaker_resolver.reset()
 
         # if audio_path == "mic":
         #     proc = ffmpeg_utils.make_ffmpeg_proc_for_pulse_default()
@@ -240,7 +245,10 @@ class ManagerDiarizationPipeline(BaseVadPipeline):
         self._speaker_resolver = SpeakerResolver(
             num_threads = self._pl_config.runtime.num_threads,
             spk_threshold = self._pl_config.diar_vad.spk_threshold,
-            resolving_mode = SpeakerResolvingMode.VAD_SPEAKER_MANAGER,
+            resolving_mode = (
+                SpeakerResolvingMode.ORACLE if self._pl_config.diar_vad.use_oracle
+                else SpeakerResolvingMode.VAD_SPEAKER_MANAGER
+            ),
             speakers = self._speakers,
         )
 
@@ -255,6 +263,9 @@ class CentroidDiarizationPipeline(BaseVadPipeline):
         self._speaker_resolver = SpeakerResolver(
             num_threads = self._pl_config.runtime.num_threads,
             spk_threshold = self._pl_config.diar_vad.spk_threshold,
-            resolving_mode = SpeakerResolvingMode.VAD_SIMPLE_CENTROID,
+            resolving_mode = (
+                SpeakerResolvingMode.ORACLE if self._pl_config.diar_vad.use_oracle
+                else SpeakerResolvingMode.VAD_SIMPLE_CENTROID
+            ),
             speakers = self._speakers,
         )

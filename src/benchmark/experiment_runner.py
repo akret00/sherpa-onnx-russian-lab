@@ -96,12 +96,8 @@ class ExperimentRunner:
             else:
                 raise ValueError(f"Неизвестный тип пайплайна: {pl_config.runtime.pipeline_type}")
 
-            # Если включен режим Оракула, то загружаем эталонную разметку
-            if (
-                exp_spec.use_oracle_vad
-                or exp_spec.use_oracle_asr
-                or exp_spec.use_oracle_diarization
-            ):
+            # Если задана эталонная разметка, то загружаем ее
+            if exp_spec.ground_truth_path is not None:
                 gt_markup = self.load_ground_truth(exp_spec.ground_truth_path)
             else:
                 gt_markup = None
@@ -112,7 +108,10 @@ class ExperimentRunner:
             for seg in pl.run_as_stream(audio_path = audio_path, markup_segments = gt_markup):
                 ts_start = common_utils.format_timestamp(seg.start_time)
                 ts_end = common_utils.format_timestamp(seg.end_time)
-                print(f"[{ts_start}-{ts_end}] {seg.text}")
+                if seg.speaker:
+                    print(f"[{ts_start}-{ts_end}] {seg.speaker.name}: {seg.text}")
+                else:
+                    print(f"[{ts_start}-{ts_end}] {seg.text}")
             # Конвертирует результат пайплайна в PipelineResultExperiment
             pipeline_result_exp = PipelineResultExperiment(**pl.pipeline_result.__dict__)
             pipeline_result_exp.exp_spec = exp_spec

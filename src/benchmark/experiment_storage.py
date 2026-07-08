@@ -125,7 +125,7 @@ def _serialize_segments(segments: list[AudioSegment] | None) -> list[dict] | Non
         # Превращаем сегмент в словарь
         seg_dict = dataclasses.asdict(segment)
         # Удаляем ссылки на тяжелые/цикличные вложенные объекты
-        seg_dict.pop("audio_file", None)
+        # seg_dict.pop("audio_file", None)
         seg_dict.pop("speaker", None)
 
         serialized_segments.append(seg_dict)

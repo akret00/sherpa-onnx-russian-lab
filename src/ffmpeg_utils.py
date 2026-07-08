@@ -95,6 +95,8 @@ class SilenceAudioSource:
         return numpy.zeros(current_chunk_size, dtype=numpy.float32)
 
 
+# ToDo: решить, нужно ли буферизованное чтение из ffmpeg большими блоками?
+# Измерить разницу с вариантом без буфера.
 class AudioPipeBuffer:
     """Буферизированный загрузчик аудио из потока ffmpeg"""
     def __init__(
@@ -143,6 +145,7 @@ class AudioPipeBuffer:
 
         return output_f32
 
+# ToDo: Возможно, стоит убрать методы внутрь соответствующих классов
 def make_ffmpeg_proc_for_file(path: str) -> subprocess.Popen[bytes]:
     """Создает подпроцесс с ffmpeg"""
     # Decode to 16kHz mono signed 16-bit little-endian PCM to stdout
@@ -216,6 +219,7 @@ def read_samples(proc: subprocess.Popen[bytes], window_size: int) -> numpy.ndarr
     samples = pcm16.astype(numpy.float32) / 32768.0  # [-1, 1]
     return samples
 
+# ToDo: переместить метод в соответсвующий класс
 def read_all_samples(path: str, step_minutes: int = 10) -> numpy.ndarray:
     """Читаем из потока подпроцесса все данные сразу"""
     # 512 сэмплов при 16кГц — это как раз 0.032 секунды (window_size)

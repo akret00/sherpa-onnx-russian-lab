@@ -25,20 +25,24 @@ def main() -> None:
         print(f"Загружены результаты эксперимента: {exp_id}")
         if pl_result is None:
             raise ValueError(f"Не найдены результаты эксперимента: {exp_id}")
-        total_wer = calc_wer_total(pl_res_exp = pl_result)
+        if pl_result.exp_spec.use_wer:
+            total_wer = calc_wer_total(pl_res_exp = pl_result)
     else: # Сохраненного результата нет, запускаем бенчмарк и сохраняем результаты
         print("Сохраненные результаты отсутствуют, запускается бенчмарк...")
-        # audio_path = BASE_DIR / "dataset" / "speaker001.opus"
-        audio_path = Path(AUDIO_PATH_ORACLE_EMPTY)
+        audio_path = BASE_DIR / "dataset" / "speaker001.opus"
+        # audio_path = Path(AUDIO_PATH_ORACLE_EMPTY)
         gt_file = BASE_DIR / "dataset" / "speaker001.opus.yaml"
         exp_specs = [
             ExperimentSpec(
                 spec_id = f"{audio_path.stem}_oracle_vad_only",
                 audio_path = str(audio_path),
                 ground_truth_path = str(gt_file),
-                use_oracle_vad = True,
-                use_oracle_asr = True,
-                pipeline_type = PipelineType.ASR_PIPELINE,
+                # use_oracle_vad = True,
+                # use_oracle_asr = True,
+                # use_oracle_diarization = True,
+                # pipeline_type = PipelineType.ASR_PIPELINE,
+                pipeline_type = PipelineType.CENTRIOD_DIARIZ_PIPELINE,
+                use_wer = True,
             ),
         ]
 
@@ -52,37 +56,43 @@ def main() -> None:
         print(f"Кэш сохранен в папке: {EXP_RUNS_BASE_DIR / exp_id}")
 
         # Запускаем расчет метрик
-        total_wer = calc_wer_total(pl_res_exp = pl_result)
+        if pl_result.exp_spec.use_wer:
+            total_wer = calc_wer_total(pl_res_exp = pl_result)
 
-    # Сохраняем рассчитанные метрики
-    export_metrics_wer_to_yaml(metrics_exp_wer = total_wer, exp_id = exp_id)
+    if pl_result.exp_spec.use_wer:
+        # Сохраняем рассчитанные метрики
+        export_metrics_wer_to_yaml(metrics_exp_wer = total_wer, exp_id = exp_id)
 
-    print(f"Количество ref: {len(pl_result.markup_segments)} hyp: {len(pl_result.segments)}")
+        print(f"Количество ref: {len(pl_result.markup_segments)} hyp: {len(pl_result.segments)}")
 
-    if total_wer.err_segments_wer is not None:
-        print("========== Детализация ошибок по фразам ==========")
-        for idx, seg in enumerate(total_wer.err_segments_wer):
-            err_count = seg.deletions + seg.insertions + seg.substitutions
+        if total_wer.err_segments_wer is not None:
+            print("========== Детализация ошибок по фразам ==========")
+            for idx, seg in enumerate(total_wer.err_segments_wer):
+                err_count = seg.deletions + seg.insertions + seg.substitutions
+                print(
+                    f"[Фраза: {idx}] Найдено ошибок: {err_count}"
+                )
+                # Печатаем красивое выравнивание
+                print(seg.alignment)
+                print("-" * 40)
+
+        print("\n--- ИТОГОВАЯ СТАТИСТИКА КОРПУСА ---")
+        print(f"Общий WER корпуса: {total_wer.exp_wer.wer:.4f}")
+        print(f"Всего слов в эталоне: {total_wer.exp_wer.gt_words_count}")
+        print(f"Всего замен (S): {total_wer.exp_wer.substitutions}")
+        print(f"Всего удалений (D): {total_wer.exp_wer.deletions}")
+        print(f"Всего вставок (I): {total_wer.exp_wer.insertions}")
+        if total_wer.err_segments_wer:
             print(
-                f"[Фраза: {idx}] Найдено ошибок: {err_count}"
+                f"Всего строк с ошибками: {len(total_wer.err_segments_wer)} "
+                f"из {total_wer.seg_count}"
             )
-            # Печатаем красивое выравнивание
-            print(seg.alignment)
-            print("-" * 40)
 
-    print("\n--- ИТОГОВАЯ СТАТИСТИКА КОРПУСА ---")
-    print(f"Общий WER корпуса: {total_wer.exp_wer.wer:.4f}")
-    print(f"Всего слов в эталоне: {total_wer.exp_wer.gt_words_count}")
-    print(f"Всего замен (S): {total_wer.exp_wer.substitutions}")
-    print(f"Всего удалений (D): {total_wer.exp_wer.deletions}")
-    print(f"Всего вставок (I): {total_wer.exp_wer.insertions}")
-    print(f"Всего строк с ошибками: {len(total_wer.err_segments_wer)} из {total_wer.seg_count}")
-
-    print(f"Общий CER корпуса: {total_wer.exp_cer.cer:.4f}")
-    print(f"Всего символов в эталоне: {total_wer.exp_cer.gt_chars_count}")
-    print(f"Всего замен (S): {total_wer.exp_cer.substitutions}")
-    print(f"Всего удалений (D): {total_wer.exp_cer.deletions}")
-    print(f"Всего вставок (I): {total_wer.exp_cer.insertions}")
+        print(f"Общий CER корпуса: {total_wer.exp_cer.cer:.4f}")
+        print(f"Всего символов в эталоне: {total_wer.exp_cer.gt_chars_count}")
+        print(f"Всего замен (S): {total_wer.exp_cer.substitutions}")
+        print(f"Всего удалений (D): {total_wer.exp_cer.deletions}")
+        print(f"Всего вставок (I): {total_wer.exp_cer.insertions}")
 
 if __name__ == "__main__":
     main()

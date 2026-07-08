@@ -7,7 +7,7 @@ import sherpa_onnx
 import model_utils
 from config import pl_conf, SR, MIN_SEARCH_SEG_LEN, MAX_PAUSE_FOR_INERTIA
 import segment_utils
-from entities import Speaker
+from entities import Speaker, AudioSegment
 
 def compute_embedding(
     extractor: sherpa_onnx.SpeakerEmbeddingExtractor,
@@ -31,11 +31,12 @@ class SpeakerResolvingMode(Enum):
     """Возможные способы диаризации"""
     # Без диаризации
     NONE = auto()
+    # Режим Оракула
+    ORACLE = auto()
     # Способы на основе VAD (посегментно)
     VAD_SPEAKER_MANAGER = auto()   # С использованием вашего менеджера и базы
     VAD_SIMPLE_THRESHOLD = auto()  # Простое сравнение эмбеддингов по порогу
     VAD_SIMPLE_CENTROID = auto()   # Простое сравнение эмбеддингов с центроидами по порогу
-    VAD_SPEECHBRAIN = auto()       # Использование моделей SpeechBrain для эмбеддингов
     # Полноценная диаризация (целым файлом или потоком)
     PYANNOTE_OFFLINE = auto()      # Обработка всего файла целиком
     PYANNOTE_STREAMING = auto()    # Потоковая диаризация
@@ -66,6 +67,11 @@ class SpeakerResolver:
             self._last_spk = None
             self._last_end_time = 0.0
 
+        # Эьалонная разметка для Оракула
+        self.markup_segments: list[AudioSegment] = []
+        self.current_markup_segment_num = 0
+        self.padding = 0
+
         # Инициализация экстрактора
         if self._resolving_mode in (
             SpeakerResolvingMode.VAD_SPEAKER_MANAGER,
@@ -80,6 +86,8 @@ class SpeakerResolver:
                 for index, spk in enumerate(self._speakers):
                     self._manager.add(str(index + 1), spk.embedding)
         elif self._resolving_mode == SpeakerResolvingMode.NONE:
+            pass # Ничего не делаем
+        elif self._resolving_mode == SpeakerResolvingMode.ORACLE:
             pass # Ничего не делаем
         else:
             raise ValueError(f"Тип диаризации {resolving_mode} пока не поддерживается")
@@ -119,7 +127,7 @@ class SpeakerResolver:
         spk = self._speakers[int(matched_id) - 1]
         score = numpy.dot(spk.embedding, emb) # Косинусное для нормированных векторов
 
-        return ResolveResult(speaker = spk, cos_similarity = score)
+        return ResolveResult(speaker = spk, cos_similarity = float(score))
 
     def _search_or_create_speaker_centriod(
         self, seg: numpy.ndarray, emb: numpy.ndarray
@@ -156,7 +164,7 @@ class SpeakerResolver:
             self._speakers.append(spk)
             best_score = 1.0
 
-        return ResolveResult(speaker = spk, cos_similarity = best_score)
+        return ResolveResult(speaker = spk, cos_similarity = float(best_score))
 
     def get_speakers(self) -> list[Speaker]:
         """Возвращает список спикеров"""
@@ -172,6 +180,7 @@ class SpeakerResolver:
         # Вернуть пустой ResolveResult, если режим SpeakerResolvingMode.NONE
         if self._resolving_mode == SpeakerResolvingMode.NONE:
             resolve_result = ResolveResult(speaker = None, cos_similarity = -1)
+
         # Расчет эмбеддинга спикера и поиск спикера по эмбеддингам
         elif self._resolving_mode == SpeakerResolvingMode.VAD_SPEAKER_MANAGER:
             emb = self._normalize_vector(compute_embedding(self._extractor, seg))
@@ -208,4 +217,51 @@ class SpeakerResolver:
                     cos_similarity = -1,
                 )
 
+        # Определение спикера на основе эталонной разметки
+        elif self._resolving_mode == SpeakerResolvingMode.ORACLE:
+            if t_start is None:
+                raise ValueError("Не задано значение аргумента t_start")
+
+            collected_speakers = []
+
+            # Итерируемся по сегментам, пока не упремся в конец списка или в будущее время
+            while self.current_markup_segment_num < len(self.markup_segments):
+                orc_seg = self.markup_segments[self.current_markup_segment_num]
+
+                # Если сегмент уже должен был прозвучать
+                if t_start >= orc_seg.start_time - self.padding:
+                    if orc_seg.speaker_id:  # Защита от None или пустых строк
+                        collected_speakers.append(Speaker(
+                            id = orc_seg.speaker_id,
+                            name = f"SPK_{orc_seg.speaker_id:03d}",
+                            )
+                        )
+                    self.current_markup_segment_num += 1
+                else:
+                    # Сегмент из будущего, прекращаем сбор для текущего вызова
+                    break
+
+            # В локальную базу спикеров не добавляем, в режиме Оракула она остается пустой
+            if collected_speakers:
+                resolve_result = ResolveResult(speaker = collected_speakers[0], cos_similarity = 1)
+            else:
+                resolve_result = ResolveResult(
+                    speaker = Speaker(
+                        id = -1,
+                        name = "SPK_BAD"
+                    ),
+                    cos_similarity = 1
+                )
+
         return resolve_result
+
+    def set_markup_segments(self, markup_segments: list[AudioSegment]) -> None:
+        """Специфичный метод Оракула для загрузки ручной разметки фраз."""
+        # Список markup_segments уже должен быть отсортирован по времени начала сегмента
+        # и проверен на отрицательную длительность сегментов
+        self.markup_segments = markup_segments
+
+    def reset(self) -> None:
+        """Сброс состояния Оракула перед новым циклом"""
+        self.current_markup_segment_num = 0
+        self._speakers = [] # Очищаем список спикеров
