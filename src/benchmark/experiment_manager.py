@@ -10,9 +10,11 @@ from benchmark.experiment_entities import (
 from benchmark.experiment_storage import (
     load_plres_exp_from_yaml, export_plres_exp_to_yaml,
     export_metrics_wer_to_yaml,
+    export_metrics_der_to_yaml,
     EXP_RUNS_BASE_DIR
 )
 from benchmark.scorer_wer import calc_wer_total
+from benchmark.scorer_der import calculate_speaker_confusion, calculate_frame_based_der
 
 def main() -> None:
     """Точка входа для тестирования"""
@@ -43,6 +45,7 @@ def main() -> None:
                 # pipeline_type = PipelineType.ASR_PIPELINE,
                 pipeline_type = PipelineType.CENTRIOD_DIARIZ_PIPELINE,
                 use_wer = True,
+                use_der = True,
             ),
         ]
 
@@ -58,6 +61,9 @@ def main() -> None:
         # Запускаем расчет метрик
         if pl_result.exp_spec.use_wer:
             total_wer = calc_wer_total(pl_res_exp = pl_result)
+        if pl_result.exp_spec.use_der:
+            # total_der = calculate_speaker_confusion(pl_res_exp = pl_result)
+            total_der = calculate_frame_based_der(pl_res_exp = pl_result)
 
     if pl_result.exp_spec.use_wer:
         # Сохраняем рассчитанные метрики
@@ -77,22 +83,53 @@ def main() -> None:
                 print("-" * 40)
 
         print("\n--- ИТОГОВАЯ СТАТИСТИКА КОРПУСА ---")
-        print(f"Общий WER корпуса: {total_wer.exp_wer.wer:.4f}")
-        print(f"Всего слов в эталоне: {total_wer.exp_wer.gt_words_count}")
-        print(f"Всего замен (S): {total_wer.exp_wer.substitutions}")
-        print(f"Всего удалений (D): {total_wer.exp_wer.deletions}")
-        print(f"Всего вставок (I): {total_wer.exp_wer.insertions}")
+        if total_wer.wer_oracle_vad:
+            print(f"Общий WER корпуса (Оракул VAD): {total_wer.wer_oracle_vad.wer:.4f}")
+            print(f"Всего слов в эталоне: {total_wer.wer_oracle_vad.gt_words_count}")
+            print(f"Всего замен (S): {total_wer.wer_oracle_vad.substitutions}")
+            print(f"Всего удалений (D): {total_wer.wer_oracle_vad.deletions}")
+            print(f"Всего вставок (I): {total_wer.wer_oracle_vad.insertions}")
+        if total_wer.wer_evaluated_vad:
+            print(f"Общий WER корпуса: {total_wer.wer_evaluated_vad.wer:.4f}")
+            print(f"Всего слов в эталоне: {total_wer.wer_evaluated_vad.gt_words_count}")
+            print(f"Всего замен (S): {total_wer.wer_evaluated_vad.substitutions}")
+            print(f"Всего удалений (D): {total_wer.wer_evaluated_vad.deletions}")
+            print(f"Всего вставок (I): {total_wer.wer_evaluated_vad.insertions}")
         if total_wer.err_segments_wer:
             print(
                 f"Всего строк с ошибками: {len(total_wer.err_segments_wer)} "
                 f"из {total_wer.seg_count}"
             )
 
-        print(f"Общий CER корпуса: {total_wer.exp_cer.cer:.4f}")
-        print(f"Всего символов в эталоне: {total_wer.exp_cer.gt_chars_count}")
-        print(f"Всего замен (S): {total_wer.exp_cer.substitutions}")
-        print(f"Всего удалений (D): {total_wer.exp_cer.deletions}")
-        print(f"Всего вставок (I): {total_wer.exp_cer.insertions}")
+        if total_wer.cer_oracle_vad:
+            print(f"Общий CER корпуса (Оракул VAD): {total_wer.cer_oracle_vad.cer:.4f}")
+            print(f"Всего символов в эталоне: {total_wer.cer_oracle_vad.gt_chars_count}")
+            print(f"Всего замен (S): {total_wer.cer_oracle_vad.substitutions}")
+            print(f"Всего удалений (D): {total_wer.cer_oracle_vad.deletions}")
+            print(f"Всего вставок (I): {total_wer.cer_oracle_vad.insertions}")
+        if total_wer.cer_evaluated_vad:
+            print(f"Общий CER корпуса: {total_wer.cer_evaluated_vad.cer:.4f}")
+            print(f"Всего символов в эталоне: {total_wer.cer_evaluated_vad.gt_chars_count}")
+            print(f"Всего замен (S): {total_wer.cer_evaluated_vad.substitutions}")
+            print(f"Всего удалений (D): {total_wer.cer_evaluated_vad.deletions}")
+            print(f"Всего вставок (I): {total_wer.cer_evaluated_vad.insertions}")
+
+    if pl_result.exp_spec.use_der:
+        # Сохраняем рассчитанные метрики
+        export_metrics_der_to_yaml(metrics_exp_der = total_der, exp_id = exp_id)
+        if total_der.scr_oracle_vad is not None:
+            print(f"Общий SCR корпуса (Оракул VAD): {total_der.scr_oracle_vad:.4f}")
+        if total_der.scr_evaluated_vad is not None:
+            print(f"Общий SCR корпуса: {total_der.scr_evaluated_vad:.4f}")
+        if total_der.der_oracle_vad is not None:
+            print(f"Общий DER корпуса (Оракул VAD): {total_der.der_oracle_vad:.4f}")
+        if total_der.der_evaluated_vad is not None:
+            print(f"Общий DER корпуса: {total_der.der_evaluated_vad:.4f}")
+        print(f"Всего времени в эталонной разметке: {total_der.total_ref_speech_time:.2f}")
+        print(f"Время аудио с ошибочными спикерами: {total_der.confusion_time:.2f}")
+        if total_der.total_error_time is not None:
+            print(f"Время ошибок обнаружения речи: {total_der.total_error_time:.2f}")
+
 
 if __name__ == "__main__":
     main()

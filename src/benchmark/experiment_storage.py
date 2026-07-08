@@ -23,6 +23,7 @@ from entities import Speaker, AudioFile, AudioSegment
 from benchmark.experiment_entities import (
     PipelineResultExperiment, ExperimentSpec,
     MetricWER, MetricCER, MetricExpWER,
+    MetricExpDER,
 )
 
 EXP_BASE_DIR = BASE_DIR / "experiments"
@@ -30,6 +31,7 @@ EXP_RUNS_BASE_DIR = EXP_BASE_DIR / "runs"
 EXP_SPEC_FILE_NAME = "exp_spec.yaml"
 PL_RESULT_FILE_NAME = "pl_result.yaml"
 METRICS_WER_FILE_NAME = "metrics_wer.yaml"
+METRICS_DER_FILE_NAME = "metrics_der.yaml"
 
 # --- Сериализаторы для вложенных классов PipilineResult ---
 def _serialize_pl_config(pl_config: PipelineConfig) -> dict | None:
@@ -410,12 +412,39 @@ def load_metrics_wer_from_yaml(exp_id: str) -> MetricExpWER:
         return MetricExpWER()
 
     # Восстанавливаем вложенные объекты из словарей
-    exp_wer_data = data.get('exp_wer') or {}
-    exp_cer_data = data.get('exp_cer') or {}
+    wer_oracle_vad_data = data.get('wer_oracle_vad') or {}
+    wer_evaluated_vad_data = data.get('wer_evaluated_vad') or {}
+    cer_oracle_vad_data = data.get('cer_oracle_vad') or {}
+    cer_evaluated_vad_data = data.get('cer_evaluated_vad') or {}
 
     return MetricExpWER(
-        exp_wer=MetricWER(**exp_wer_data),
-        exp_cer=MetricCER(**exp_cer_data),
-        err_segments_wer=[MetricWER(**seg) for seg in data.get('err_segments_wer', [])],
-        err_segments_cer=[MetricCER(**seg) for seg in data.get('err_segments_cer', [])]
+        wer_oracle_vad = MetricWER(**wer_oracle_vad_data),
+        wer_evaluated_vad = MetricWER(**wer_evaluated_vad_data),
+        cer_oracle_vad = MetricCER(**cer_oracle_vad_data),
+        cer_evaluated_vad = MetricCER(**cer_evaluated_vad_data),
+        err_segments_wer = [MetricWER(**seg) for seg in data.get('err_segments_wer', [])],
+        err_segments_cer = [MetricCER(**seg) for seg in data.get('err_segments_cer', [])]
     )
+
+def export_metrics_der_to_yaml(metrics_exp_der: MetricExpDER, exp_id: str) -> None:
+    """Сохраняет объект MetricExpDER в YAML-файл."""
+    file_path = EXP_RUNS_BASE_DIR / exp_id / METRICS_DER_FILE_NAME
+    # asdict автоматически превращает датакласс и все вложенные списки/классы в dict
+    metrics_dict = dataclasses.asdict(metrics_exp_der)
+
+    with open(file_path, 'w', encoding='utf-8') as f:
+        # allow_unicode=True сохраняет кириллицу/символы в визуализации как текст,
+        # а не кодировку (\u0440)
+        # sort_keys=False сохраняет порядок полей ровно как в датаклассе
+        yaml.safe_dump(metrics_dict, f, allow_unicode=True, sort_keys=False)
+
+def load_metrics_der_from_yaml(exp_id: str) -> MetricExpDER:
+    """Загружает данные из YAML-файла и возвращает объект MetricExpDER."""
+    file_path = EXP_RUNS_BASE_DIR / exp_id / METRICS_DER_FILE_NAME
+    with open(file_path, 'r', encoding='utf-8') as f:
+        data = yaml.safe_dump_load = yaml.safe_load(f)
+
+    if not data:
+        return MetricExpDER()
+
+    return MetricExpDER(**data)

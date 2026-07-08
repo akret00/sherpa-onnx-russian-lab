@@ -158,6 +158,10 @@ class BaseVadPipeline:
                         # if text:
                         segment = AudioSegment(
                             # audio_file = audio_file,
+                            speaker_id = (
+                                resolve_result.speaker.id if resolve_result.speaker is not None
+                                else None
+                            ),
                             speaker = resolve_result.speaker,
                             cos_similarity = resolve_result.cos_similarity,
                             start_time = t_start,
@@ -180,6 +184,10 @@ class BaseVadPipeline:
                     if text:
                         segment = AudioSegment(
                             # audio_file = audio_file,
+                            speaker_id = (
+                                resolve_result.speaker.id if resolve_result.speaker is not None
+                                else None
+                            ),
                             speaker = resolve_result.speaker,
                             cos_similarity = resolve_result.cos_similarity,
                             start_time = t_start,

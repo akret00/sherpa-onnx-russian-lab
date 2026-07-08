@@ -74,13 +74,24 @@ class MetricExpWER:
     """Содержит метрики WER и CER эксперимента"""
     obj_id: str | None = None   # ИД метрики внутри эксперимента, может быть ИД или номер сегмента
     seg_count: int = 0          # Количество сегментов (фраз)
-    exp_wer: MetricWER | None = None    # WER для всего эксперимента
-    exp_cer: MetricCER | None = None    # CER для всего эксперимента
+    wer_oracle_vad: MetricWER | None = None # WER для всего эксперимента с включенным Оракулом VAD
+    wer_evaluated_vad: MetricWER | None = None # WER для всего эксперимента
+    cer_oracle_vad: MetricCER | None = None # CER для всего эксперимента с включенным Оракулом VAD
+    cer_evaluated_vad: MetricCER | None = None # CER для всего эксперимента
     err_segments_wer: list[MetricWER] | None = None # Содержит метрики для сегментов с ошибками
     err_segments_cer: list[MetricCER] | None = None # Содержит метрики для сегментов с ошибками
 
 @dataclass
-class MetricDER:
-    """Содержит метрику DER"""
+class MetricExpDER:
+    """Содержит метрику DER эксперимента"""
     obj_id: str = ""         # ИД метрики внутри эксперимента, может быть ИД или номер сегмента
-    der: float = 0.0
+    # Метрики ошибочного определения спикера
+    confusion_time: float | None = None
+    total_error_time: float | None = None
+    total_ref_speech_time: float | None = None
+    # Метрики SCR
+    scr_oracle_vad: float | None = None    # Speaker Confusion Rate при включенном Oracle VAD
+    scr_evaluated_vad: float | None = None
+    # Метрика DER
+    der_oracle_vad: float | None = None     # DER при включенном Oracle VAD
+    der_evaluated_vad: float | None = None

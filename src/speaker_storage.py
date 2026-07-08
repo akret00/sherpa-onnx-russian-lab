@@ -207,7 +207,7 @@ class VoiceDbRepository:
 
             for speaker in speakers:
                 # Сценарий А: Абсолютно новый спикер
-                if speaker.id is None:
+                if speaker.id is None or speaker.id < 0:
                     cursor.execute(
                         "INSERT INTO speaker (name, embedding_blob, total_count) "
                         "VALUES (:name, :embedding_blob, :total_count);",

@@ -187,11 +187,24 @@ def calc_wer_total(pl_res_exp: PipelineResultExperiment) -> MetricExpWER:
             if seg_cer.substitutions + seg_cer.deletions + seg_cer.insertions > 0:
                 err_segments_cer.append(seg_cer)
 
+    if pl_res_exp.exp_spec.use_oracle_vad:
+        wer_oracle_vad = exp_wer
+        wer_evaluated_vad = None
+        cer_oracle_vad = exp_cer
+        cer_evaluated_vad = None
+    else:
+        wer_oracle_vad = None
+        wer_evaluated_vad = exp_wer
+        cer_oracle_vad = None
+        cer_evaluated_vad = exp_cer
+
     return MetricExpWER(
         obj_id = pl_res_exp.exp_id,
         seg_count = len(pl_res_exp.segments),
-        exp_wer = exp_wer,
-        exp_cer = exp_cer,
+        wer_oracle_vad = wer_oracle_vad,
+        wer_evaluated_vad = wer_evaluated_vad,
+        cer_oracle_vad = cer_oracle_vad,
+        cer_evaluated_vad = cer_evaluated_vad,
         err_segments_wer = err_segments_wer,
         err_segments_cer = err_segments_cer,
     )

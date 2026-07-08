@@ -114,6 +114,7 @@ class SpeakerResolver:
         matched_id = self._manager.search(emb, threshold = self._spk_threshold)
         if not matched_id:
             spk = Speaker(
+                id = -(len(self._speakers) + 1),
                 name = f"SPK_{(len(self._speakers) + 1):03d}",
                 embedding = emb,
             )
@@ -157,6 +158,7 @@ class SpeakerResolver:
         else:
             # Создаем нового и добавляем к базе
             spk = Speaker(
+                id = -(len(self._speakers) + 1),
                 name = f"SPK_{(len(self._speakers) + 1):03d}",
                 embedding = emb,
             )
@@ -247,7 +249,7 @@ class SpeakerResolver:
             else:
                 resolve_result = ResolveResult(
                     speaker = Speaker(
-                        id = -1,
+                        id = -1000,
                         name = "SPK_BAD"
                     ),
                     cos_similarity = 1
