@@ -14,7 +14,10 @@ from benchmark.experiment_storage import (
     EXP_RUNS_BASE_DIR
 )
 from benchmark.scorer_wer import calc_wer_total
-from benchmark.scorer_der import calculate_speaker_confusion, calculate_frame_based_der
+from benchmark.scorer_der import (
+    calculate_speaker_confusion, calculate_frame_based_der,
+    print_grouped_error_timeline
+)
 
 def main() -> None:
     """Точка входа для тестирования"""
@@ -40,7 +43,7 @@ def main() -> None:
                 audio_path = str(audio_path),
                 ground_truth_path = str(gt_file),
                 # use_oracle_vad = True,
-                # use_oracle_asr = True,
+                use_oracle_asr = True,
                 # use_oracle_diarization = True,
                 # pipeline_type = PipelineType.ASR_PIPELINE,
                 pipeline_type = PipelineType.CENTRIOD_DIARIZ_PIPELINE,
@@ -63,7 +66,7 @@ def main() -> None:
             total_wer = calc_wer_total(pl_res_exp = pl_result)
         if pl_result.exp_spec.use_der:
             # total_der = calculate_speaker_confusion(pl_res_exp = pl_result)
-            total_der = calculate_frame_based_der(pl_res_exp = pl_result)
+            total_der = calculate_frame_based_der(pl_res_exp = pl_result, detailed_errors = True)
 
     if pl_result.exp_spec.use_wer:
         # Сохраняем рассчитанные метрики
@@ -127,8 +130,16 @@ def main() -> None:
             print(f"Общий DER корпуса: {total_der.der_evaluated_vad:.4f}")
         print(f"Всего времени в эталонной разметке: {total_der.total_ref_speech_time:.2f}")
         print(f"Время аудио с ошибочными спикерами: {total_der.confusion_time:.2f}")
+        if total_der.missed_speech_time is not None:
+            print(f"Время пропущенной речи: {total_der.missed_speech_time:.2f}")
+        if total_der.false_alarm_time is not None:
+            print(f"Время ложного обнаружения речи: {total_der.false_alarm_time:.2f}")
         if total_der.total_error_time is not None:
             print(f"Время ошибок обнаружения речи: {total_der.total_error_time:.2f}")
+        if total_der.error_types is not None:
+            print_grouped_error_timeline(
+                pl_res_exp = pl_result, error_types = total_der.error_types
+            )
 
 
 if __name__ == "__main__":

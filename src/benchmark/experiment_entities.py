@@ -87,6 +87,8 @@ class MetricExpDER:
     obj_id: str = ""         # ИД метрики внутри эксперимента, может быть ИД или номер сегмента
     # Метрики ошибочного определения спикера
     confusion_time: float | None = None
+    missed_speech_time: float | None = None
+    false_alarm_time: float | None = None
     total_error_time: float | None = None
     total_ref_speech_time: float | None = None
     # Метрики SCR
@@ -95,3 +97,5 @@ class MetricExpDER:
     # Метрика DER
     der_oracle_vad: float | None = None     # DER при включенном Oracle VAD
     der_evaluated_vad: float | None = None
+    # Пофреймовый список типов ошибок
+    error_types: list[str] | None = None

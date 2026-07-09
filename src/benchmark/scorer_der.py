@@ -115,7 +115,8 @@ def calculate_speaker_confusion(pl_res_exp: PipelineResultExperiment) -> MetricE
 
 def calculate_frame_based_der(
     pl_res_exp: PipelineResultExperiment,
-    frame_step: float = 0.1
+    frame_step: float = 0.1,
+    detailed_errors: bool = False
 ) -> MetricExpDER:
     """Расчитывает покадровый DER (включая FA, MS и Confusion)."""
     # 1. Получаем маппинг спикеров из эталона и гипотезы
@@ -170,8 +171,12 @@ def calculate_frame_based_der(
     missed_speech_frames = 0
     false_alarm_frames = 0
     confusion_frames = 0
+    if detailed_errors:
+        error_types = ["OK"] * total_frames # Список фреймов для фиксации ошибок
+    else:
+        error_types = None
 
-    for r_spk, h_spk in zip(ref_frames, hyp_frames):
+    for frame_idx, (r_spk, h_spk) in enumerate(zip(ref_frames, hyp_frames)):
         is_ref_speech = r_spk is not None
         is_hyp_speech = h_spk is not None
 
@@ -181,16 +186,22 @@ def calculate_frame_based_der(
         # Сценарий А: В эталоне говорят, в гипотезе — тишина (пропуск речи)
         if is_ref_speech and not is_hyp_speech:
             missed_speech_frames += 1
+            if error_types:
+                error_types[frame_idx] = "MISSED"
 
         # Сценарий Б: В эталоне тишина, в гипотезе система нашла речь (ложная тревога)
         elif not is_ref_speech and is_hyp_speech:
             false_alarm_frames += 1
+            if error_types:
+                error_types[frame_idx] = "FALSE_ALARM"
 
         # Сценарий В: Речь есть и там, и там, но спикеры не совпали (путаница)
         # Сюда же автоматически прилетят строки "UNKNOWN_XYZ", так как они никогда не равны r_spk
         elif is_ref_speech and is_hyp_speech:
             if r_spk != h_spk:
                 confusion_frames += 1
+                if error_types:
+                    error_types[frame_idx] = "CONFUSION"
 
     # Переводим кадры обратно в секунды
     total_ref_speech_time = total_ref_speech_frames * frame_step
@@ -216,6 +227,8 @@ def calculate_frame_based_der(
     return MetricExpDER(
         obj_id = pl_res_exp.exp_id,
         confusion_time = confusion_time,
+        missed_speech_time = missed_speech_time,
+        false_alarm_time = false_alarm_time,
         total_error_time = total_error_time,
         total_ref_speech_time = total_ref_speech_time,
         # SCR в рамках этой функции — это посекундная путаница к общему времени речи
@@ -223,5 +236,95 @@ def calculate_frame_based_der(
         scr_oracle_vad = scr_oracle_vad,
         # Классический DER
         der_evaluated_vad = der_evaluated_vad,
-        der_oracle_vad = der_oracle_vad
+        der_oracle_vad = der_oracle_vad,
+        error_types = error_types,
+    )
+
+
+def print_grouped_error_timeline(
+    pl_res_exp: PipelineResultExperiment,
+    error_types: list[str],
+    frame_step: float = 0.1
+) -> None:
+    """Выводит в консоль детальный отчет об ошибках по фреймам"""
+    print("=== СГРУППИРОВАННЫЙ ТАЙМЛАЙН ОШИБОК ===")
+
+    current_ref_idx = 0
+    total_ref_segments = len(pl_res_exp.markup_segments)
+
+    # Переменные для хранения текущего открытого интервала
+    current_error = None
+    current_seg_idx = None
+    current_seg_obj = None
+
+    interval_start_time = 0.0
+    interval_frames_count = 0
+
+    # Вспомогательная функция для красивой печати закрытого интервала
+    def flush_interval(
+        err: str, seg_idx: int, seg_obj: AudioSegment, start_t: float, count: int
+    ) -> None:
+        if err == "OK" or count == 0:
+            return
+
+        end_t = start_t + (count * frame_step)
+        duration = end_t - start_t
+
+        if seg_idx is not None and seg_obj is not None:
+            # Ошибка внутри сегмента эталона
+            print(
+                f"[{start_t:.1f}s - {end_t:.1f}s] ({duration:.2f}с) | Фреймов: {count} | "
+                f"Ошибка: {err} | Сегмент #{seg_idx + 1} (Спикер: {seg_obj.speaker_id}) | "
+                f"Текст: '{seg_obj.text}'"
+            )
+        else:
+            # Ошибка в тишине (False Alarm)
+            print(
+                f"[{start_t:.1f}s - {end_t:.1f}s] ({duration:.2f}с) | Фреймов: {count} | "
+                f"Ошибка: {err} | ВНЕ РАЗМЕТКИ (Тишина)"
+            )
+
+    # Основной цикл по всем фреймам
+    for frame_idx, error in enumerate(error_types):
+        frame_time = frame_idx * frame_step
+
+        # 1. Двигаем указатель эталона (двух указателей)
+        while (current_ref_idx < total_ref_segments and 
+               pl_res_exp.markup_segments[current_ref_idx].end_time <= frame_time):
+            current_ref_idx += 1
+
+        # 2. Определяем контекст текущего фрейма
+        in_segment = False
+        seg_idx = None
+        seg_obj = None
+
+        if current_ref_idx < total_ref_segments:
+            possible_seg = pl_res_exp.markup_segments[current_ref_idx]
+            if possible_seg.start_time <= frame_time < possible_seg.end_time:
+                in_segment = True
+                seg_idx = current_ref_idx
+                seg_obj = possible_seg
+
+        # 3. ЛОГИКА ГРУППИРОВКИ
+        # Интервал продолжается, если совпадает и тип ошибки, и контекст сегмента
+        if error == current_error and seg_idx == current_seg_idx:
+            interval_frames_count += 1
+        else:
+            # Контекст изменился! Сначала сбрасываем старый накопленный интервал
+            flush_interval(
+                current_error, current_seg_idx, current_seg_obj, 
+                interval_start_time, interval_frames_count
+            )
+
+            # Открываем новый интервал
+            current_error = error
+            current_seg_idx = seg_idx
+            current_seg_obj = seg_obj
+            interval_start_time = frame_time
+            interval_frames_count = 1
+
+    # Не забываем сбросить самый последний интервал после выхода из цикла
+    flush_interval(
+        current_error, current_seg_idx, current_seg_obj,
+        interval_start_time, interval_frames_count
     )
