@@ -43,7 +43,7 @@ def main() -> None:
                 audio_path = str(audio_path),
                 ground_truth_path = str(gt_file),
                 # use_oracle_vad = True,
-                use_oracle_asr = True,
+                # use_oracle_asr = True,
                 # use_oracle_diarization = True,
                 # pipeline_type = PipelineType.ASR_PIPELINE,
                 pipeline_type = PipelineType.CENTRIOD_DIARIZ_PIPELINE,

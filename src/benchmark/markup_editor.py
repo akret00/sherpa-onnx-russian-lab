@@ -26,35 +26,38 @@ class AudioSegmentEditor:
         """Возвращает текущий сегмент аудио"""
         return self.segments[self.index]
 
-    def load_yaml(self):
+    def load_yaml(self) -> None:
         """Загружает данные из yaml файла с разметкой"""
         self.speakers, self.audio_file = load_markup_from_yaml(self.yaml_path)
         self.segments = sorted(self.audio_file.segments, key=lambda x: x.start_time)
         self.audio_file.segments = self.segments
         print("Данные загружены из файла: {self.yaml_path}")
 
-    def load_audio_data(self, file_path: str):
+    def load_audio_data(self, file_path: str) -> None:
         """Загружает аудиофайл в формате PCM, 16 кГц, моно"""
         self.audio_data = ffmpeg_utils.read_all_samples(file_path)
 
-    def play_segment_sounddevice(self):
+    def play_segment_sounddevice(self) -> None:
         """Воспроизводит аудиофрагмент с помощью sounddevice."""
         seg = self.current
+        audio_file = self.audio_file
+        if audio_file.id != seg.audio_file_id:
+            raise ValueError("ИД аудиофайла в self.audio_file и сегменте self.current не совпадают")
 
         # Считаем, что все сегменты с разметкой относятся только к одному файлу
         # Поэтому берем путь к аудиофайлу из первого сегмента и загружаем аудиоданные
         # Позже это стоит отрефакторить, начиная с подхода к процессу разметки
         if self.audio_data is None:
-            if not seg.audio_file or not seg.audio_file.file_path:
+            if not audio_file or not audio_file.file_path:
                 print("Ошибка: Нет пути к аудиофайлу.")
                 return
 
             # Проверка наличия аудиофайла
-            if not os.path.exists(seg.audio_file.file_path):
-                print(f"Ошибка: Файл '{seg.audio_file.file_path}' не существует!")
+            if not os.path.exists(audio_file.file_path):
+                print(f"Ошибка: Файл '{audio_file.file_path}' не существует!")
 
             print("Начинаем загрузку аудиофайла. Загрузка будет производиться только один раз.")
-            self.load_audio_data(seg.audio_file.file_path)
+            self.load_audio_data(audio_file.file_path)
 
         duration = seg.end_time - seg.start_time
         if duration <= 0:
@@ -86,10 +89,13 @@ class AudioSegmentEditor:
         # Ждем окончания проигрывания текущего фрагмента
         sounddevice.wait()
 
-    def play_segment_ffplay(self):
+    def play_segment_ffplay(self) -> None:
         """Воспроизводит аудиофрагмент с помощью ffplay."""
         seg = self.current
-        if not seg.audio_file or not seg.audio_file.file_path:
+        audio_file = self.audio_file
+        if audio_file.id != seg.audio_file_id:
+            raise ValueError("ИД аудиофайла в self.audio_file и сегменте self.current не совпадают")
+        if not audio_file or not audio_file.file_path:
             print("Ошибка: Нет пути к аудиофайлу.")
             return
 
@@ -99,33 +105,33 @@ class AudioSegmentEditor:
             return
 
         # Проверка наличия аудиофайла
-        if not os.path.exists(seg.audio_file.file_path):
-            print(f"Ошибка: Файл '{seg.audio_file.file_path}' не существует!")
+        if not os.path.exists(audio_file.file_path):
+            print(f"Ошибка: Файл '{audio_file.file_path}' не существует!")
 
         # -ss: старт, -t: длительность, -nodisp: без окна визуализации,
         # -autoexit: закрыть по окончании
         cmd = [
             "ffplay", "-ss", str(seg.start_time), 
             "-t", str(duration), "-nodisp", "-autoexit", 
-            seg.audio_file.file_path
+            audio_file.file_path
         ]
         print(f"Воспроизведение: {seg.start_time:.2f}s -> {seg.end_time:.2f}s")
         # stdout/stderr уводим в DEVNULL, чтобы не засорять консоль
         subprocess.run(cmd, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL, check = True)
 
-    def clear_screen(self):
+    def clear_screen(self) -> None:
         """Очищает экран консоли (Linux/Windows)."""
         if platform.system() == "Windows":
             os.system("cls")
         else:
             os.system("clear")
 
-    def print_status(self):
+    def print_status(self) -> None:
         """Выводит информацию о текущем состоянии."""
         # self.clear_screen()
         print(f"\n=== Сегмент {self.index + 1} из {len(self.segments)} ===")
         seg = self.current
-        print(f"ID: {seg.id} Speaker.id: {seg.speaker.id} AudioFileMarkup.id: {seg.audio_file.id}")
+        print(f"ID: {seg.id} Speaker.id: {seg.speaker_id} AudioFileMarkup.id: {seg.audio_file_id}")
         print(
             f"Таймкоды: {seg.start_time:.2f}s -> {seg.end_time:.2f}s "
             f"[Длительность: {seg.end_time - seg.start_time:.2f}s]"
@@ -136,7 +142,7 @@ class AudioSegmentEditor:
             "[s]plit | [m]erge L/R | [i]mport | [w]rite | [q]uit"
         )
 
-    def run(self):
+    def run(self) -> None:
         """Главный цикл интерфейса."""
         while True:
             self.print_status()
@@ -204,14 +210,14 @@ class AudioSegmentEditor:
             else:
                 print("Неизвестная команда.")
 
-    def _goto_id(self, target_id: str):
+    def _goto_id(self, target_id: str) -> None:
         for i, seg in enumerate(self.segments):
             if str(seg.id) == target_id:
                 self.index = i
                 return
         print(f"Сегмент с ID {target_id} не найден.")
 
-    def _shift_boundary(self, boundary: str, direction: int):
+    def _shift_boundary(self, boundary: str, direction: int) -> None:
         delta = self.step * direction
         seg = self.current
         if boundary == 'start':
@@ -227,7 +233,7 @@ class AudioSegmentEditor:
             else:
                 print("Правая граница не может быть левее левой.")
 
-    def _split_segment(self):
+    def _split_segment(self) -> None:
         seg = self.current
         midpoint = round((seg.start_time + seg.end_time) / 2, 2)
 
@@ -235,7 +241,6 @@ class AudioSegmentEditor:
         new_seg = AudioSegmentMarkup(
             id = seg.id + 10000,
             audio_file_id = seg.audio_file_id,
-            audio_file = seg.audio_file,
             speaker_id = seg.speaker_id,
             speaker = seg.speaker,
             start_time = midpoint,
@@ -248,7 +253,7 @@ class AudioSegmentEditor:
         self.segments.insert(self.index + 1, new_seg)
         print(f"Сегмент разделен пополам на отметке {midpoint}s.")
 
-    def _merge_segment(self, direction: str):
+    def _merge_segment(self, direction: str) -> None:
         if direction == 'l':
             if self.index == 0:
                 print("Нет сегмента слева для объединения.")
@@ -276,7 +281,7 @@ class AudioSegmentEditor:
             self.index -= 1
         print("Сегменты успешно объединены.")
 
-def main():
+def main() -> None:
     """Точка входа"""
     args = args_utils.parse_args()
     yaml_path = args.input

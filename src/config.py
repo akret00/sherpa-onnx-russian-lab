@@ -154,10 +154,10 @@ class VadConfig:
     model_name: str | None = None
     model_short_name: str | None = None
     model_path: str | None = None
-    threshold: float = 0.4 # 0.4 Было 0.3
-    min_silence: float = 0.1 # 0.1 Было 0.25
-    min_speech: float = 0.2 # 0.2 Было 0.25
-    max_speech: float = 20.0
+    threshold: float = 0.3 # 0.4 Было 0.3
+    min_silence: float = 0.5 # 0.1 Было 0.25
+    min_speech: float = 0.1 # 0.2 Было 0.25
+    max_speech: float = 30.0
 
 @dataclass
 class AsrConfig:

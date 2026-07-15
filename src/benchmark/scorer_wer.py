@@ -35,6 +35,8 @@ class CustomNormalisationTransform(jiwer.AbstractTransform):
             norm_text = norm_text.replace("кгц", "килогерц")
         if "19:45" in norm_text:
             norm_text = norm_text.replace("19:45", "девятнадцать сорок пять")
+        if "2024—001" in norm_text:
+            norm_text = norm_text.replace("2024—001", "два ноль два четыре тире ноль ноль один")
         if "3 450" in norm_text:
             norm_text = norm_text.replace("3 450", "три тысячи четыреста пятьдесят")
         if "7701" in norm_text:
