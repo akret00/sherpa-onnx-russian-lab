@@ -1,305 +1,210 @@
-"""Тест модуля src/speaker_storage.py"""
-import sqlite3
+"""Модуль тестирует функционал репозитория пайплайна"""
 from pathlib import Path
-from collections.abc import Generator
+from typing import Generator
+import numpy as np
 import pytest
-import numpy
-from entities import (
-    Speaker,
-    AudioFile,
-    AudioSegment,
-)
-from speaker_storage import (
-    VoiceDbRepository,
-    SpeakerUpdateMode
-)
+from entities import Speaker
+from speaker_storage import BaseRepo, InMemoryRepo, SqliteRepo
 
-# ==========================================
-# ФИКСТУРЫ (Настройка окружения для каждого теста)
-# ==========================================
+# =====================================================================
+# ФИКСТУРЫ (FIXTURES)
+# =====================================================================
 
-@pytest.fixture
-def db_repo(tmp_path: Path) -> Generator[VoiceDbRepository]:
-    """Фикстура, которая возвращает объект VoiceDbRepository"""
-    repo = VoiceDbRepository(db_path=str(tmp_path / "test_voice.db"))
-
-    yield repo
-    # Здесь может быть код очистки или завершения, когда понадобится
+@pytest.fixture(params=["in_memory", "sqlite"])
+def repo(request: pytest.FixtureRequest, tmp_path: Path) -> Generator[BaseRepo, None, None]:
+    """Параметризованная фикстура, возвращающая по очереди InMemoryRepo и SqliteRepo.
+    
+    Благодаря параметризации, каждый тест, использующий эту фикстуру, 
+    будет запущен дважды для каждого типа репозитория.
+    """
+    if request.param == "in_memory":
+        yield InMemoryRepo()
+    elif request.param == "sqlite":
+        # Используем tmp_path для создания изолированной временной БД под каждый тест
+        db_file = tmp_path / "test_voice.db"
+        yield SqliteRepo(db_path = str(db_file))
 
 
 @pytest.fixture
-def sample_speakers(db_repo: VoiceDbRepository) -> Generator[tuple[Speaker, Speaker]]:
-    """Наполняет базу базовыми спикерами для тестов чтения и обновлений."""
-    # Генерируем случайный вектор из 128 чисел типа float32
-    mock_embedding1 = numpy.random.rand(128).astype(numpy.float32)
-    mock_embedding2 = numpy.random.rand(128).astype(numpy.float32)
-    spk1 = Speaker(name="Алексей", embedding=mock_embedding1, total_count = 11)
-    spk2 = Speaker(name="Мария", embedding=mock_embedding2, total_count = 22)
-    db_repo.save_speakers([spk1, spk2])
-    yield spk1, spk2
+def sample_embedding_v1() -> np.ndarray:
+    """Возвращает тестовый вектор модели v1."""
+    return np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float32)
 
 
-# ==========================================
-# ТЕСТЫ: СОХРАНЕНИЕ И АВТОИНКРЕМЕНТ
-# ==========================================
-
-def test_save_new_speakers_generates_ids(db_repo: VoiceDbRepository) -> None:
-    """Проверяет, что у новых спикеров корректно заполняется ID из базы."""
-    mock_embedding1 = numpy.random.rand(128).astype(numpy.float32)
-    mock_embedding2 = numpy.random.rand(128).astype(numpy.float32)
-    spk1 = Speaker(name="Unknown SPEAKER_00", embedding=mock_embedding1, total_count = 11)
-    spk2 = Speaker(name="Unknown SPEAKER_01", embedding=mock_embedding2, total_count = 22)
-
-    assert spk1.id is None
-    assert spk2.id is None
-
-    db_repo.save_speakers([spk1, spk2])
-
-    # Проверяем мутацию объектов (ID должны проставиться)
-    spk1_id = spk1.id
-    spk2_id = spk2.id
-    assert spk1_id is not None and spk1_id == 1
-    assert spk2_id is not None and spk2_id == 2
-
-    # Вычитываем из базы заново и проверяем правильность данных
-    updated_spk1 = db_repo.load_speakers(speaker_ids=[spk1_id])[0]
-    updated_spk2 = db_repo.load_speakers(speaker_ids=[spk2_id])[0]
-    assert updated_spk1.id == spk1.id
-    assert updated_spk1.name == "Unknown SPEAKER_00"
-    assert numpy.array_equal(updated_spk1.embedding, mock_embedding1)
-    assert updated_spk1.total_count == 11
-
-    assert updated_spk2.id == spk2.id
-    assert updated_spk2.name == "Unknown SPEAKER_01"
-    assert numpy.array_equal(updated_spk2.embedding, mock_embedding2)
-    assert updated_spk2.total_count == 22
+@pytest.fixture
+def sample_embedding_v2() -> np.ndarray:
+    """Возвращает тестовый вектор модели v2."""
+    return np.array([0.9, 0.8, 0.7, 0.6], dtype=np.float32)
 
 
-def test_save_audio_file_and_segments(
-    db_repo: VoiceDbRepository,
-    sample_speakers: tuple[Speaker, Speaker]
+# =====================================================================
+# ТЕСТЫ (TESTS)
+# =====================================================================
+
+def test_save_new_speaker_generates_id_and_name(
+    repo: BaseRepo, sample_embedding_v1: np.ndarray
 ) -> None:
-    """Проверяет сквозной процесс сохранения карточки файла и его сегментов."""
-    spk1, spk2 = sample_speakers
+    """Проверяет, что для нового спикера генерируется ID и дефолтное имя типа SPK_001."""
+    speaker = Speaker(name = None)
+    speaker.add_embedding("model_v1", sample_embedding_v1)
 
-    # 1. Создаем и сохраняем файл
-    audio = AudioFile(file_path="/audio/test.wav", duration_seconds=60.0)
-    file_id = db_repo.save_audio_file(audio)
+    # До сохранения ID нет
+    assert speaker.id is None
+    assert speaker.embeddings[0].id is None
 
-    assert file_id is not None
-    assert audio.id == file_id
+    # Сохраняем (объект должен мутировать)
+    repo.save_speakers([speaker])
 
-    # 2. Создаем сегменты диаризации
-    segments = [
-        AudioSegment(
-            speaker_id=spk1.id,
-            start_time=0.0,
-            end_time=5.5,
-            text="Привет",
-            word_count=1
-        ),
-        AudioSegment(
-            speaker_id=spk2.id,
-            start_time=6.0,
-            end_time=12.2,
-            text="Добрый день",
-            word_count=2
-        )
-    ]
-    db_repo.save_audio_segments(audio_file_id=file_id, segments=segments)
-
-    # 3. Вычитываем обратно и проверяем целостность данных
-    loaded_segments, loaded_speakers = db_repo.load_file_content(audio_file_id=file_id)
-
-    assert len(loaded_segments) == 2
-    assert len(loaded_speakers) == 2
-
-    assert loaded_segments[0].text == "Привет"
-    assert loaded_segments[0].speaker_id == spk1.id
-    assert loaded_segments[1].text == "Добрый день"
-    assert loaded_segments[1].speaker_id == spk2.id
+    # Проверяем генерацию ID и имени
+    assert speaker.id is not None
+    assert speaker.name == f"SPK_{speaker.id:03d}"
+    assert speaker.embeddings[0].id is not None
+    assert speaker.embeddings[0].speaker_id == speaker.id
 
 
-# ==========================================
-# ТЕСТЫ: РЕЖИМЫ ОБНОВЛЕНИЯ СПИКЕРОВ (UPDATE MODES)
-# ==========================================
-
-def test_update_mode_all(
-    db_repo: VoiceDbRepository,
-    sample_speakers: tuple[Speaker, Speaker]
+def test_save_new_speaker_keeps_custom_name(
+    repo: BaseRepo, sample_embedding_v1: np.ndarray
 ) -> None:
-    """Проверяет обновление метаданных без изменения вектора."""
-    spk1, _ = sample_speakers
+    """Проверяет, что если у спикера уже задано имя, оно не перезаписывается на SPK_00X."""
+    speaker = Speaker(name="Иван")
+    speaker.add_embedding("model_v1", sample_embedding_v1)
 
-    # Меняем имя в коде, но оставляем старый эмбеддинг
-    spk1.name = "Алексей Переименованный"
-    mock_embedding3 = numpy.random.rand(128).astype(numpy.float32)
-    spk1.embedding = mock_embedding3 # Попытка изменить эмбеддинг
-    spk1.total_count = 33
+    repo.save_speakers([speaker])
 
-    db_repo.save_speakers([spk1], update_mode=SpeakerUpdateMode.UPDATE_ALL)
-
-    # Вычитываем из базы заново
-    spk1_id = spk1.id
-    assert spk1_id is not None
-    updated_spk = db_repo.load_speakers(speaker_ids=[spk1_id])[0]
-
-    updated_embeding = updated_spk.embedding
-    assert updated_embeding is not None
-    assert updated_spk.name == "Алексей Переименованный"
-    assert numpy.array_equal(updated_embeding, mock_embedding3)
-    assert updated_spk.total_count == 33
+    assert speaker.id is not None
+    assert speaker.name == "Иван"
 
 
-def test_update_mode_all_except_embedding(
-    db_repo: VoiceDbRepository,
-    sample_speakers: tuple[Speaker, Speaker]
+def test_load_speakers_without_filters_returns_all(
+    repo: BaseRepo, sample_embedding_v1: np.ndarray
 ) -> None:
-    """Проверяет обновление метаданных без изменения вектора."""
-    spk1, _ = sample_speakers
+    """Проверяет, что метод load_speakers без фильтров отдает всех спикеров из БД."""
+    spk1 = Speaker(name="Алла")
+    spk2 = Speaker(name="Борис")
+    spk1.add_embedding("model_v1", sample_embedding_v1)
+    spk2.add_embedding("model_v1", sample_embedding_v1)
 
-    # Меняем имя в коде, но оставляем старый эмбеддинг
-    spk1.name = "Алексей Переименованный"
-    old_embedding1 = spk1.embedding
-    mock_embedding3 = numpy.random.rand(128).astype(numpy.float32)
-    spk1.embedding = mock_embedding3 # Попытка изменить эмбеддинг
-    spk1.total_count = 33
+    repo.save_speakers([spk1, spk2])
 
-    db_repo.save_speakers([spk1], update_mode=SpeakerUpdateMode.UPDATE_ALL_EXCEPT_EMBEDDING)
+    loaded = repo.load_speakers()
+    assert len(loaded) == 2
 
-    # Вычитываем из базы заново
-    spk1_id = spk1.id
-    assert spk1_id is not None
-    updated_spk = db_repo.load_speakers(speaker_ids=[spk1_id])[0]
-
-    assert updated_spk.name == "Алексей Переименованный"
-    # Эмбеддинг должен остаться СТАРЫМ
-    updated_embeding = updated_spk.embedding
-    assert updated_embeding is not None
-    assert old_embedding1 is not None
-    assert numpy.array_equal(updated_embeding, old_embedding1)
-    assert updated_spk.total_count == 33
+    # Собираем имена полученных спикеров
+    names = {s.name for s in loaded}
+    assert names == {"Алла", "Борис"}
 
 
-def test_update_mode_embeddings_only(
-    db_repo: VoiceDbRepository,
-    sample_speakers: tuple[Speaker, Speaker]
+def test_load_speakers_filter_by_ids(repo: BaseRepo, sample_embedding_v1: np.ndarray) -> None:
+    """Проверяет фильтрацию загрузки по списку ID спикеров."""
+    spk1 = Speaker(name="Спикер 1")
+    spk2 = Speaker(name="Спикер 2")
+    spk3 = Speaker(name="Спикер 3")
+    spk1.add_embedding("model_v1", sample_embedding_v1)
+    spk2.add_embedding("model_v1", sample_embedding_v1)
+    spk3.add_embedding("model_v1", sample_embedding_v1)
+
+    repo.save_speakers([spk1, spk2, spk3])
+
+    # Пытаемся загрузить только 1-го и 3-го спикера
+    assert spk1.id is not None
+    assert spk3.id is not None
+
+    loaded = repo.load_speakers(speaker_ids=[spk1.id, spk3.id])
+
+    assert len(loaded) == 2
+    names = {s.name for s in loaded}
+    assert names == {"Спикер 1", "Спикер 3"}
+
+
+def test_load_speakers_filter_by_name(repo: BaseRepo, sample_embedding_v1: np.ndarray) -> None:
+    """Проверяет фильтрацию загрузки по точному имени спикера."""
+    spk1 = Speaker(name="Уникальное Имя")
+    spk2 = Speaker(name="Другое Имя")
+    spk1.add_embedding("model_v1", sample_embedding_v1)
+    spk2.add_embedding("model_v1", sample_embedding_v1)
+
+    repo.save_speakers([spk1, spk2])
+
+    loaded = repo.load_speakers(name="Уникальное Имя")
+    assert len(loaded) == 1
+    assert loaded[0].id == spk1.id
+
+
+def test_save_existing_speaker_updates_data(
+    repo: BaseRepo, sample_embedding_v1: np.ndarray
 ) -> None:
-    """Проверяет обновление только векторов без изменения метаданных."""
-    spk1, _ = sample_speakers
+    """Проверяет сценарий UPSERT (обновление полей у уже существующего спикера)."""
+    speaker = Speaker(name="John")
+    speaker.add_embedding("model_v1", sample_embedding_v1)
+    repo.save_speakers([speaker])
 
-    spk1.name = "Хакер" # Попытка изменить имя
-    mock_embedding3 = numpy.random.rand(128).astype(numpy.float32)
-    spk1.embedding = mock_embedding3 # Новый эмбеддинг
-    spk1.total_count = 33
+    # Изменяем поля у объекта в памяти
+    speaker.name = "John Doe"
+    speaker.total_count = 150
 
-    db_repo.save_speakers([spk1], update_mode=SpeakerUpdateMode.UPDATE_EMBEDDINGS_ONLY)
+    # Сохраняем повторно
+    repo.save_speakers([speaker])
 
-    # Вычитываем из базы заново
-    spk1_id = spk1.id
-    assert spk1_id is not None
-    updated_spk = db_repo.load_speakers(speaker_ids=[spk1_id])[0]
-
-    assert updated_spk.name == "Алексей"  # Имя должно остаться СТАРЫМ
-    updated_embeding = updated_spk.embedding
-    assert updated_embeding is not None
-    assert numpy.array_equal(updated_embeding, mock_embedding3) # Эмбеддинг обновился
-    assert updated_spk.total_count == 11 # Счетчик должен остаться старым
+    # Выкачиваем заново из репозитория для проверки
+    speaker_id = speaker.id
+    assert speaker_id is not None
+    loaded = repo.load_speakers(speaker_ids=[speaker_id])[0]
+    assert loaded.name == "John Doe"
+    assert loaded.total_count == 150
 
 
-def test_update_mode_no_update(
-    db_repo: VoiceDbRepository,
-    sample_speakers: tuple[Speaker, Speaker]
+def test_multiple_embeddings_persistence(
+    repo: BaseRepo,
+    sample_embedding_v1: np.ndarray,
+    sample_embedding_v2: np.ndarray
 ) -> None:
-    """Проверяет режим полного игнорирования обновлений старых спикеров."""
-    spk1, _ = sample_speakers
+    """Проверяет, что у одного спикера успешно сохраняются и загружаются векторы разных моделей."""
+    speaker = Speaker(name="MultiModel Speaker")
 
-    spk1.name = "Новое имя"
-    mock_embedding3 = numpy.random.rand(128).astype(numpy.float32)
-    spk1.embedding = mock_embedding3
-    spk1.total_count = 33
+    # Добавляем два вектора для разных нейросетей
+    speaker.add_embedding("pyannote_v3", sample_embedding_v1)
+    speaker.add_embedding("respeaker_v1", sample_embedding_v2)
 
-    # Важно: новый спикер в этом списке ДОЛЖЕН добавиться в любом случае
-    mock_embedding4 = numpy.random.rand(128).astype(numpy.float32)
-    new_spk = Speaker(name = "Новичок", embedding = mock_embedding4, total_count = 44)
+    repo.save_speakers([speaker])
 
-    db_repo.save_speakers([spk1, new_spk], update_mode=SpeakerUpdateMode.NO_UPDATE)
+    # Загружаем спикера обратно
+    speaker_id = speaker.id
+    assert speaker_id is not None
+    loaded_speakers = repo.load_speakers(speaker_ids=[speaker_id])
+    assert len(loaded_speakers) == 1
+    loaded_speaker = loaded_speakers[0]
 
-    # Проверяем старого
-    spk1_id = spk1.id
-    assert spk1_id is not None
-    old_spk_db = db_repo.load_speakers(speaker_ids=[spk1_id])[0]
+    # Проверяем, что оба эмбеддинга на месте и данные векторов совпадают
+    assert len(loaded_speaker.embeddings) == 2
 
-    assert old_spk_db.name == "Алексей" # Данные не изменились
-    assert old_spk_db.total_count == 11 # Счетчик должен остаться старым
+    vec_v1 = loaded_speaker.get_embedding("pyannote_v3")
+    vec_v2 = loaded_speaker.get_embedding("respeaker_v1")
 
-    # Проверяем нового
-    assert new_spk.id is not None # При сохранении, объекту должен был быть выдан ИД из БД
-
-    # Загружаем нового и проверяем
-    new_spk_from_db = db_repo.load_speakers(speaker_ids=[new_spk.id])[0]
-    assert new_spk_from_db.name == "Новичок"
-    new_spk_embeding = new_spk_from_db.embedding
-    assert new_spk_embeding is not None
-    assert numpy.array_equal(new_spk_embeding, mock_embedding4)
-    assert new_spk_from_db.total_count == 44
-
-    assert len(db_repo.load_speakers()) == 3
+    assert vec_v1 is not None
+    assert vec_v2 is not None
+    assert np.allclose(vec_v1, sample_embedding_v1)
+    assert np.allclose(vec_v2, sample_embedding_v2)
 
 
-# ==========================================
-# ТЕСТЫ: ФИЛЬТРАЦИЯ И ПОИСК (READ POOL)
-# ==========================================
+def test_in_memory_repo_data_isolation(sample_embedding_v1: np.ndarray) -> None:
+    """Специфичный тест для InMemoryRepo: проверяет изоляцию данных через deepcopy.
+    
+    Изменение возвращенного из БД объекта в памяти не должно менять саму БД 
+    до вызова метода сохранения. В реальных СУБД это базовое свойство.
+    """
+    repo_local = InMemoryRepo()
+    speaker = Speaker(name="Original Name")
+    speaker.add_embedding("model_v1", sample_embedding_v1)
+    repo_local.save_speakers([speaker])
 
-def test_load_speakers_with_filters(
-    db_repo: VoiceDbRepository,
-    sample_speakers: tuple[Speaker, Speaker]
-) -> None:
-    """Проверяет работу фильтрации по ID и части имени LIKE."""
-    spk1, spk2 = sample_speakers
+    # Шаг 1: Извлекаем из репозитория
+    loaded = repo_local.load_speakers(name="Original Name")[0]
 
-    # Поиск по списку ID
-    spk2_id = spk2.id
-    assert spk2_id is not None
-    res_ids = db_repo.load_speakers(speaker_ids=[spk2_id])
-    assert len(res_ids) == 1
-    assert res_ids[0].name == "Мария"
+    # Шаг 2: Мутируем извлеченный объект, НО НЕ вызываем save_speakers
+    loaded.name = "Mutated Name"
 
-    # Поиск по подстроке имени (регистронезависимый LIKE в SQLite для ASCII)
-    res_name = db_repo.load_speakers(name="лекс")
-    assert len(res_name) == 1
-    assert res_name[0].id == spk1.id
-
-
-def test_load_audio_file_by_filters(db_repo: VoiceDbRepository) -> None:
-    """Проверяет поиск аудиофайла по ID и уникальному пути."""
-    path = "/var/audio/test_file.mp3"
-    audio = AudioFile(file_path=path, duration_seconds=12.5)
-    db_repo.save_audio_file(audio)
-
-    # Ищем по пути
-    file_by_path = db_repo.load_audio_file(file_path=path)
-    assert file_by_path is not None
-    assert file_by_path.id == audio.id
-
-    # Ищем по ID
-    file_by_id = db_repo.load_audio_file(file_id=audio.id)
-    assert file_by_id is not None
-    file_path = file_by_id.file_path
-    assert file_path is not None
-    assert file_path == path
-
-
-# ==========================================
-# ТЕСТЫ: ЦЕЛОСТНОСТЬ И ОГРАНИЧЕНИЯ (CONSTRAINTS)
-# ==========================================
-
-def test_audio_file_path_uniqueness(db_repo: VoiceDbRepository) -> None:
-    """Проверяет, что база вызовет ошибку при попытке дублировать путь к файлу."""
-    audio1 = AudioFile(file_path="/dup/path.wav", duration_seconds=10)
-    audio2 = AudioFile(file_path="/dup/path.wav", duration_seconds=20)
-
-    db_repo.save_audio_file(audio1)
-
-    with pytest.raises(sqlite3.IntegrityError):
-        db_repo.save_audio_file(audio2)
+    # Шаг 3: Проверяем, что в репозитории объект остался прежним
+    speaker_id = speaker.id
+    assert speaker_id is not None
+    still_original = repo_local.load_speakers(speaker_ids=[speaker_id])[0]
+    assert still_original.name == "Original Name"

@@ -4,7 +4,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 import os
-from enum import Enum
+from enum import Enum, auto
 from typing import Any
 import yaml
 
@@ -42,6 +42,18 @@ class PipelineType(Enum):
     ASR_PIPELINE = "asr"
     MANAGER_DIARIZ_PIPELINE = "dman"
     CENTRIOD_DIARIZ_PIPELINE = "dcentr"
+
+class SpeakerResolvingMode(Enum):
+    """Возможные способы диаризации"""
+    NONE = auto()       # Без диаризации
+    ORACLE = auto()     # Режим Оракула
+    VAD_SPEAKER_MANAGER = auto()   # С использованием менеджера и базы
+    VAD_SIMPLE_CENTROID = auto()   # Cравнение эмбеддингов с центроидами по порогу
+
+class SpeakerRepoType(Enum):
+    """Варианты репозитария спикеров"""
+    IN_MEMORY = "in_memory"
+    DB_SQLITE = "db_sqlite"
 
 class Config:
     """Класс загрузчика конфигурации"""
@@ -146,6 +158,7 @@ class RuntimeConfig:
     provider: str = "cpu"
     output_dir: str = str(DEFAULT_OUTPUT_DIR)    # Путь к папке с с файлами с распознанным текстом
     no_timestamps: bool = False             # Запрещает вывод меток времени в распознанный текст
+    use_db: bool = False    # Признак хранения спикеров, аудиофайлов и сегментов в БД или в памяти
 
 @dataclass
 class VadConfig:
@@ -177,7 +190,7 @@ class AsrConfig:
 
 @dataclass
 class EmbeddingConfig:
-    """Настройки модели эмбуддинга"""
+    """Настройки модели эмбеддинга"""
     use_oracle: bool = False
     model_name: str | None = None
     model_short_name: str | None = None
@@ -188,7 +201,9 @@ class VadDiarizationConfig:
     """Настройки VAD диаризации"""
     use_oracle: bool = False
     spk_threshold: float = 0.4  # Порог косинусной схожести для поиска спикера
-    # min_seg_sec: float = 0.5
+    resolving_mode: SpeakerResolvingMode = SpeakerResolvingMode.NONE
+    speaker_repo_type: SpeakerRepoType = SpeakerRepoType.IN_MEMORY
+    db_path: str = str(DB_DEFAULT_PATH)
 
 @dataclass
 class SegmentationConfig:

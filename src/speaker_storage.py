@@ -1,5 +1,6 @@
-"""Модуль реалиpует хранилище данных о спикерах"""
-from enum import Enum
+"""Модуль реалиpует хранилище данных пайплайна"""
+from abc import ABC, abstractmethod
+import copy
 from contextlib import contextmanager
 import sqlite3
 from typing import Any
@@ -7,56 +8,119 @@ from collections.abc import Generator
 from pathlib import Path
 import numpy
 import config
-from entities import Speaker, AudioFile, AudioSegment
+from entities import Speaker, SpeakerEmbedding
+
+def make_default_speaker_name(speaker_id: int) -> str:
+    """Конструирует имя спикера по умолчанию"""
+    return f"SPK_{speaker_id:03d}"
+
+class BaseRepo(ABC):
+    """Абстрактный интерфейс хранилища базовых объектов"""
+    @abstractmethod
+    def load_speakers(self,
+        speaker_ids: list[int] | None = None,
+        name: str | None = None
+    ) -> list[Speaker]:
+        """Загружает список спикеров по фильтрам. Без фильтров возвращает ВСЕХ спикеров."""
+
+    @abstractmethod
+    def save_speakers(self, speakers: list[Speaker]) -> None:
+        """Сохраняет список спикеров. 
+        Для новых (id is None) генерирует автоинкремент и мутирует переданный объект.
+        """
 
 
-class SpeakerUpdateMode(Enum):
-    """Режимы обновления существующих спикеров при сохранении."""
-    UPDATE_ALL = "all"                                   # Обновить все, кроме ID
-    UPDATE_ALL_EXCEPT_EMBEDDING = "all_except_embedding" # Обновить имя, метрики (если появятся)
-    UPDATE_EMBEDDINGS_ONLY = "embeddings_only"           # Обновить только вектор
-    NO_UPDATE = "no_update"                              # Не трогать старых, только добавлять новых
+class InMemoryRepo(BaseRepo):
+    """Репозиторий, имитирующий работу СУБД в оперативной памяти (для бенчмарков/тестов)."""
+    def __init__(self) -> None:
+        self._speaker_id_counter: int = 1
+        self._embedding_id_counter: int = 1
 
-# ==========================================
-# ОСНОВНОЙ РЕПОЗИТОРИЙ БАЗЫ ДАННЫХ
-# ==========================================
+        # Хранилище сущностей, где ключ — это уникальный ID спикера
+        self._speakers: dict[int, Speaker] = {}
 
-class VoiceDbRepository:
+    def load_speakers(
+        self,
+        speaker_ids: list[int] | None = None,
+        name: str | None = None
+    ) -> list[Speaker]:
+        """Загружает список спикеров по фильтрам. Без фильтров возвращает ВСЕХ спикеров."""
+        matched_speakers: list[Speaker] = []
+
+        for speaker in self._speakers.values():
+            # Фильтр по списку ID (если передан)
+            if speaker_ids is not None and speaker.id not in speaker_ids:
+                continue
+
+            # Фильтр по имени (если передан, ищет точное совпадение)
+            if name is not None and speaker.name != name:
+                continue
+
+            # Возвращаем deepcopy, чтобы изменения объектов в пайплайне
+            # не влияли на состояние "БД" до вызова метода сохранения
+            matched_speakers.append(copy.deepcopy(speaker))
+
+        return matched_speakers
+
+    def save_speakers(self, speakers: list[Speaker]) -> None:
+        """
+        Сохраняет список спикеров. 
+        Для новых (id is None) генерирует автоинкремент и мутирует переданный объект.
+        """
+        for speaker in speakers:
+            # 1. Если спикер новый, генерируем для него ID и базовое имя
+            if speaker.id is None:
+                speaker.id = self._speaker_id_counter
+                self._speaker_id_counter += 1
+
+                # Если имя осталось дефолтным, дополняем его сгенерированным ID
+                if speaker.name is None:
+                    speaker.name = make_default_speaker_name(speaker_id = speaker.id)
+
+            # 2. Обрабатываем эмбеддинги спикера
+            for emb in speaker.embeddings:
+                # Проставляем связь эмбеддинга со спикером
+                emb.speaker_id = speaker.id
+
+                # Если у самого эмбеддинга нет ID, выдаем автоинкремент
+                if emb.id is None:
+                    emb.id = self._embedding_id_counter
+                    self._embedding_id_counter += 1
+
+            # 3. Сохраняем глубокую копию состояния объекта в наше хранилище
+            self._speakers[speaker.id] = copy.deepcopy(speaker)
+
+
+class SqliteRepo(BaseRepo):
     """Управляет жизненным циклом БД SQLite и операциями чтения/записи объектов."""
-
-    def __init__(self, db_path: str | None = None):
+    def __init__(self, db_path: str | None = None) -> None:
         """Инициализирует подключение к БД и создает таблицы, если их нет."""
-        # Корректно разворачиваем пути (~, относительные и т.д.) в абсолютный путь
         if db_path is None:
-            self.db_path = config.DB_DEFAULT_PATH
+            # Используем путь из конфига, если ничего не передано
+            self.db_path: Path = Path(config.DB_DEFAULT_PATH).expanduser().resolve()
         elif db_path == ":memory:":
-            raise ValueError("Работа с БД в памяти не поддерживается")
+            raise ValueError("Работа с БД в памяти не поддерживается в этом репозитории")
         else:
             self.db_path = Path(db_path).expanduser().resolve()
 
-        # Проверяем, нужна ли инициализация базы данных
-        is_need_init = False
-        # Проверяем, существует ли файл базы данных ДО подключения
+        # Проверяем, нужна ли инициализация базы данных до подключения
         is_need_init = not self.db_path.is_file()
-        if is_need_init:
-            # Создаем родительские папки, если их еще нет
+        if is_need_init: # Создаем нужные папки для файла с БД, если их нет
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Инициализируем структуру БД, если она новая
         if is_need_init:
             print("База данных не найдена. Запуск инициализации структуры...")
             self._init_db()
             print(f"Создана база данных: {self.db_path}")
 
     @contextmanager
-    def connection_scope(self) -> Generator[sqlite3.Connection]:
+    def connection_scope(self) -> Generator[sqlite3.Connection, None, None]:
         """
         Контекстный менеджер управляет транзакциями.
-        Закрывает коннект для БД на диске, или оставляет открытым для БД в ОЗУ.
+        Закрывает коннект для БД на диске, выполняет автокоммит или автооткат.
         """
-        # 1. Получаем нужный коннект
         conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row # Позволяет обращаться к колонке по имени
+        conn.row_factory = sqlite3.Row  # Позволяет обращаться к колонке по имени
         conn.execute("PRAGMA foreign_keys = ON;")
 
         try:
@@ -66,321 +130,191 @@ class VoiceDbRepository:
             conn.rollback()  # Авто-откат при ошибке внутри блока with
             raise
         finally:
-            # 2. Закрываем коннект
             conn.close()
 
     def _init_db(self) -> None:
-        """Создает структуру таблиц и индексов, которых нет в базе."""
+        """Создает структуру таблиц и индексов, если их нет в базе."""
+        # Используем путь к схеме из вашего конфига
+        scheme_path = Path(config.DB_DEFAULT_SCHEME_PATH)
+        if not scheme_path.is_file():
+            raise FileNotFoundError(
+                f"Файл со структурой базы данных не найден по пути: {scheme_path}"
+            )
+
+        # Читаем весь файл в строку (utf-8 защитит от проблем с кодировкой)
+        sql_script = scheme_path.read_text(encoding="utf-8")
+
         with self.connection_scope() as conn:
             cursor = conn.cursor()
-
-            # Проверяем, существует ли SQL-файл со схемой БД
-            if not config.DB_DEFAULT_SCHEME_PATH.is_file():
-                raise FileNotFoundError(
-                    f"Файл со структурой базы данных не найден по пути: "
-                    f"{config.DB_DEFAULT_SCHEME_PATH}"
-                )
-
-            # Читаем весь файл в строку (utf-8 защитит от проблем с кодировкой)
-            sql_script = config.DB_DEFAULT_SCHEME_PATH.read_text(encoding="utf-8")
-
             # executescript() выполняет сразу несколько SQL-команд, разделенных точкой с запятой
             cursor.executescript(sql_script)
 
-    # --- МЕТОДЫ ЗАГРУЗКИ (READ) ---
 
-    def load_speakers(self,
+    # --- Хелперы для работы с векторами ---
+    def _encode_embedding(self, emb: numpy.ndarray | None) -> bytes:
+        """Преобразует numpy массив в компактные байты float32."""
+        if emb is None:
+            return b""
+        return emb.astype(numpy.float32).tobytes()
+
+    def _decode_embedding(self, blob: bytes) -> numpy.ndarray:
+        """Восстанавливает numpy массив из байтов."""
+        return numpy.frombuffer(blob, dtype = numpy.float32)
+
+
+    # --- Реализация методов интерфейса BaseRepo ---
+    def load_speakers(
+        self,
         speaker_ids: list[int] | None = None,
         name: str | None = None
     ) -> list[Speaker]:
         """Загружает список спикеров по фильтрам. Без фильтров возвращает ВСЕХ спикеров."""
-        query = "SELECT id, name, embedding_blob, total_count, created_at FROM speaker WHERE 1=1"
-        params: list[Any] = []
 
-        if speaker_ids:
-            placeholders = ",".join(["?"] * len(speaker_ids))
-            query += f" AND id IN ({placeholders})"
-            params.extend(speaker_ids)
+        # 1. Формируем SQL-запрос для спикеров с динамическими фильтрами
+        query_parts = ["SELECT id, name, total_count, created_at FROM speaker WHERE 1=1"]
+        params: dict[str, Any] = {}
 
-        if name:
-            query += " AND name LIKE ?"
-            params.append(f"%{name}%")
+        if speaker_ids is not None:
+            # SQLite не поддерживает списки в именованных параметрах напрямую,
+            # генерируем плейсхолдеры вида :id0, :id1...
+            id_placeholders = []
+            for idx, s_id in enumerate(speaker_ids):
+                param_name = f"id_{idx}"
+                id_placeholders.append(f":{param_name}")
+                params[param_name] = s_id
+            query_parts.append(f"AND id IN ({', '.join(id_placeholders)})")
+
+        if name is not None:
+            query_parts.append("AND name = :name")
+            params["name"] = name
+
+        speakers_query = " ".join(query_parts)
+        speakers_dict: dict[int, Speaker] = {}
 
         with self.connection_scope() as conn:
             cursor = conn.cursor()
-            cursor.execute(query, params)
+
+            # Шаг 1: Загружаем базовые карточки спикеров
+            cursor.execute(speakers_query, params)
             rows = cursor.fetchall()
 
-        return [
-            Speaker(
-                id = r["id"],
-                name = r["name"],
-                embedding = numpy.frombuffer(r["embedding_blob"], dtype = numpy.float32),
-                total_count = r["total_count"],
-                created_at = r["created_at"],
-            )
-            for r in rows
-        ]
+            if not rows:
+                return []
 
-    def load_audio_file(
-        self,
-        file_id: int | None = None,
-        file_path: str | None = None
-    ) -> AudioFile | None:
-        """Ищет аудиофайл в базе по его ID или по уникальному системному пути."""
-        query = "SELECT id, file_path, duration_seconds, processed_at FROM audio_file WHERE "
-        param: Any
-        if file_id is not None:
-            query += "id = ?"
-            param = file_id
-        elif file_path is not None:
-            query += "file_path = ?"
-            param = file_path
-        else:
-            return None
+            for row in rows:
+                s_id = row["id"]
+                speakers_dict[s_id] = Speaker(
+                    id = s_id,
+                    name = row["name"],
+                    total_count = row["total_count"],
+                    created_at = row["created_at"],
+                    embeddings = []
+                )
 
-        with self.connection_scope() as conn:
-            cursor = conn.cursor()
-            cursor.execute(query, (param,))
-            row = cursor.fetchone()
+            # Шаг 2: Загружаем все эмбеддинги для этих спикеров
+            # Делаем это одним запросом через IN, чтобы не спамить базу в цикле
+            emb_placeholders = [f":s_id_{idx}" for idx in range(len(speakers_dict))]
+            emb_params = {f"s_id_{idx}": s_id for idx, s_id in enumerate(speakers_dict.keys())}
 
-        if row:
-            return AudioFile(
-                id=row["id"],
-                file_path=row["file_path"],
-                duration_seconds=row["duration_seconds"],
-                processed_at=row["processed_at"]
-            )
-        return None
+            emb_query = f"""
+                SELECT id, speaker_id, model_name, embedding 
+                FROM speaker_embedding 
+                WHERE speaker_id IN ({', '.join(emb_placeholders)})
+            """
 
-    def load_file_content(self, audio_file_id: int) -> tuple[list[AudioSegment], list[Speaker]]:
+            cursor.execute(emb_query, emb_params)
+            emb_rows = cursor.fetchall()
+
+            for emb_row in emb_rows:
+                spk_id = emb_row["speaker_id"]
+                vector = self._decode_embedding(emb_row["embedding"])
+
+                embedding_obj = SpeakerEmbedding(
+                    id=emb_row["id"],
+                    speaker_id=spk_id,
+                    model_name=emb_row["model_name"],
+                    embedding=vector
+                )
+                speakers_dict[spk_id].embeddings.append(embedding_obj)
+
+        return list(speakers_dict.values())
+
+    def save_speakers(self, speakers: list[Speaker]) -> None:
         """
-        Возвращает кортеж: (Список объектов AudioSegment, Список объектов Speaker),
-        задействованных в файле.
-        """
-        segments: list[AudioSegment] = []
-
-        # 1. Загружаем все сегменты для файла
-        with self.connection_scope() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT id, audio_file_id, speaker_id, start_time, end_time, text, word_count
-                FROM speech_segment
-                WHERE audio_file_id = ?
-                ORDER BY start_time ASC
-            """, (audio_file_id,))
-            seg_rows = cursor.fetchall()
-
-        for r in seg_rows:
-            segments.append(AudioSegment(
-                id=r["id"],
-                audio_file_id=r["audio_file_id"],
-                speaker_id=r["speaker_id"],
-                start_time=r["start_time"],
-                end_time=r["end_time"],
-                text=r["text"],
-                word_count=r["word_count"]
-            ))
-
-        # 2. Извлекаем уникальные ID спикеров из этих сегментов и загружаем их
-        unique_speaker_ids = list(
-            {seg.speaker_id for seg in segments if seg.speaker_id is not None}
-        )
-        speakers = self.load_speakers(speaker_ids=unique_speaker_ids) if unique_speaker_ids else []
-
-        return segments, speakers
-
-    # --- МЕТОДЫ СОХРАНЕНИЯ (WRITE) ---
-
-    def save_speakers(
-        self,
-        speakers: list[Speaker],
-        update_mode: SpeakerUpdateMode = SpeakerUpdateMode.NO_UPDATE
-    ) -> None:
-        """Сохраняет список спикеров. 
-        
+        Сохраняет список спикеров.
         Для новых (id is None) генерирует автоинкремент и мутирует переданный объект.
-        Для старых применяет один из выбранных режимов обновления `update_mode`.
         """
         with self.connection_scope() as conn:
             cursor = conn.cursor()
 
             for speaker in speakers:
-                # Сценарий А: Абсолютно новый спикер
-                if speaker.id is None or speaker.id < 0:
+                if speaker.id is None:
+                    # Создаем нового спикера
                     cursor.execute(
-                        "INSERT INTO speaker (name, embedding_blob, total_count) "
-                        "VALUES (:name, :embedding_blob, :total_count);",
+                        """
+                        INSERT INTO speaker (name, total_count, created_at) 
+                        VALUES (:name, :total_count, :created_at)
+                        """,
                         {
                             "name": speaker.name,
-                            "embedding_blob": (
-                                speaker.embedding.tobytes()
-                                if speaker.embedding is not None else None
-                            ),
                             "total_count": speaker.total_count,
+                            "created_at": speaker.created_at
                         }
                     )
-                    speaker.id = cursor.lastrowid  # Наполняем объект сгенерированным ID из базы
+                    speaker.id = cursor.lastrowid
 
-                # Сценарий Б: Спикер уже существует, обрабатываем согласно логике mode
+                    # Проверяем дефолтное имя: если оно не изменилось, дополняем полученным ID
+                    if speaker.name is None and speaker.id is not None:
+                        speaker.name = make_default_speaker_name(speaker_id = speaker.id)
+                        cursor.execute(
+                            "UPDATE speaker SET name = :name WHERE id = :id",
+                            {"name": speaker.name, "id": speaker.id}
+                        )
                 else:
-                    if update_mode == SpeakerUpdateMode.UPDATE_ALL:
+                    # Обновляем существующего спикера (честный UPSERT/Update)
+                    cursor.execute(
+                        """
+                        UPDATE speaker 
+                        SET name = :name, total_count = :total_count 
+                        WHERE id = :id
+                        """,
+                        {"name": speaker.name, "total_count": speaker.total_count, "id": speaker.id}
+                    )
+
+                # Сохраняем эмбеддинги текущего спикера
+                for emb in speaker.embeddings:
+                    emb.speaker_id = speaker.id
+                    blob_data = self._encode_embedding(emb.embedding)
+
+                    if emb.id is None:
+                        # Новый эмбеддинг для этой модели
                         cursor.execute(
-                            "UPDATE speaker "
-                            "SET name = :name, embedding_blob = :embedding_blob, "
-                            "   total_count = :total_count "
-                            "WHERE id = :id; ",
+                            """
+                            INSERT INTO speaker_embedding (speaker_id, model_name, embedding) 
+                            VALUES (:speaker_id, :model_name, :embedding)
+                            """,
                             {
-                                "name": speaker.name,
-                                "embedding_blob": (
-                                speaker.embedding.tobytes()
-                                if speaker.embedding is not None else None
-                            ),
-                                "total_count": speaker.total_count,
-                                "id": speaker.id
+                                "speaker_id": emb.speaker_id,
+                                "model_name": emb.model_name,
+                                "embedding": blob_data
                             }
                         )
-                    elif update_mode == SpeakerUpdateMode.UPDATE_ALL_EXCEPT_EMBEDDING:
+                        emb.id = cursor.lastrowid
+                    else:
+                        # Обновляем существующий вектор (например, если модель уточнила эмбеддинг)
                         cursor.execute(
-                            "UPDATE speaker "
-                            "SET name = :name, total_count = :total_count "
-                            "WHERE id = :id; ",
-                            {
-                                "name": speaker.name,
-                                "total_count": speaker.total_count,
-                                "id": speaker.id
-                            }
+                            """
+                            UPDATE speaker_embedding 
+                            SET embedding = :embedding 
+                            WHERE id = :id
+                            """,
+                            {"embedding": blob_data, "id": emb.id}
                         )
-                    elif update_mode == SpeakerUpdateMode.UPDATE_EMBEDDINGS_ONLY:
-                        cursor.execute(
-                            "UPDATE speaker "
-                            "SET embedding_blob = :embedding_blob "
-                            "WHERE id = :id; ",
-                            {
-                                "embedding_blob": (
-                                speaker.embedding.tobytes()
-                                if speaker.embedding is not None else None
-                            ),
-                                "id": speaker.id
-                            }
-                        )
-                    elif update_mode == SpeakerUpdateMode.NO_UPDATE:
-                        pass  # Ничего не делаем со старым спикером
 
-    def save_audio_file(self, audio_file: AudioFile) -> int:
-        """Сохраняет карточку аудиофайла. Возвращает ID записи (включая мутацию объекта)."""
-        with self.connection_scope() as conn:
-            cursor = conn.cursor()
-            if audio_file.id is None:
-                cursor.execute(
-                    "INSERT INTO audio_file (file_path, duration_seconds) "
-                    "VALUES (:file_path, :duration_seconds);",
-                    {
-                        "file_path": audio_file.file_path,
-                        "duration_seconds": audio_file.duration_seconds
-                    }
-                )
-                audio_file.id = cursor.lastrowid
-            else:
-                cursor.execute(
-                    "UPDATE audio_file "
-                    "SET file_path = :file_path, duration_seconds = :duration_seconds "
-                    "WHERE id = :id;",
-                    {
-                        "file_path": audio_file.file_path,
-                        "duration_seconds": audio_file.duration_seconds,
-                        "id": audio_file.id
-                    }
-                )
-
-        audio_file_id = audio_file.id
-        if audio_file_id is None:
-            raise ValueError("audio_file.id не может быть None")
-        return audio_file_id
-
-    def save_audio_segments(self, audio_file_id: int, segments: list[AudioSegment]) -> None:
-        """
-        Сохраняет пачку сегментов (таймкодов) для конкретного аудиофайла в рамках
-        единой транзакции.
-        """
-        # Подготавливаем кортежи для быстрой пакетной вставки через executemany
-        data_to_insert = [
-            {
-                "audio_file_id": audio_file_id,
-                "speaker_id": seg.speaker_id,
-                "start_time": seg.start_time,
-                "end_time": seg.end_time,
-                "text": seg.text,
-                "word_count": seg.word_count
-            }
-            for seg in segments
-        ]
-
-        with self.connection_scope() as conn:
-            cursor = conn.cursor()
-
-            # Перед перезаписью сегментов конкретного файла удаляем старые,
-            # если требуется логикой перезаписи
-            cursor.execute(
-                "DELETE FROM speech_segment WHERE audio_file_id = :audio_file_id;",
-                {"audio_file_id": audio_file_id,}
-            )
-
-            cursor.executemany("""
-                INSERT INTO speech_segment
-                (audio_file_id, speaker_id, start_time, end_time, text, word_count)
-                VALUES (:audio_file_id, :speaker_id, :start_time, :end_time, :text, :word_count);
-            """, data_to_insert)
-
-def usage_sample() -> None:
-    """Пример использования функционала класса"""
-    # 1. Инициализируем репозиторий (создаст файл 'speech_vault.db', если его нет)
-    repo = VoiceDbRepository()
-
-    # 2. Создаем тестовых спикеров (один старый, один новый рантайм-спикер)
-    mock_embedding1 = numpy.random.rand(128).astype(numpy.float32)
-    mock_embedding2 = numpy.random.rand(128).astype(numpy.float32)
-    speaker_existing = Speaker(id=1, name="John Doe Modified", embedding=mock_embedding1)
-    speaker_new_found = Speaker(name="SPEAKER_01 (Unknown)", embedding=mock_embedding2)
-
-    speakers_list = [speaker_existing, speaker_new_found]
-
-    # 3. Сохраняем спикеров с обновлением имени для старых.
-    # Обратите внимание: у speaker_new_found динамически заполнится поле .id!
-    repo.save_speakers(speakers_list, update_mode=SpeakerUpdateMode.UPDATE_ALL_EXCEPT_EMBEDDING)
-    print(f"Новому спикеру база присвоила ID: {speaker_new_found.id}")
-
-    # 4. Создаем и сохраняем информацию об обработанном аудиофайле
-    audio = AudioFile(file_path="/raw/audio/interview_05.wav", duration_seconds=124.5)
-    file_id = repo.save_audio_file(audio)
-
-    # 5. Генерируем пачку сегментов диаризации, привязывая их к выданным базой ID спикеров
-    runtime_segments = [
-        AudioSegment(
-            speaker_id=speaker_existing.id,
-            start_time=0.0,
-            end_time=15.2,
-            text="Привет всем",
-            word_count=2
-        ),
-        AudioSegment(
-            speaker_id=speaker_new_found.id,
-            start_time=15.2,
-            end_time=30.0,
-            text="Здравствуйте!",
-            word_count=1
-        )
-    ]
-    repo.save_audio_segments(audio_file_id=file_id, segments=runtime_segments)
-
-    # ==========================================
-    # ПРОВЕРКА ЧТЕНИЯ (Где-то в интерфейсе разметчика)
-    # ==========================================
-
-    # Загружаем контент файла обратно
-    loaded_segments, loaded_speakers = repo.load_file_content(audio_file_id=file_id)
-
-    print(f"\nВ файле обнаружено сегментов: {len(loaded_segments)}")
-    print(f"\nВ файле обнаружено спикеров: {len(loaded_speakers)}")
-    for spk in loaded_speakers:
-        print(f"- Спикер ID {spk.id}: {spk.name}")
+def create_spk_repo(pl_conf: config.PipelineConfig) -> BaseRepo:
+    """Создает репозиторий спикеров на основе типа репо в конфигурации пайплайна"""
+    if pl_conf.diar_vad.speaker_repo_type is config.SpeakerRepoType.IN_MEMORY:
+        return InMemoryRepo()
+    if pl_conf.diar_vad.speaker_repo_type is config.SpeakerRepoType.DB_SQLITE:
+        return SqliteRepo(db_path = pl_conf.diar_vad.db_path)
+    raise ValueError(f"Недопустимый тип репозитория: {pl_conf.diar_vad.speaker_repo_type}")

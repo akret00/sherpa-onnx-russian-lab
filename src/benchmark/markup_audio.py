@@ -18,7 +18,7 @@ def main() -> None:
     start_time = time.perf_counter()
 
     # Создаем репозитарий для спикеров и загружаем базу спикеров
-    db_repo = speaker_storage.VoiceDbRepository()
+    db_repo = speaker_storage.SqliteRepo()
     speakers = db_repo.load_speakers()
 
     # Инициализация пайплайна

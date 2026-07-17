@@ -1,13 +1,15 @@
 """Модуль содержит утилиты для разных способов диаризации"""
-from enum import Enum, auto
 from dataclasses import dataclass
 import typing
 import numpy
 import sherpa_onnx
 import model_utils
-from config import pl_conf, SR, MIN_SEARCH_SEG_LEN, MAX_PAUSE_FOR_INERTIA
+from config import (
+    SR, MIN_SEARCH_SEG_LEN, MAX_PAUSE_FOR_INERTIA, PipelineConfig, SpeakerResolvingMode
+)
 import segment_utils
 from entities import Speaker, AudioSegment
+from speaker_storage import BaseRepo, create_spk_repo
 
 def compute_embedding(
     extractor: sherpa_onnx.SpeakerEmbeddingExtractor,
@@ -27,47 +29,36 @@ class ResolveResult:
     speaker: Speaker | None = None
     cos_similarity: float = -1  # косинусная схожесть или другой скор
 
-class SpeakerResolvingMode(Enum):
-    """Возможные способы диаризации"""
-    # Без диаризации
-    NONE = auto()
-    # Режим Оракула
-    ORACLE = auto()
-    # Способы на основе VAD (посегментно)
-    VAD_SPEAKER_MANAGER = auto()   # С использованием вашего менеджера и базы
-    VAD_SIMPLE_THRESHOLD = auto()  # Простое сравнение эмбеддингов по порогу
-    VAD_SIMPLE_CENTROID = auto()   # Простое сравнение эмбеддингов с центроидами по порогу
-    # Полноценная диаризация (целым файлом или потоком)
-    PYANNOTE_OFFLINE = auto()      # Обработка всего файла целиком
-    PYANNOTE_STREAMING = auto()    # Потоковая диаризация
-
 class SpeakerResolver:
     """Класс для определения спикера"""
-    def __init__(
-            self,
-            num_threads: int,
-            spk_threshold: float,
-            resolving_mode: SpeakerResolvingMode | None = None,
-            speakers: list[Speaker] | None = None,
-    ):
-        self._resolving_mode = resolving_mode
-        self._num_threads = num_threads
+    def __init__(self, pl_conf: PipelineConfig):
+        self._pl_conf: PipelineConfig = pl_conf
+        # Автоматическое включение режима Оракула
+        if self._pl_conf.diar_vad.use_oracle:
+            self._resolving_mode = SpeakerResolvingMode.ORACLE
+        else:
+            self._resolving_mode = self._pl_conf.diar_vad.resolving_mode
+
+        self._num_threads = self._pl_conf.runtime.num_threads
         # spk_threshold -  косинусное сходство: Обычно лежит в диапазоне 0.0 (совсем разные)
         # до 1.0 (идентичные).
         # Норма примерно 0.5 - 0.6, если есть похожие голоса, то нужно повышать до 0.65+
         # если шум, эхо, порог придется снижать, но тогда могут дробиться реальные спикеры
-        self._spk_threshold = spk_threshold
-        self._spk_model = pl_conf.embed.model_path
-        self._provider = pl_conf.runtime.provider
+        self._spk_threshold = self._pl_conf.diar_vad.spk_threshold
+        self._embed_model_path = self._pl_conf.embed.model_path
+        self._provider = self._pl_conf.runtime.provider
+
+        # Создаем репо спикеров
+        self._spk_repo: BaseRepo = create_spk_repo(pl_conf = self._pl_conf)
         # Список спикеров с векторами и количеством накопленных фраз
-        self._speakers: list[Speaker] = [] if speakers is None else speakers
+        self._speakers: list[Speaker] = self._spk_repo.load_speakers()
 
         if self._resolving_mode == SpeakerResolvingMode.VAD_SIMPLE_CENTROID:
             # Переменные для сброса последнего спикера при паузах
             self._last_spk = None
             self._last_end_time = 0.0
 
-        # Эьалонная разметка для Оракула
+        # Эталонная разметка для Оракула
         self.markup_segments: list[AudioSegment] = []
         self.current_markup_segment_num = 0
         self.padding = 0
@@ -78,19 +69,22 @@ class SpeakerResolver:
             SpeakerResolvingMode.VAD_SIMPLE_CENTROID,
         ):
             self._extractor, self._manager = model_utils.load_embedder(
-                self._spk_model, num_threads = self._num_threads, provider = self._provider
+                self._embed_model_path, num_threads = self._num_threads, provider = self._provider
             )
 
             if self._resolving_mode == SpeakerResolvingMode.VAD_SPEAKER_MANAGER:
                 # Загружаем базу спикеров в менеджер
                 for index, spk in enumerate(self._speakers):
-                    self._manager.add(str(index + 1), spk.embedding)
+                    self._manager.add(
+                        str(index + 1),
+                        spk.get_embedding(model_name = self._pl_conf.embed.model_short_name)
+                    )
         elif self._resolving_mode == SpeakerResolvingMode.NONE:
             pass # Ничего не делаем
         elif self._resolving_mode == SpeakerResolvingMode.ORACLE:
             pass # Ничего не делаем
         else:
-            raise ValueError(f"Тип диаризации {resolving_mode} пока не поддерживается")
+            raise ValueError(f"Тип диаризации {self._resolving_mode} пока не поддерживается")
 
     def _normalize_vector(self, vec: numpy.ndarray) -> numpy.ndarray:
         norm = numpy.linalg.norm(vec)
@@ -102,31 +96,37 @@ class SpeakerResolver:
         self, speaker: Speaker, new_emb: numpy.ndarray, alpha: float =0.1
     ) -> None:
         """Мягкое обновление центроида спикера"""
-        old_centroid = speaker.embedding
+        old_centroid = speaker.get_embedding(model_name = self._pl_conf.embed.model_short_name)
         if old_centroid is None:
             raise ValueError("Эмбеддинг не может иметь значение None")
         # Формула экспоненциального сглаживания
         updated_centroid = (1 - alpha) * old_centroid + alpha * new_emb
         # Нормализуем вектор обратно (важно для косинусного сходства)
-        speaker.embedding = self._normalize_vector(updated_centroid)
+        speaker.add_embedding(
+            model_name = self._pl_conf.embed.model_short_name,
+            embedding = self._normalize_vector(updated_centroid)
+        )
 
     def _search_or_create_speaker_manager(self, emb: numpy.ndarray) -> ResolveResult:
         matched_id = self._manager.search(emb, threshold = self._spk_threshold)
         if not matched_id:
-            spk = Speaker(
-                id = -(len(self._speakers) + 1),
-                name = f"SPK_{(len(self._speakers) + 1):03d}",
-                embedding = emb,
-            )
-
+            # Создает пустого спикера и добавляем к нему эмбеддинг с именем модели
+            spk = Speaker()
+            spk.add_embedding(model_name = self._pl_conf.embed.model_short_name, embedding = emb)
+            # При сохранении пустого спикера в репо, ему будут присвоены ИД и имя по умолчанию
+            self._spk_repo.save_speakers(speakers = [spk])
+            # Добавляем нового спикера в локальный список
             self._speakers.append(spk)
+
             matched_id = str((len(self._speakers)))
-            ok = self._manager.add(matched_id, emb)
-            if not ok:
+            if not self._manager.add(matched_id, emb):
                 raise RuntimeError(f"Failed to register speaker {matched_id}")
 
         spk = self._speakers[int(matched_id) - 1]
-        score = numpy.dot(spk.embedding, emb) # Косинусное для нормированных векторов
+        score = numpy.dot(
+            spk.get_embedding(model_name = self._pl_conf.embed.model_short_name),
+            emb
+        ) # Косинусное сходство для нормированных векторов
 
         return ResolveResult(speaker = spk, cos_similarity = float(score))
 
@@ -143,7 +143,10 @@ class SpeakerResolver:
         best_spk = None
         best_score = -1.0
         for curr_spk in self._speakers:
-            score = numpy.dot(curr_spk.embedding, emb) # Косинусное для нормированных векторов
+            score = numpy.dot(
+                curr_spk.get_embedding(model_name = self._pl_conf.embed.model_short_name),
+                emb
+            ) # Косинусное сходство для нормированных векторов
             if score > best_score:
                 best_score = score
                 best_spk = curr_spk
@@ -156,14 +159,14 @@ class SpeakerResolver:
             if len(seg) > 2.0 * SR:
                 self._update_speaker_profile(spk, emb)
         else:
-            # Создаем нового и добавляем к базе
-            spk = Speaker(
-                id = -(len(self._speakers) + 1),
-                name = f"SPK_{(len(self._speakers) + 1):03d}",
-                embedding = emb,
-            )
-
+            # Создает пустого спикера и добавляем к нему эмбеддинг с именем модели
+            spk = Speaker()
+            spk.add_embedding(model_name = self._pl_conf.embed.model_short_name, embedding = emb)
+            # При сохранении пустого спикера в репо, ему будут присвоены ИД и имя по умолчанию
+            self._spk_repo.save_speakers(speakers = [spk])
+            # Добавляем нового спикера в локальный список
             self._speakers.append(spk)
+
             best_score = 1.0
 
         return ResolveResult(speaker = spk, cos_similarity = float(best_score))

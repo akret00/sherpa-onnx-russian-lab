@@ -6,7 +6,7 @@ import os
 import platform
 import math
 import numpy
-from speaker_storage import VoiceDbRepository, SpeakerUpdateMode, Speaker
+import speaker_storage
 
 # --------------------------------------------------------------
 # Конфигурация

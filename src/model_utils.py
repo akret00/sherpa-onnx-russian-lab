@@ -23,8 +23,8 @@ def load_vad(
     if not cfg.validate():
         raise ValueError(f"Invalid VoiceActivityDetectorConfig: {cfg}")
     # Создаем обертку над VoiceActivityDetector
-    vad = SherpaVADAdapter(config = cfg, buffer_size_in_seconds = 30)
-    # vad = sherpa_onnx.VoiceActivityDetector(cfg, buffer_size_in_seconds = 30)
+    # vad = SherpaVADAdapter(config = cfg, buffer_size_in_seconds = 30)
+    vad = sherpa_onnx.VoiceActivityDetector(cfg, buffer_size_in_seconds = 30)
     window_size = cfg.silero_vad.window_size  # in samples
     return vad, window_size
 

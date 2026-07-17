@@ -11,7 +11,7 @@ from collections.abc import Generator
 from dataclasses import dataclass
 import numpy
 from sherpa_onnx import VadModelConfig, VoiceActivityDetector
-from config import SR
+from config import SR, PipelineConfig
 from entities import AudioSegment
 
 
@@ -73,11 +73,27 @@ class SherpaVADAdapter(BaseVAD):
     Безопасная обертка над оригинальным бинарным C++ классом sherpa_onnx.
     Приводит его к нашей строгой Python-иерархии.
     """
-    # ToDo: заменить типа аргумента с sherpa_onnx.VadModelConfig на config.VadConfig
-    def __init__(self, config: VadModelConfig, buffer_size_in_seconds: int):
+    def __init__(self, pl_conf: PipelineConfig, buffer_size_in_seconds: float = 60.0):
         # Инициализируем настоящий бинарный объект внутри
-        # self._real_vad = sherpa_onnx.VoiceActivityDetector(config, buffer_size_in_seconds)
-        self._real_vad = VoiceActivityDetector(config, buffer_size_in_seconds)
+        # self._real_vad = VoiceActivityDetector(config, buffer_size_in_seconds)
+        # Загружаем модель VAD
+        cfg = VadModelConfig()
+        cfg.silero_vad.model = pl_conf.vad.model_path
+        cfg.silero_vad.threshold = pl_conf.vad.threshold
+        cfg.silero_vad.min_silence_duration = pl_conf.vad.min_silence
+        cfg.silero_vad.min_speech_duration = pl_conf.vad.min_speech
+        cfg.silero_vad.max_speech_duration = pl_conf.vad.max_speech
+        cfg.sample_rate = SR
+        cfg.provider = pl_conf.runtime.provider
+        if not cfg.validate():
+            raise ValueError(f"Invalid VoiceActivityDetectorConfig: {cfg}")
+        # Создаем обертку над VoiceActivityDetector
+        self._real_vad = VoiceActivityDetector(
+            config = cfg,
+            buffer_size_in_seconds = buffer_size_in_seconds
+        )
+        self.window_size = cfg.silero_vad.window_size  # in samples
+
 
     @property
     def front(self) -> FakeSpeechSegment:

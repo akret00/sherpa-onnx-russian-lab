@@ -1,18 +1,47 @@
 """ КЛАССЫ ДАННЫХ (ОБЪЕКТНЫЕ МОДЕЛИ) """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 import numpy
 from config import PipelineConfig
 
 @dataclass
+class SpeakerEmbedding:
+    """Эмбеддинг спикера для конкретной модели."""
+    id: int | None = None
+    speaker_id: int | None = None  # Связь с сущностью Speaker (Внешний ключ)
+    model_name: str = ""           # Короткое имя модели (например, "pyannote_v3")
+    embedding: numpy.ndarray | None = None
+
+@dataclass
 class Speaker:
     """Модель данных спикера."""
     id: int | None = None
-    name: str = "Unknown Speaker"
-    embedding: numpy.ndarray | None = None
+    name: str | None = None
+    # embedding: numpy.ndarray | None = None
+    embeddings: list[SpeakerEmbedding] = field(default_factory=list)
     total_count: int = 0 # Глобальный счетчик фраз
     count: int = 0  # Сессионный счетчик фраз, не сохраняется в БД
-    created_at: str | None = None
+    created_at: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    def get_embedding(self, model_name: str) -> numpy.ndarray | None:
+        """Возвращает вектор для конкретной модели или None, если его нет."""
+        for emb in self.embeddings:
+            if emb.model_name == model_name:
+                return emb.embedding
+        return None
+
+    def add_embedding(self, model_name: str, embedding: numpy.ndarray) -> None:
+        """Добавляет новый эмбеддинг или перезаписывает старый для этой модели."""
+        # Сначала проверяем, нет ли уже такой модели, чтобы не плодить дубли
+        for emb in self.embeddings:
+            if emb.model_name == model_name: # Если модель найдена, обновляем эмбеддинг
+                emb.embedding = embedding
+                return
+
+        # Если модели нет, добавляем новую сущность в список
+        self.embeddings.append(
+            SpeakerEmbedding(speaker_id = self.id, model_name = model_name, embedding = embedding)
+        )
 
 @dataclass
 class AudioFile:
@@ -44,7 +73,7 @@ class PipelineResult:
     file: AudioFile | None = None
     segments: list[AudioSegment] | None = None
     markup_segments: list[AudioSegment] | None = None
-    start_time: datetime | None = None      # Время запуска пайплайна
+    start_time: datetime  = datetime.now()  # Время запуска пайплайна
     proc_time: float | None = None          # Время работы пайплайна
     total_ram: float | None = None          # Объем занимаемой памяти в ОЗУ, в МБ
     sherpa_version: str | None = None       # Номер версии пакета sherpa_onnx

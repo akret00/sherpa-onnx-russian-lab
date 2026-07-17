@@ -1,24 +1,21 @@
 """Пайплан для распознавания и диаризации при помощи VAD и центроидов"""
-import sys
 import time
 from datetime import datetime
 from collections.abc import Generator
 import numpy as np
-from config import PipelineConfig, SR
+from config import PipelineConfig, SpeakerResolvingMode, SR
 import ffmpeg_utils
-import model_utils
 from entities import Speaker, AudioFile, AudioSegment, PipelineResult
-from diarization_utils import SpeakerResolver, SpeakerResolvingMode
+from diarization_utils import SpeakerResolver
 import vad_utils
 import asr_utils
 from common_utils import get_package_version
 
 class BaseVadPipeline:
     """Базовый пайплайн для распознавания и диаризации при помощи VAD"""
-    def __init__(self, pl_config: PipelineConfig, speakers: list[Speaker] | None = None):
+    def __init__(self, pl_config: PipelineConfig):
         self._pl_config = pl_config
-        self._speakers = speakers
-        self._speaker_resolver: SpeakerResolver | None = None
+        self._speaker_resolver: SpeakerResolver
         self.pipeline_result: PipelineResult | None = None
         # Список сегментов разметки для режимов OracleVAD, OracleASR, OracleDiarization
         self.markup_segments: list[AudioSegment] | None = None
@@ -28,20 +25,18 @@ class BaseVadPipeline:
     def _init_models(self) -> None:
         """Инициализация моделей"""
         # Инициализируем VAD
-        # ToDo: Переделать как с ASR моделью
+        self._vad: vad_utils.BaseVAD
         if self._pl_config.vad.use_oracle:
             # Создаем OracleVAD
             self._vad = vad_utils.OracleVAD(buffer_size_in_seconds = 100, padding_seconds = 0.0)
             self._window_size = 512
         else:
             # Создаем оригинальный VAD ()
-            self._vad, self._window_size = model_utils.load_vad(
-                vad_model = self._pl_config.vad.model_path,
-                threshold = self._pl_config.vad.threshold,
-                min_silence = self._pl_config.vad.min_silence,
-                min_speech = self._pl_config.vad.min_speech,
-                max_speech = self._pl_config.vad.max_speech,
+            self._vad = vad_utils.SherpaVADAdapter(
+                pl_conf = self._pl_config,
+                buffer_size_in_seconds = self._pl_config.vad.max_speech * 2 # *2 на всякий случай
             )
+            self._window_size = self._vad.window_size
 
         # Инициализируем ASR распознаватель
         self._asr: asr_utils.BaseASR
@@ -73,7 +68,10 @@ class BaseVadPipeline:
 
         # Если пайплайн в режиме OracleVAD, устанавливаем эталонную разметку
         if self._pl_config.vad.use_oracle:
-            self._vad.set_markup_segments(self.markup_segments)
+            if isinstance(self._vad, vad_utils.OracleVAD):
+                self._vad.set_markup_segments(self.markup_segments)
+            else:
+                raise ValueError(f"Недопустимый тип класса vad: {self._vad.__class__.__name__}")
         # Если пайплайн в режиме OracleASR, устанавливаем эталонную разметку
         if self._pl_config.asr.use_oracle:
             if isinstance(self._asr, asr_utils.OracleASR):
@@ -109,38 +107,13 @@ class BaseVadPipeline:
         if isinstance(self._speaker_resolver, SpeakerResolver):
             self._speaker_resolver.reset()
 
-        # if audio_path == "mic":
-        #     proc = ffmpeg_utils.make_ffmpeg_proc_for_pulse_default()
-        #     buff_size_secs = self._window_size / SR
-        # else:
-        #     proc = ffmpeg_utils.make_ffmpeg_proc_for_file(audio_path)
-        #     buff_size_secs = 10.0
-        # if proc.stdout is None:
-        #     print("ffmpeg stdout is None", file=sys.stderr)
-        #     ffmpeg_utils.close_ffmpeg_proc(proc)
-        #     sys.exit(1)
-
-        # audio_pipe = ffmpeg_utils.AudioPipeBuffer(
-        #     ffmpeg_proc = proc, internal_buff_sec = buff_size_secs
-        # )
-
-        # try:
         with ffmpeg_utils.AudioStreamReader(
             path = audio_path, duration_sec = self.test_duration_sec
         ) as as_reader:
-            # Оснвной цикл
             segments: list[AudioSegment] = []
             audio_file = AudioFile(file_path = audio_path, segments = segments)
-            # while True:
+            # Основной цикл
             for samples in as_reader.iter_chunks():
-                # Пробуем прочитать полный блок (window_size == 512) данных (0.032 секунды аудио)
-                # samples = ffmpeg_utils.read_samples(proc, self._window_size)
-                # samples = audio_pipe.get_samples_f32(self._window_size)
-                # Если блок пустой или неполный, то игнорируем его и переходим к выталкиванию
-                # из VAD тишиной последней незавершенной фразы, если она есть
-                # if len(samples) == 0 or len(samples) < self._window_size:
-                #     break
-
                 # Передает в VAD очередной блок данных. Когда VAD определяет начало фразы, он
                 # начинает накапливать фрагменты фразы до тех пор, пока не определит завершение
                 # фразы.
@@ -205,7 +178,7 @@ class BaseVadPipeline:
         # Формируем результат работы пайплайна
         self.pipeline_result = PipelineResult(
             pl_config = self._pl_config,
-            speakers = self._speakers,
+            speakers = self._speaker_resolver.get_speakers(),
             file = audio_file,
             segments = segments,
             markup_segments = self.markup_segments,
@@ -224,7 +197,10 @@ class BaseVadPipeline:
         for _ in self.run_as_stream(audio_path = audio_path, markup_segments = markup_segments):
             pass
 
-        return self.pipeline_result
+        if self.pipeline_result is not None:
+            return self.pipeline_result
+        else:
+            raise ValueError("self.pipeline_result не должен быть None")
 
 
 class AsrPipeline(BaseVadPipeline):
@@ -235,12 +211,7 @@ class AsrPipeline(BaseVadPipeline):
         super()._init_models()
 
         #Инициализируем распознаватель голоса в холостом режиме SpeakerResolvingMode.NONE
-        self._speaker_resolver = SpeakerResolver(
-            num_threads = self._pl_config.runtime.num_threads,
-            spk_threshold = self._pl_config.diar_vad.spk_threshold,
-            resolving_mode = SpeakerResolvingMode.NONE,
-            speakers = self._speakers,
-        )
+        self._speaker_resolver = SpeakerResolver(pl_conf = self._pl_config)
 
 class ManagerDiarizationPipeline(BaseVadPipeline):
     """Пайплайн для распознавания и диаризации при помощи VAD и менеджера спикеров"""
@@ -250,15 +221,8 @@ class ManagerDiarizationPipeline(BaseVadPipeline):
         super()._init_models()
 
         #Инициализируем распознаватель голоса
-        self._speaker_resolver = SpeakerResolver(
-            num_threads = self._pl_config.runtime.num_threads,
-            spk_threshold = self._pl_config.diar_vad.spk_threshold,
-            resolving_mode = (
-                SpeakerResolvingMode.ORACLE if self._pl_config.diar_vad.use_oracle
-                else SpeakerResolvingMode.VAD_SPEAKER_MANAGER
-            ),
-            speakers = self._speakers,
-        )
+        self._pl_config.diar_vad.resolving_mode = SpeakerResolvingMode.VAD_SPEAKER_MANAGER
+        self._speaker_resolver = SpeakerResolver(pl_conf = self._pl_config)
 
 class CentroidDiarizationPipeline(BaseVadPipeline):
     """Пайплайн для распознавания и диаризации при помощи VAD и центроидов"""
@@ -268,12 +232,5 @@ class CentroidDiarizationPipeline(BaseVadPipeline):
         super()._init_models()
 
         #Инициализируем распознаватель голоса
-        self._speaker_resolver = SpeakerResolver(
-            num_threads = self._pl_config.runtime.num_threads,
-            spk_threshold = self._pl_config.diar_vad.spk_threshold,
-            resolving_mode = (
-                SpeakerResolvingMode.ORACLE if self._pl_config.diar_vad.use_oracle
-                else SpeakerResolvingMode.VAD_SIMPLE_CENTROID
-            ),
-            speakers = self._speakers,
-        )
+        self._pl_config.diar_vad.resolving_mode = SpeakerResolvingMode.VAD_SIMPLE_CENTROID
+        self._speaker_resolver = SpeakerResolver(pl_conf = self._pl_config)

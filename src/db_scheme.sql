@@ -5,10 +5,18 @@
 -- Таблица спикеров
 CREATE TABLE IF NOT EXISTS speaker (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL DEFAULT 'Unknown Speaker',
-    embedding_blob BLOB NOT NULL,
-    total_count INTEGER,
+    name TEXT DEFAULT 'Unknown Speaker',
+    total_count INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Таблица эмбеддингов голосов
+CREATE TABLE IF NOT EXISTS speaker_embedding (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    speaker_id INTEGER NOT NULL,
+    model_name TEXT NOT NULL,
+    embedding BLOB NOT NULL,
+    FOREIGN KEY (speaker_id) REFERENCES speaker(id) ON DELETE CASCADE
 );
 
 -- Таблица аудиофайлов
@@ -33,5 +41,8 @@ CREATE TABLE IF NOT EXISTS speech_segment (
 );
 
 -- Создаем индексы для ускорения выборок аналитики и фрагментов
+CREATE INDEX IF NOT EXISTS idx_speaker_name ON speaker(name);
+CREATE INDEX IF NOT EXISTS idx_embedding_model ON speaker_embedding(model_name);
+CREATE INDEX IF NOT EXISTS idx_embedding_speaker ON speaker_embedding(speaker_id);
 CREATE INDEX IF NOT EXISTS idx_seg_speaker ON speech_segment(speaker_id);
 CREATE INDEX IF NOT EXISTS idx_seg_audio ON speech_segment(audio_file_id);
