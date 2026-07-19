@@ -11,6 +11,7 @@ class SpeakerEmbedding:
     speaker_id: int | None = None  # Связь с сущностью Speaker (Внешний ключ)
     model_name: str = ""           # Короткое имя модели (например, "pyannote_v3")
     embedding: numpy.ndarray | None = None
+    created_at: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 @dataclass
 class Speaker:

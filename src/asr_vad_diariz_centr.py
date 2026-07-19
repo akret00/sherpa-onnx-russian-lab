@@ -5,9 +5,8 @@
 """
 import time
 from pathlib import Path
-from config import config, PipelineType
+from config import config, PipelineType, SpeakerRepoType
 import args_utils
-import speaker_storage
 import common_utils
 from pipeline_vad import CentroidDiarizationPipeline
 
@@ -21,7 +20,7 @@ def main() -> None:
     # Инициализация пайплайна
     pl_conf = config.get_new_pipeline_config()
     pl_conf.runtime.pipeline_type = PipelineType.CENTRIOD_DIARIZ_PIPELINE
-    pl_conf.runtime.use_db = True
+    pl_conf.diar_vad.speaker_repo_type = SpeakerRepoType.DB_SQLITE # Хранение спикеров в БД
     pl = CentroidDiarizationPipeline(pl_config = pl_conf)
 
     # Определяем путь к аудио файлу
@@ -62,15 +61,6 @@ def main() -> None:
     # Засекаем время окончания распознавания
     end_time = time.perf_counter()
     print(f"Время распознавания: {end_time - start_time:.6f} секунд")
-
-    # Создаем репозитарий для спикеров и загружаем базу спикеров
-    db_repo = speaker_storage.SqliteRepo()
-
-    # Сохраняем обновленную базу спикеров
-    if pl.pipeline_result is not None and pl.pipeline_result.speakers is not None:
-        db_repo.save_speakers(pl.pipeline_result.speakers)
-    else:
-        raise ValueError("pl.pipeline_result.speakers не должен иметь значение None")
 
 if __name__ == "__main__":
     main()

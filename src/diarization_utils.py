@@ -175,6 +175,10 @@ class SpeakerResolver:
         """Возвращает список спикеров"""
         return self._speakers
 
+    def save_all_speakers(self) -> None:
+        """Сохраняет в репозиторий обновленные данные всех локальных спикеров"""
+        self._spk_repo.save_speakers(self._speakers)
+
     def resolve(self, seg: numpy.ndarray, t_start: float = 0, t_end: float = 0) -> ResolveResult:
         """
             Вычисляет эмбеддинг голоса из фразы.
@@ -269,4 +273,3 @@ class SpeakerResolver:
     def reset(self) -> None:
         """Сброс состояния Оракула перед новым циклом"""
         self.current_markup_segment_num = 0
-        self._speakers = [] # Очищаем список спикеров

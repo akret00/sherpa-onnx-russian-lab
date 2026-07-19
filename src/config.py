@@ -158,7 +158,6 @@ class RuntimeConfig:
     provider: str = "cpu"
     output_dir: str = str(DEFAULT_OUTPUT_DIR)    # Путь к папке с с файлами с распознанным текстом
     no_timestamps: bool = False             # Запрещает вывод меток времени в распознанный текст
-    use_db: bool = False    # Признак хранения спикеров, аудиофайлов и сегментов в БД или в памяти
 
 @dataclass
 class VadConfig:

@@ -20,6 +20,7 @@ class AudioSegmentEditor:
         self.index = 0
         self.step = 0.05  # Шаг сдвига границ по умолчанию (50 мс)
         self.audio_data: numpy.ndarray | None = None
+        self.segments: list[AudioSegmentMarkup]
 
     @property
     def current(self) -> AudioSegmentMarkup:

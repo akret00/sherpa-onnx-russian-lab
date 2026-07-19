@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS speaker_embedding (
     speaker_id INTEGER NOT NULL,
     model_name TEXT NOT NULL,
     embedding BLOB NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (speaker_id) REFERENCES speaker(id) ON DELETE CASCADE
 );
 

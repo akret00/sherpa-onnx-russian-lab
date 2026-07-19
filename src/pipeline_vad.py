@@ -5,7 +5,7 @@ from collections.abc import Generator
 import numpy as np
 from config import PipelineConfig, SpeakerResolvingMode, SR
 import ffmpeg_utils
-from entities import Speaker, AudioFile, AudioSegment, PipelineResult
+from entities import AudioFile, AudioSegment, PipelineResult
 from diarization_utils import SpeakerResolver
 import vad_utils
 import asr_utils
@@ -169,8 +169,9 @@ class BaseVadPipeline:
                         )
                         segments.append(segment)
                         yield segment
-        # finally:
-        #     ffmpeg_utils.close_ffmpeg_proc(proc)
+
+        # Сохраняем обновленные данны спикеров (в т.ч. эмбединги и счетчики) в хранилище
+        self._speaker_resolver.save_all_speakers()
 
         # Засекаем время окончания работы пайплайна
         pl_end_time = time.perf_counter()

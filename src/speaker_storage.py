@@ -29,6 +29,10 @@ class BaseRepo(ABC):
         Для новых (id is None) генерирует автоинкремент и мутирует переданный объект.
         """
 
+    @abstractmethod
+    def delete_speaker(self, speaker_id: int) -> int:
+        """Удаляет спикера из хранилища. Возвращает количество удаленных записей"""
+
 
 class InMemoryRepo(BaseRepo):
     """Репозиторий, имитирующий работу СУБД в оперативной памяти (для бенчмарков/тестов)."""
@@ -89,6 +93,15 @@ class InMemoryRepo(BaseRepo):
 
             # 3. Сохраняем глубокую копию состояния объекта в наше хранилище
             self._speakers[speaker.id] = copy.deepcopy(speaker)
+
+    def delete_speaker(self, speaker_id: int) -> int:
+        """Удаляет спикера из хранилища. Возвращает количество удаленных записей"""
+        for idx, speaker in enumerate(self._speakers.values()):
+            # Ищем спикера по ID
+            if speaker_id == speaker.id:
+                del self._speakers[idx]
+                return 1
+        return 0 # Запись не найдена и не удалена
 
 
 class SqliteRepo(BaseRepo):
@@ -217,7 +230,7 @@ class SqliteRepo(BaseRepo):
             emb_params = {f"s_id_{idx}": s_id for idx, s_id in enumerate(speakers_dict.keys())}
 
             emb_query = f"""
-                SELECT id, speaker_id, model_name, embedding 
+                SELECT id, speaker_id, model_name, embedding, created_at 
                 FROM speaker_embedding 
                 WHERE speaker_id IN ({', '.join(emb_placeholders)})
             """
@@ -233,7 +246,8 @@ class SqliteRepo(BaseRepo):
                     id=emb_row["id"],
                     speaker_id=spk_id,
                     model_name=emb_row["model_name"],
-                    embedding=vector
+                    embedding=vector,
+                    created_at=emb_row["created_at"]
                 )
                 speakers_dict[spk_id].embeddings.append(embedding_obj)
 
@@ -290,13 +304,16 @@ class SqliteRepo(BaseRepo):
                         # Новый эмбеддинг для этой модели
                         cursor.execute(
                             """
-                            INSERT INTO speaker_embedding (speaker_id, model_name, embedding) 
-                            VALUES (:speaker_id, :model_name, :embedding)
+                            INSERT INTO speaker_embedding (
+                                speaker_id, model_name, embedding, created_at
+                            ) 
+                            VALUES (:speaker_id, :model_name, :embedding, :created_at)
                             """,
                             {
                                 "speaker_id": emb.speaker_id,
                                 "model_name": emb.model_name,
-                                "embedding": blob_data
+                                "embedding": blob_data,
+                                "created_at": emb.created_at
                             }
                         )
                         emb.id = cursor.lastrowid
@@ -310,6 +327,21 @@ class SqliteRepo(BaseRepo):
                             """,
                             {"embedding": blob_data, "id": emb.id}
                         )
+
+    def delete_speaker(self, speaker_id: int) -> int:
+        """Удаляет спикера из хранилища"""
+        with self.connection_scope() as conn:
+            cursor = conn.cursor()
+
+            # Удаляем спикера из БД
+            cursor.execute(
+                "DELETE FROM speaker WHERE id = :id",
+                {"id": speaker_id}
+            )
+
+            deleted_rows = cursor.rowcount
+
+        return deleted_rows
 
 def create_spk_repo(pl_conf: config.PipelineConfig) -> BaseRepo:
     """Создает репозиторий спикеров на основе типа репо в конфигурации пайплайна"""
