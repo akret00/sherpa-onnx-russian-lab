@@ -34,7 +34,7 @@ FILL_MODE = FILL_MODE_VERTICAL
 class FormType(Enum):
     """Содержит типы форм"""
     SPEAKER_LIST = auto()
-    SPEAKER = auto()
+    SPEAKER_DETAIL = auto()
 
 class AppAction(Enum):
     """Содержит действия приложения"""
@@ -282,11 +282,34 @@ def delete_speaker(repo: SqliteRepo) -> bool:
 
     return True
 
+
+def ask_speaker_id(repo: SqliteRepo) -> int | None:
+    """
+    Запрашивает ИД спикера для отображения деталей
+    Возвращает ИД спикера, если указан, или None.
+    """
+    sp_id = get_int_input("Введите ID спикера для просмотра информации (Enter для отмены): ")
+    if sp_id is None:
+        return None
+
+    speakers = repo.load_speakers(speaker_ids=[sp_id])
+    if not speakers:
+        print(f"Спикер с ID={sp_id} не найден.")
+        return None
+
+    return sp_id
+
+
 # --- БАЗОВАЯ ФОРМА ---
 class BaseForm(ABC):
     """Базовая форма"""
     def __init__(self, repo: SqliteRepo) -> None:
         self._repo = repo
+
+    def _show_header(self) -> None:
+        """Показывает заголовок формы"""
+        print("  МЕНЕДЖЕР ГОЛОСОВЫХ ПРОФИЛЕЙ")
+        print(f"{'═' * FORM_WIDTH}")
 
     def clear_screen(self) -> None:
         """Очищает экран консоли (Linux/Windows)."""
@@ -295,9 +318,10 @@ class BaseForm(ABC):
         else:
             os.system("clear")
 
-    @abstractmethod
     def render(self) -> None:
         """Отрисовать форму и меню"""
+        self.clear_screen()
+        self._show_header()
 
     @abstractmethod
     def handle_command(self, cmd: str) -> AppAction:
@@ -312,7 +336,7 @@ class SpeakerListForm(BaseForm):
     """Форма со списком спикеров"""
     def __init__(self, repo: SqliteRepo) -> None:
         super().__init__(repo)
-        self.selected_speaker_id = None # Сюда сохраним выбор, если он будет
+        self.selected_speaker_id: int | None = None # Сюда сохраним выбор, если он будет
         self.page = 1   # текущая страница
         self.search_query = ""
         self.total_pages = 1
@@ -341,12 +365,6 @@ class SpeakerListForm(BaseForm):
             f"{sp.total_count:<{COL_WIDTH_SEGMENTS}}"
             f"{len(sp.embeddings):<{COL_WIDTH_VECTOR}}"
         )
-
-    def _show_header(self) -> None:
-        """Показывает заголовок формы"""
-        # print(f"\n{'═' * FORM_WIDTH}")
-        print("  МЕНЕДЖЕР ГОЛОСОВЫХ ПРОФИЛЕЙ")
-        print(f"\n{'═' * FORM_WIDTH}")
 
     def _show_speakers_table(self, speakers: list[Speaker]) -> None:
         """
@@ -429,7 +447,7 @@ class SpeakerListForm(BaseForm):
 
     def render(self) -> None:
         """Рендеринг формы"""
-        super().clear_screen()
+        super().render()
 
         # Загружаем спикеров с учетом поиска
         if self.search_query:
@@ -449,7 +467,7 @@ class SpeakerListForm(BaseForm):
         page_speakers = speakers[start_idx:end_idx]
 
         # Показываем заголовок
-        self._show_header()
+        # self._show_header()
         # Показываем таблицу
         self._show_speakers_table(page_speakers)
         # Показываем меню
@@ -474,15 +492,21 @@ class SpeakerListForm(BaseForm):
         elif cmd == 'a':
             self.search_query = ""
             self.page = 1
+        elif cmd == 'i':
+            spk_id = ask_speaker_id(self._repo)
+            if spk_id is not None:
+                self.selected_speaker_id = spk_id
+                return AppAction.OPEN_DETAIL
+            press_enter_to_continue()
+        elif cmd == 'c':
+            compare_speakers(self._repo)
+            press_enter_to_continue()
         elif cmd == 'r':
             if rename_speaker(self._repo):
                 press_enter_to_continue()
         elif cmd == 'm':
             if merge_speakers(self._repo):
                 press_enter_to_continue()
-        elif cmd == 'c':
-            compare_speakers(self._repo)
-            press_enter_to_continue()
         elif cmd == 'd':
             if delete_speaker(self._repo):
                 press_enter_to_continue()
@@ -505,29 +529,43 @@ class SpeakerListForm(BaseForm):
 # --- ФОРМА 2: УПРАВЛЕНИЕ ОДНИМ СПИКЕРОМ ---
 class SpeakerDetailForm(BaseForm):
     """Форма управления одним спикером"""
-    def __init__(self, repo: SqliteRepo) -> None:
+    def __init__(self, repo: SqliteRepo, speaker_id: int) -> None:
         super().__init__(repo)
-        self.speaker_id: int
+        self.speaker_id = speaker_id
 
     def render(self) -> None:
-        self.clear_screen()
-        # Предположим, у repo есть метод get_by_id
-        speaker = self.repo.get_by_id(self.speaker_id) 
-        print(f"=== УПРАВЛЕНИЕ СПИКЕРОМ: {speaker['name']} ===")
-        print("1: Изменить имя")
-        print("2: Удалить спикера")
-        print("\n[Меню] b: Назад в список")
+        super().render()
+        speakers = self._repo.load_speakers(speaker_ids = [self.speaker_id])
+        if len(speakers) == 0:
+            print(f"ПРОФИЛЬ СПИКЕРА: с ID: {self.speaker_id} не найден!")
+            print(f"Спикер с ID: {self.speaker_id} не найден!")
+            print(f"{'-' * FORM_WIDTH}")
+            print("[B] Назад в список спикеров")
+            return
+
+        spk = speakers[0]
+
+        print("ПРОФИЛЬ СПИКЕРА:")
+        print(f"ID:         {spk.id}")
+        print(f"Имя:        {spk.name}")
+        print(f"Всего фраз: {spk.total_count}")
+        print(f"Создан:     {spk.created_at}")
+        print("Доступные эмбеддинги:")
+        print(f"{'-' * FORM_WIDTH}")
+        for emb in spk.embeddings:
+            print(f"Модель: {emb.model_name:<20} Добавлен: {emb.created_at}")
+        print(f"{'═' * FORM_WIDTH}")
+        print("  [B] Назад в список спикеров")
+        print(f"{'═' * FORM_WIDTH}")
 
     def handle_command(self, cmd: str) -> AppAction:
         if cmd.lower() == 'b':
-            return 'back'
+            return AppAction.BACK
+        else:
+            print("Неизвестная команда. Используйте буквы из меню.")
+            press_enter_to_continue()
 
-        if cmd == '1':
-            new_name = input("Новое имя: ")
-            self.repo.update_name(self.speaker_id, new_name)
-            return 'refresh'
-
-        return 'refresh'
+        return AppAction.REFRESH
 
 
 class SpeakerEditorApp:
@@ -537,9 +575,9 @@ class SpeakerEditorApp:
         self.is_running = True
         # Храним состояние: на каком мы этапе и с каким спикером работаем
         self.current_form = FormType.SPEAKER_LIST
-        # self.current_speaker_id: int | None = None
+        self.current_speaker_id: int | None = None
         self.spk_list_form = SpeakerListForm(self._repo)
-        self.spk_detail_form = SpeakerDetailForm(self._repo)
+        self.spk_detail_form: SpeakerDetailForm
 
     def run(self) -> None:
         """Главный цикл приложения."""
@@ -561,16 +599,25 @@ class SpeakerEditorApp:
 
     def _route(self, action: AppAction, form: BaseForm) -> None:
         """Логика переключения между экранами"""
-        if action is AppAction.EXIT:
-            self.is_running = False
-        elif action is AppAction.OPEN_DETAIL:
-            # Забираем ID, который выбрал пользователь внутри SpeakerListForm
-            self.current_speaker_id = form.selected_speaker_id
-            self.current_state = "DETAIL"
-        elif action is AppAction.BACK:
-            self.current_state = "LIST"
-            self.current_speaker_id = None
-        elif action is AppAction.REFRESH:
+        if isinstance(form, SpeakerListForm):
+            if action is AppAction.EXIT:
+                self.is_running = False
+            elif action is AppAction.OPEN_DETAIL:
+                # Забираем ID, который выбрал пользователь внутри SpeakerListForm
+                self.current_speaker_id = form.selected_speaker_id
+                if self.current_speaker_id is None:
+                    self.current_speaker_id = 0
+                self.current_form = FormType.SPEAKER_DETAIL
+                self.spk_detail_form = SpeakerDetailForm(
+                    self._repo, speaker_id = self.current_speaker_id
+                )
+
+        elif isinstance(form, SpeakerDetailForm):
+            if action is AppAction.BACK:
+                self.current_form = FormType.SPEAKER_LIST
+                self.current_speaker_id = None
+
+        if action is AppAction.REFRESH:
             pass # Ничего не меняем, цикл просто запустится заново
 
 
