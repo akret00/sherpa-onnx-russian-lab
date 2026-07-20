@@ -4,13 +4,13 @@ from datetime import datetime
 import numpy
 from config import PipelineConfig
 
-@dataclass
+@dataclass(kw_only=True)
 class SpeakerEmbedding:
     """Эмбеддинг спикера для конкретной модели."""
     id: int | None = None
     speaker_id: int | None = None  # Связь с сущностью Speaker (Внешний ключ)
     model_name: str = ""           # Короткое имя модели (например, "pyannote_v3")
-    embedding: numpy.ndarray | None = None
+    embedding: numpy.ndarray
     created_at: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 @dataclass
@@ -18,7 +18,6 @@ class Speaker:
     """Модель данных спикера."""
     id: int | None = None
     name: str | None = None
-    # embedding: numpy.ndarray | None = None
     embeddings: list[SpeakerEmbedding] = field(default_factory=list)
     total_count: int = 0 # Глобальный счетчик фраз
     count: int = 0  # Сессионный счетчик фраз, не сохраняется в БД

@@ -156,8 +156,7 @@ def compare_speakers(repo: SqliteRepo) -> None:
         table[emb.model_name][1] = emb
         emb1, emb2, _ = table[emb.model_name]
         if isinstance(emb1, SpeakerEmbedding) and isinstance(emb2, SpeakerEmbedding):
-            if emb1.embedding is not None and emb2.embedding is not None:
-                table[emb.model_name][2] = cosine_similarity(emb1.embedding, emb2.embedding)
+            table[emb.model_name][2] = cosine_similarity(emb1.embedding, emb2.embedding)
 
     # Печать заголовка отчета
     print(f"\n{'=' * 55}")
@@ -174,6 +173,75 @@ def compare_speakers(repo: SqliteRepo) -> None:
             print(f"Модель: {model_name:<15} | Нет эмбеддинга для Спикера 2")
 
     print(f"{'=' * 55}")
+
+
+def merge_speakers(repo: SqliteRepo) -> bool:
+    """
+    Объединение двух спикеров в одного:
+    - Эмбединги второго спикера переносятся в первого спикера;
+    - Второй спикер удаляется.
+    """
+    print("\nОбъединение двух спикеров:")
+
+    id1 = get_int_input("Введите ID основного спикера (Enter для отмены): ")
+    if id1 is None:
+        return False
+
+    id2 = get_int_input("Введите ID поглощаемого спикера (Enter для отмены): ")
+    if id2 is None:
+        return False
+
+    if id1 == id2:
+        print("Вы выбрали одного и того же спикера.")
+        return False
+
+    # Загружаем обоих
+    speakers = repo.load_speakers(speaker_ids=[id1, id2])
+    sp_dict = {sp.id: sp for sp in speakers}
+
+    if id1 not in sp_dict:
+        print(f"Спикер с ID={id1} не найден.")
+        return False
+    if id2 not in sp_dict:
+        print(f"Спикер с ID={id2} не найден.")
+        return False
+
+    sp1, sp2 = sp_dict[id1], sp_dict[id2]
+    print(f"Внимание: спикер [{sp2.id}] {sp2.name} будет поглощен спикером [{sp1.id}] {sp1.name}")
+
+    # Двойное подтверждение
+    confirm = input("\nДля подтверждения объединения введите 'merge': ").strip().lower()
+    if confirm != "merge":
+        print("Объединение отменено.")
+        return False
+
+    # 1. Индексируем список получатель по имени модели для быстрого поиска
+    merged_dict = {emb1.model_name: emb1 for emb1 in sp1.embeddings}
+    for emb2 in sp2.embeddings:
+        if emb2.model_name in merged_dict:
+            # === МЕСТО ДЛЯ ВАШИХ ВАРИАНТОВ РЕШЕНИЯ ПРИ КОНФЛИКТЕ МОДЕЛЕЙ ===
+            # Оставить эмбеддинг первого спикера (ничего не делать)
+            pass
+        else:
+            # Модели нет в первом списке — просто добавляем её
+            merged_dict[emb2.model_name] = emb2
+
+    # Обновляем список эмбеддингов спикера - получателя
+    sp1.embeddings = list(merged_dict.values())
+
+    try:
+        # Сохраняем спикера - получателя в репо
+        repo.save_speakers(speakers = [sp1])
+        # Удаляем спикера - донора в репо.
+        repo.delete_speaker(id2)
+        print(f"Спикер ID={id2} удален.")
+    except RuntimeError as e:
+        print(f"Ошибка при слиянии спикеров: {e}")
+        return False
+
+    print(f"Спикер ID={sp1.id} поглотил спикера ID={id2}")
+    return True
+
 
 
 def delete_speaker(repo: SqliteRepo) -> bool:
@@ -205,7 +273,7 @@ def delete_speaker(repo: SqliteRepo) -> bool:
         return False
 
     try:
-        # Временное решение, пока нет метода delete:
+        # Удаляем спикера в репо.
         repo.delete_speaker(sp_id)
         print(f"Спикер ID={sp_id} удален.")
     except RuntimeError as e:
@@ -326,7 +394,7 @@ class SpeakerListForm(BaseForm):
             # --- РЕЖИМ 2: По очереди во все колонки (Слева направо, сверху вниз) ---
             for i in range(0, len(speakers), FORM_COLS):
                 # Берем срез элементов для одной строки таблицы
-                chunk = speakers[i:i + FORM_COLS]
+                chunk: list[Speaker | None] = list(speakers[i:i + FORM_COLS])
                 # Если элементов меньше, чем колонок, дополняем None
                 while len(chunk) < FORM_COLS:
                     chunk.append(None)
@@ -408,6 +476,9 @@ class SpeakerListForm(BaseForm):
             self.page = 1
         elif cmd == 'r':
             if rename_speaker(self._repo):
+                press_enter_to_continue()
+        elif cmd == 'm':
+            if merge_speakers(self._repo):
                 press_enter_to_continue()
         elif cmd == 'c':
             compare_speakers(self._repo)
