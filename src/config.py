@@ -116,6 +116,7 @@ class Config:
             model_name = model_name,
             model_short_name = model_data["short_name"],
             model_path = model_data["model"],
+            threshold = model_data["threshold"],
         )
 
     def get_new_diar_vad_config(self)-> VadDiarizationConfig:
@@ -174,10 +175,10 @@ class VadConfig:
 @dataclass
 class AsrConfig:
     """Настройки модели распознавания речи (ASR)"""
+    model_name: str
+    model_short_name: str
+    model_type: str
     use_oracle: bool = False
-    model_name: str | None = None
-    model_short_name: str | None = None
-    model_type: str | None = None
     # NeMo CTC
     nemo_model_path: str | None = None
     nemo_tokens_path: str | None = None
@@ -190,16 +191,15 @@ class AsrConfig:
 @dataclass
 class EmbeddingConfig:
     """Настройки модели эмбеддинга"""
-    use_oracle: bool = False
-    model_name: str | None = None
-    model_short_name: str | None = None
-    model_path: str | None = None
+    model_name: str
+    model_short_name: str
+    model_path: str
+    threshold: float = 0.4  # Базовый для модели порог косинусной схожести для поиска спикера
 
 @dataclass
 class VadDiarizationConfig:
     """Настройки VAD диаризации"""
     use_oracle: bool = False
-    spk_threshold: float = 0.4  # Порог косинусной схожести для поиска спикера
     resolving_mode: SpeakerResolvingMode = SpeakerResolvingMode.NONE
     speaker_repo_type: SpeakerRepoType = SpeakerRepoType.IN_MEMORY
     db_path: str = str(DB_DEFAULT_PATH)

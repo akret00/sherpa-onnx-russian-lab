@@ -77,6 +77,7 @@ def parse_args() -> argparse.Namespace:
     # Embedding параметры для speaker ID
     if args.spk_threshold: # cosine-sim threshold inside manager.search
         pl_conf.segmentation.spk_threshold = float(args.spk_threshold)
+        pl_conf.embed.threshold = float(args.spk_threshold)
     if args.min_seg_sec: # Пропускать сегменты короче указанного
         pl_conf.segmentation.min_seg_sec = float(args.min_seg_sec)
     # Кластеризация

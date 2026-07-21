@@ -1,7 +1,7 @@
 """Модуль загрузки моделей onnx"""
 import sherpa_onnx
 from config import SR, pl_conf, PYANNOTE_MIN_DURATION_OFF, PYANNOTE_MIN_DURATION_ON
-from vad_utils import BaseVAD, SherpaVADAdapter
+from vad_utils import BaseVAD
 
 # ToDo: убрать функцию, ибо она продублирована в vad_utils
 def load_vad(

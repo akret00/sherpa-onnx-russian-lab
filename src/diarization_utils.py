@@ -44,7 +44,7 @@ class SpeakerResolver:
         # до 1.0 (идентичные).
         # Норма примерно 0.5 - 0.6, если есть похожие голоса, то нужно повышать до 0.65+
         # если шум, эхо, порог придется снижать, но тогда могут дробиться реальные спикеры
-        self._spk_threshold = self._pl_conf.diar_vad.spk_threshold
+        self._spk_threshold = self._pl_conf.embed.threshold
         self._embed_model_path = self._pl_conf.embed.model_path
         self._provider = self._pl_conf.runtime.provider
 
@@ -150,8 +150,6 @@ class SpeakerResolver:
             if score > best_score:
                 best_score = score
                 best_spk = curr_spk
-
-        # print(f"Threshold: {self._spk_threshold} Best score: {best_score}")
 
         if best_score > self._spk_threshold:
             spk = best_spk
