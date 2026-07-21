@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS speaker (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT DEFAULT 'Unknown Speaker',
     total_count INTEGER DEFAULT 0,
+    total_time REAL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

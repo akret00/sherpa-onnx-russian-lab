@@ -194,8 +194,10 @@ class SpeakerResolver:
         elif self._resolving_mode == SpeakerResolvingMode.VAD_SPEAKER_MANAGER:
             emb = self._normalize_vector(compute_embedding(self._extractor, seg))
             resolve_result = self._search_or_create_speaker_manager(emb)
-            resolve_result.speaker.count += 1
+            resolve_result.speaker.session_count += 1
+            resolve_result.speaker.session_time += len(seg) / SR
             resolve_result.speaker.total_count += 1
+            resolve_result.speaker.total_time += len(seg) / SR
 
         # Расчет эмбеддинга спикера и поиск спикера по центроидам эмбеддингов
         elif self._resolving_mode == SpeakerResolvingMode.VAD_SIMPLE_CENTROID:
@@ -216,8 +218,10 @@ class SpeakerResolver:
             if len(vad_seg) >= int(MIN_SEARCH_SEG_LEN * SR):
                 emb = self._normalize_vector(compute_embedding(self._extractor, vad_seg))
                 resolve_result = self._search_or_create_speaker_centriod(vad_seg, emb)
-                resolve_result.speaker.count += 1
+                resolve_result.speaker.session_count += 1
+                resolve_result.speaker.session_time += len(vad_seg) / SR
                 resolve_result.speaker.total_count += 1
+                resolve_result.speaker.total_time += len(vad_seg) / SR
                 self._last_spk = resolve_result.speaker # Обновляем "уверенного" спикера
             else:
                 # Сегмент короткий: берем последнего или Unknown

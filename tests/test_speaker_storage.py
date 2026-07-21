@@ -141,6 +141,7 @@ def test_save_existing_speaker_updates_data(
     # Изменяем поля у объекта в памяти
     speaker.name = "John Doe"
     speaker.total_count = 150
+    speaker.total_time = 250
 
     # Сохраняем повторно
     repo.save_speakers([speaker])
@@ -151,6 +152,7 @@ def test_save_existing_speaker_updates_data(
     loaded = repo.load_speakers(speaker_ids=[speaker_id])[0]
     assert loaded.name == "John Doe"
     assert loaded.total_count == 150
+    assert loaded.total_time == 250
 
 
 def test_multiple_embeddings_persistence(

@@ -19,8 +19,10 @@ class Speaker:
     id: int | None = None
     name: str | None = None
     embeddings: list[SpeakerEmbedding] = field(default_factory=list)
-    total_count: int = 0 # Глобальный счетчик фраз
-    count: int = 0  # Сессионный счетчик фраз, не сохраняется в БД
+    total_count: int = 0        # Глобальный счетчик фраз
+    session_count: int = 0      # Сессионный счетчик фраз, не сохраняется в БД
+    total_time: float = 0.0     # Глобальный счетчик времени речи в секундах
+    session_time: float = 0.0   # Сессионный счетчик времени речи, не сохраняется в БД
     created_at: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     def get_embedding(self, model_name: str) -> numpy.ndarray | None:

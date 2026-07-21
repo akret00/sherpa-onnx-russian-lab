@@ -184,7 +184,9 @@ class SqliteRepo(BaseRepo):
         """Загружает список спикеров по фильтрам. Без фильтров возвращает ВСЕХ спикеров."""
 
         # 1. Формируем SQL-запрос для спикеров с динамическими фильтрами
-        query_parts = ["SELECT id, name, total_count, created_at FROM speaker WHERE 1=1"]
+        query_parts = [
+            "SELECT id, name, total_count, total_time, created_at FROM speaker WHERE 1=1"
+        ]
         params: dict[str, Any] = {}
 
         if speaker_ids is not None:
@@ -220,6 +222,7 @@ class SqliteRepo(BaseRepo):
                     id = s_id,
                     name = row["name"],
                     total_count = row["total_count"],
+                    total_time = row["total_time"],
                     created_at = row["created_at"],
                     embeddings = []
                 )
@@ -266,12 +269,13 @@ class SqliteRepo(BaseRepo):
                     # Создаем нового спикера
                     cursor.execute(
                         """
-                        INSERT INTO speaker (name, total_count, created_at) 
-                        VALUES (:name, :total_count, :created_at)
+                        INSERT INTO speaker (name, total_count, total_time, created_at) 
+                        VALUES (:name, :total_count, :total_time, :created_at)
                         """,
                         {
                             "name": speaker.name,
                             "total_count": speaker.total_count,
+                            "total_time": speaker.total_time,
                             "created_at": speaker.created_at
                         }
                     )
@@ -289,10 +293,15 @@ class SqliteRepo(BaseRepo):
                     cursor.execute(
                         """
                         UPDATE speaker 
-                        SET name = :name, total_count = :total_count 
+                        SET name = :name, total_count = :total_count, total_time = :total_time 
                         WHERE id = :id
                         """,
-                        {"name": speaker.name, "total_count": speaker.total_count, "id": speaker.id}
+                        {
+                            "name": speaker.name,
+                            "total_count": speaker.total_count,
+                            "total_time": speaker.total_time,
+                            "id": speaker.id
+                        }
                     )
 
                 # Сохраняем эмбеддинги текущего спикера

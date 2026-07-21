@@ -19,11 +19,19 @@ FORM_COLS = 2
 PAGE_SIZE = MAX_DATA_ROWS * FORM_COLS # Сколько спикеров на одной странице
 COL_WIDTH_ID = 3
 COL_WIDTH_NAME = 15
-COL_WIDTH_SEGMENTS = 8
+COL_WIDTH_TIME = 6
+COL_WIDTH_SEGMENTS = 7
 COL_WIDTH_VECTOR = 8
 COLS_DELIMITER = " | "
 FORM_WIDTH = (
-    (COL_WIDTH_ID + COL_WIDTH_NAME + COL_WIDTH_SEGMENTS + COL_WIDTH_VECTOR +3) * FORM_COLS
+    (
+        COL_WIDTH_ID
+        + COL_WIDTH_NAME
+        + COL_WIDTH_TIME
+        + COL_WIDTH_SEGMENTS
+        + COL_WIDTH_VECTOR
+        + 4
+    ) * FORM_COLS
     + len(COLS_DELIMITER) * (FORM_COLS - 1)
 )
 FILL_MODE_HORISINTAL = "horisontal"
@@ -265,6 +273,7 @@ def delete_speaker(repo: SqliteRepo) -> bool:
     print(f"   ID: {sp.id}")
     print(f"   Имя: {sp.name}")
     print(f"   Количество фраз: {sp.total_count}")
+    print(f"   Время речи, сек: {round(sp.total_time)}")
 
     # Двойное подтверждение
     confirm = input("\nДля подтверждения удаления введите 'del': ").strip().lower()
@@ -308,7 +317,7 @@ class BaseForm(ABC):
 
     def _show_header(self) -> None:
         """Показывает заголовок формы"""
-        print("  МЕНЕДЖЕР ГОЛОСОВЫХ ПРОФИЛЕЙ")
+        print(" МЕНЕДЖЕР ГОЛОСОВЫХ ПРОФИЛЕЙ")
         print(f"{'═' * FORM_WIDTH}")
 
     def clear_screen(self) -> None:
@@ -349,6 +358,7 @@ class SpeakerListForm(BaseForm):
             return (
                 f" {' ':<{COL_WIDTH_ID}}"
                 f" {' ':<{COL_WIDTH_NAME}}"
+                f" {' ':<{COL_WIDTH_TIME}}"
                 f" {' ':<{COL_WIDTH_SEGMENTS}}"
                 f" {' ':<{COL_WIDTH_VECTOR}}"
             )
@@ -360,10 +370,11 @@ class SpeakerListForm(BaseForm):
             display_name = name
 
         return (
-            f" {sp.id:<{COL_WIDTH_ID}} "
-            f"{display_name:<{COL_WIDTH_NAME}} "
-            f"{sp.total_count:<{COL_WIDTH_SEGMENTS}}"
-            f"{len(sp.embeddings):<{COL_WIDTH_VECTOR}}"
+            f" {sp.id:>{COL_WIDTH_ID}} "
+            f"{display_name:<{COL_WIDTH_NAME}}"
+            f"{round(sp.total_time):>{COL_WIDTH_TIME}}"
+            f"{sp.total_count:>{COL_WIDTH_SEGMENTS}} "
+            f"{len(sp.embeddings):>{COL_WIDTH_VECTOR}} "
         )
 
     def _show_speakers_table(self, speakers: list[Speaker]) -> None:
@@ -381,6 +392,7 @@ class SpeakerListForm(BaseForm):
         col_title = (
             f" {'ID':<{COL_WIDTH_ID}} "
             f"{'Имя':<{COL_WIDTH_NAME}} "
+            f"{'Время':<{COL_WIDTH_TIME}} "
             f"{'Фразы':<{COL_WIDTH_SEGMENTS}}"
             f"{'Векторы':<{COL_WIDTH_VECTOR}}"
         )
@@ -425,21 +437,21 @@ class SpeakerListForm(BaseForm):
         # Информация о странице
         if self.total_count > PAGE_SIZE:
             total_pages = (self.total_count + PAGE_SIZE - 1) // PAGE_SIZE
-            print(f"  Страница {self.page}/{total_pages} (всего спикеров: {self.total_count})")
+            print(f" Страница {self.page}/{total_pages} (всего спикеров: {self.total_count})")
         else:
-            print(f"  Всего спикеров: {len(speakers)}")
+            print(f" Всего спикеров: {len(speakers)}")
 
     def _show_menu(self) -> None:
         """Показывает главное меню."""
         print(f"{'═' * FORM_WIDTH}")
-        print("  [P] Предыдущая страница    [N] Следующая страница")
-        print("  [S] Поиск по имени         [A] Показать всех")
+        print(" [P] Предыдущая страница    [N] Следующая страница")
+        print(" [S] Поиск по имени         [A] Показать всех")
         print(f"{'-' * FORM_WIDTH}")
-        print("  [I] Инфо о спикере         [C] Сравнить спикеров")
-        print("  [R] Переименовать спикера  [M] Объединить спикеров")
-        print("  [D] Удалить спикера")
+        print(" [I] Инфо о спикере         [C] Сравнить спикеров")
+        print(" [R] Переименовать спикера  [M] Объединить спикеров")
+        print(" [D] Удалить спикера")
         print(f"{'-' * FORM_WIDTH}")
-        print("  [Q] Выход")
+        print(" [Q] Выход")
         print(f"{'═' * FORM_WIDTH}")
 
         if self.search_query:
@@ -545,17 +557,18 @@ class SpeakerDetailForm(BaseForm):
 
         spk = speakers[0]
 
-        print("ПРОФИЛЬ СПИКЕРА:")
-        print(f"ID:         {spk.id}")
-        print(f"Имя:        {spk.name}")
-        print(f"Всего фраз: {spk.total_count}")
-        print(f"Создан:     {spk.created_at}")
-        print("Доступные эмбеддинги:")
+        print(" ПРОФИЛЬ СПИКЕРА:")
+        print(f" ID:                 {spk.id}")
+        print(f" Имя:                {spk.name}")
+        print(f" Время речи, сек:    {round(spk.total_time)}")
+        print(f" Всего фраз:         {spk.total_count}")
+        print(f" Создан:             {spk.created_at}")
+        print("\n Доступные эмбеддинги:")
         print(f"{'-' * FORM_WIDTH}")
         for emb in spk.embeddings:
-            print(f"Модель: {emb.model_name:<20} Добавлен: {emb.created_at}")
+            print(f" Модель: {emb.model_name:<20} Добавлен: {emb.created_at}")
         print(f"{'═' * FORM_WIDTH}")
-        print("  [B] Назад в список спикеров")
+        print(" [B] Назад в список спикеров")
         print(f"{'═' * FORM_WIDTH}")
 
     def handle_command(self, cmd: str) -> AppAction:
