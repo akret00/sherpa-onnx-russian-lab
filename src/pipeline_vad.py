@@ -6,7 +6,7 @@ import numpy as np
 from config import PipelineConfig, SpeakerResolvingMode, SR
 import ffmpeg_utils
 from entities import AudioFile, AudioSegment, PipelineResult
-from diarization_utils import SpeakerResolver
+from diarization_utils import SpeakerResolver, OracleSpeakerResolver, get_speaker_resolver
 import vad_utils
 import asr_utils
 from common_utils import get_package_version
@@ -79,7 +79,7 @@ class BaseVadPipeline:
             else:
                 raise ValueError("В режиме Оракула атрибут _asr должен иметь тип OracleASR")
         if self._pl_config.diar_vad.use_oracle:
-            if isinstance(self._speaker_resolver, SpeakerResolver):
+            if isinstance(self._speaker_resolver, OracleSpeakerResolver):
                 self._speaker_resolver.set_markup_segments(self.markup_segments)
 
     def run_as_stream(
@@ -104,7 +104,7 @@ class BaseVadPipeline:
         if isinstance(self._asr, asr_utils.OracleASR):
             self._asr.reset()
         # Сброс состояния Оракула резольвера спикеров в исходное состояние
-        if isinstance(self._speaker_resolver, SpeakerResolver):
+        if isinstance(self._speaker_resolver, OracleSpeakerResolver):
             self._speaker_resolver.reset()
 
         with ffmpeg_utils.AudioStreamReader(
@@ -212,7 +212,7 @@ class AsrPipeline(BaseVadPipeline):
         super()._init_models()
 
         #Инициализируем распознаватель голоса в холостом режиме SpeakerResolvingMode.NONE
-        self._speaker_resolver = SpeakerResolver(pl_conf = self._pl_config)
+        self._speaker_resolver = get_speaker_resolver(pl_conf = self._pl_config)
 
 class ManagerDiarizationPipeline(BaseVadPipeline):
     """Пайплайн для распознавания и диаризации при помощи VAD и менеджера спикеров"""
@@ -223,7 +223,7 @@ class ManagerDiarizationPipeline(BaseVadPipeline):
 
         #Инициализируем распознаватель голоса
         self._pl_config.diar_vad.resolving_mode = SpeakerResolvingMode.VAD_SPEAKER_MANAGER
-        self._speaker_resolver = SpeakerResolver(pl_conf = self._pl_config)
+        self._speaker_resolver = get_speaker_resolver(pl_conf = self._pl_config)
 
 class CentroidDiarizationPipeline(BaseVadPipeline):
     """Пайплайн для распознавания и диаризации при помощи VAD и центроидов"""
@@ -234,4 +234,4 @@ class CentroidDiarizationPipeline(BaseVadPipeline):
 
         #Инициализируем распознаватель голоса
         self._pl_config.diar_vad.resolving_mode = SpeakerResolvingMode.VAD_SIMPLE_CENTROID
-        self._speaker_resolver = SpeakerResolver(pl_conf = self._pl_config)
+        self._speaker_resolver = get_speaker_resolver(pl_conf = self._pl_config)

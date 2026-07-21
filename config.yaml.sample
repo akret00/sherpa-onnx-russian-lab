@@ -5,9 +5,11 @@ work:
   vad_model_name: "silero"
   embed_model_name: "3dspeaker"
   # Должен быть только один незакомментированный параметр "asr_model_name"
-  asr_model_name: "giga-am-v3"
-  # asr_model_name: "qwen3-0.6b"
-  # asr_model_name: "qwen3-1.7b"
+  asr_model_name: "giga-am-v3-punct-int8"
+  # asr_model_name: "qwen3-0.6b-int8"
+  # asr_model_name: "qwen3-1.7b-int8"
+  segmentation_model_name: "pyannote-int8"
+  provider: "cpu"
 models:
   # Распознавание речи
   asr:
@@ -44,16 +46,47 @@ models:
       short_name: "pyan8"
       model: "models/diarization/segmentation-model.onnx"
   embedding:
-    wespeaker:
-      # model: "/models/diarization/wespeaker_en_voxceleb_CAM++_LM.onnx"
-      # model: "/models/diarization/wespeaker_en_voxceleb_resnet34_LM.onnx"
-      model: "/models/diarization/wespeaker_en_voxceleb_resnet152_LM.onnx"
-    nemo:
-      # model: "/models/diarization/nemo_en_speakerverification_speakernet.onnx"
-      # model: "/models/diarization/nemo_en_titanet_small.onnx"
-      model: "/models/diarization/nemo_en_titanet_large.onnx"
-    3dspeaker:
-      # model: "/models/diarization/3dspeaker_speech_campplus_sv_en_voxceleb_16k.onnx"
-      model: "/models/diarization/3dspeaker_speech_eres2net_sv_en_voxceleb_16k.onnx"
-      # model: "/models/diarization/3dspeaker_speech_eres2net_base_sv_zh-cn_3dspeaker_16k.onnx"
-      # model: "/models/diarization/3dspeaker_speech_eres2netv2_sv_zh-cn_16k-common.onnx"
+    wespeaker-cammplus:
+      short_name: "wecamm"
+      model: "models/embedding/wespeaker_en_voxceleb_CAM++_LM.onnx"
+      threshold: 0.4
+    wespeaker-resnet34-lm:
+      short_name: "weres34"
+      model: "models/embedding/wespeaker_en_voxceleb_resnet34_LM.onnx"
+      threshold: 0.4
+    wespeaker-resnet152-lm:
+      short_name: "weres152"
+      model: "models/embedding/wespeaker_en_voxceleb_resnet152_LM.onnx"
+      threshold: 0.4
+    wespeaker-resnet293-lm:
+      short_name: "weres293"
+      model: "models/embedding/wespeaker_en_voxceleb_resnet293_LM.onnx"
+      threshold: 0.4
+    nemo-en-speakernet:
+      short_name: "nemospk"
+      model: "models/embedding/nemo_en_speakerverification_speakernet.onnx"
+      threshold: 0.4
+    nemo-en-titanet-small:
+      short_name: "nemotis"
+      model: "models/embedding/nemo_en_titanet_small.onnx"
+      threshold: 0.4
+    nemo-en-titanet-large:
+      short_name: "nemotil"
+      model: "models/embedding/nemo_en_titanet_large.onnx"
+      threshold: 0.4
+    3dspeaker-en-cammplus:
+      short_name: "3dcamm"
+      model: "models/embedding/3dspeaker_speech_campplus_sv_en_voxceleb_16k.onnx"
+      threshold: 0.4
+    3dspeaker-en-eres2net:
+      short_name: "3deres"
+      model: "models/embedding/3dspeaker_speech_eres2net_sv_en_voxceleb_16k.onnx"
+      threshold: 0.4
+    3dspeaker-en-eres2net-base:
+      short_name: "3deresb"
+      model: "models/embedding/3dspeaker_speech_eres2net_base_sv_zh-cn_3dspeaker_16k.onnx"
+      threshold: 0.4
+    3dspeaker-zh-eres2netv2:
+      short_name: "3deresv2"
+      model: "models/embedding/3dspeaker_speech_eres2netv2_sv_zh-cn_16k-common.onnx"
+      threshold: 0.4

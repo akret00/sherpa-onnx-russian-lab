@@ -203,6 +203,14 @@ class VadDiarizationConfig:
     resolving_mode: SpeakerResolvingMode = SpeakerResolvingMode.NONE
     speaker_repo_type: SpeakerRepoType = SpeakerRepoType.IN_MEMORY
     db_path: str = str(DB_DEFAULT_PATH)
+    skip_below_sec: float = 0.5 # Фразы короче исключаются из диаризации
+    boost_threshold_below_sec: float = 2.0 # Для фраз короче, добавляется буст threshold
+    boost_threshold_value: float = 0.15  # Величина буста (добавка к threshhold)
+    adapt_centriod_above_sec: float = 3.0  # Минимальная длина фразы для адаптации центроида
+    create_speaker_above_sec: float = 1.5  # Минимальная длина фразы для создания нового спикера
+    min_speaker_lifetime_sec: float = 5.0  # Время речи, ниже которого спикер-кандидат удаляется
+    min_alfa: float = 0.001 # Минимальная альфа, что бы старый центроид не "закостенел"
+    max_alfa: float = 0.1   # Максимальная альфа, уменьшает влияние на новые центроиды
 
 @dataclass
 class SegmentationConfig:
