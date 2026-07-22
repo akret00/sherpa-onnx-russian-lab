@@ -4,6 +4,7 @@
 центроиды эмбеддингов и их обновление
 """
 import time
+import datetime
 from pathlib import Path
 from config import config, PipelineType, SpeakerRepoType
 import args_utils
@@ -20,7 +21,8 @@ def main() -> None:
     # Инициализация пайплайна
     pl_conf = config.get_new_pipeline_config()
     pl_conf.runtime.pipeline_type = PipelineType.CENTRIOD_DIARIZ_PIPELINE
-    pl_conf.diar_vad.speaker_repo_type = SpeakerRepoType.DB_SQLITE # Хранение спикеров в БД
+    # pl_conf.diar_vad.speaker_repo_type = SpeakerRepoType.DB_SQLITE # Хранение спикеров в БД
+    pl_conf.diar_vad.speaker_repo_type = SpeakerRepoType.IN_MEMORY # Хранение спикеров в памяти
     pl = CentroidDiarizationPipeline(pl_config = pl_conf)
 
     # Определяем путь к аудио файлу
@@ -32,7 +34,10 @@ def main() -> None:
     # Определяем директорию для хранения файлов с результатом
     output_dir = common_utils.get_output_dir()
     # Определяем  имя файла с результатом распознавания
-    output_file_path = output_dir / f"{Path(a_path).name}.txt"
+    time_str = ""
+    if a_path == "mic":
+        time_str = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    output_file_path = output_dir / f"{Path(a_path + time_str).name}.txt"
     # Создаем директорию, если ее еще нет и открываем файл
     output_file_path.parent.mkdir(parents=True, exist_ok=True)
 

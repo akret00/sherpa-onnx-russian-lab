@@ -5,7 +5,6 @@ from pathlib import Path
 from config import PipelineType, PipelineConfig, config
 from pipeline_vad import (
     AsrPipeline,
-    ManagerDiarizationPipeline,
     CentroidDiarizationPipeline,
 )
 import common_utils
@@ -89,8 +88,6 @@ class ExperimentRunner:
             pl_config = self.build_pl_config(exp_spec = exp_spec)
             if pl_config.runtime.pipeline_type is PipelineType.ASR_PIPELINE:
                 pl = AsrPipeline(pl_config = pl_config)
-            elif pl_config.runtime.pipeline_type is PipelineType.MANAGER_DIARIZ_PIPELINE:
-                pl = ManagerDiarizationPipeline(pl_config = pl_config)
             elif pl_config.runtime.pipeline_type is PipelineType.CENTRIOD_DIARIZ_PIPELINE:
                 pl = CentroidDiarizationPipeline(pl_config = pl_config)
             else:

@@ -122,8 +122,8 @@ class OracleSpeakerResolver(BasePassiveSpeakerResolver):
         self.current_markup_segment_num = 0
 
 
-class BaseVadSpeakerResolver(SpeakerResolver, ABC):
-    """Базовый класс для VAD диаризации"""
+class VadSpeakerResolver(SpeakerResolver):
+    """Класс для определения спикера на базе центроидов"""
     def __init__(self, pl_conf: PipelineConfig):
         self._pl_conf: PipelineConfig = pl_conf
 
@@ -135,159 +135,150 @@ class BaseVadSpeakerResolver(SpeakerResolver, ABC):
         self._spk_threshold = self._pl_conf.embed.threshold
         self._embed_model_path = self._pl_conf.embed.model_path
         self._provider = self._pl_conf.runtime.provider
-
-        # Создаем репо спикеров
-        self._spk_repo: BaseRepo = create_spk_repo(pl_conf = self._pl_conf)
-        # Список спикеров с векторами и количеством накопленных фраз
-        self._speakers: list[Speaker] = self._spk_repo.load_speakers()
+        self._model_name = self._pl_conf.embed.model_short_name
 
         # Инициализация экстрактора эмбеддингов
         self._extractor, self._manager = model_utils.load_embedder(
             self._embed_model_path, num_threads = self._num_threads, provider = self._provider
         )
 
+        # Создаем репо спикеров
+        self._spk_repo: BaseRepo = create_spk_repo(pl_conf = self._pl_conf)
+
+        # Готовим пустые структуры данных под кэш
+        self._speakers_dict: dict[str, Speaker] = {}    # Словарь спикеров
+        self._matrix: numpy.ndarray         # Матрица эмбеддингов
+        self._active_ids: list[str] = []    # Список ИД спикеров в порядке эмбеддингов в матрице
+        self._init_speaker_list()
+
+    def _init_speaker_list(self) -> None:
+        """
+        - Загружает список спикеров из репо
+        - Заполняет словарь спикеров спикерами, у которых есть эмбединги для текущей модели
+        - Создает и наполняет матрицу эмбеддингов, а так же 
+        """
+        embeddings_list = []
+
+        # Загружаем список спикеров с векторами и количеством накопленных фраз из репо
+        speakers_list = self._spk_repo.load_speakers()
+
+        # Фильтруем спикеров по наличию эмбеддинга для текущей модели и собираем данные для NumPy
+        for spk in speakers_list:
+            # Проверяем базовое наличие ID
+            # if not hasattr(spk, 'id'):
+            #     continue
+
+            # Проверяем наличие эмбеддинга именно для ТЕКУЩЕЙ модели
+            curr_emb = spk.get_embedding(model_name = self._model_name)
+            if curr_emb is None:
+                continue  # Пропускаем спикера, если он записан для другой модели
+
+            spk_id = str(spk.id)
+
+            # Заполняем словарь только валидными спикерами
+            self._speakers_dict[spk_id] = spk
+            # Синхронно наполняем списки для кэш-матрицы
+            self._active_ids.append(spk_id)
+            embeddings_list.append(curr_emb)
+
+        # Инициализируем матрицу эмбеддингов на основе отфильтрованных данных
+        if embeddings_list:
+            self._matrix = numpy.vstack(embeddings_list)
+        else:
+            # Если подходящих спикеров нет, оставляем пустую матрицу для ленивой инициализации
+            self._matrix = numpy.empty((0, 0), dtype=numpy.float32)
 
     def _normalize_vector(self, vec: numpy.ndarray) -> numpy.ndarray:
+        """Выполняет нормализацию вектора"""
         norm = numpy.linalg.norm(vec)
         if norm == 0:
             return vec  # Защита от деления на ноль, если вектор пустой
         return typing.cast(numpy.ndarray, vec / norm)
 
-    def get_speakers(self) -> list[Speaker]:
-        """Возвращает список спикеров"""
-        return self._speakers
+    def _create_and_register_speaker(self, emb: numpy.ndarray) -> Speaker:
+        """Создает спикера, сохраняет в репо, и расширяет матрицу кэша."""
+        spk = Speaker()
+        spk.add_embedding(model_name = self._model_name, embedding = emb)
+        self._spk_repo.save_speakers(speakers = [spk])
 
-    def save_all_speakers(self) -> None:
-        """Сохраняет в репозиторий обновленные данные всех локальных спикеров"""
-        self._spk_repo.save_speakers(self._speakers)
+        spk_id = str(spk.id)
+        self._speakers_dict[spk_id] = spk
 
-
-class ManagerSpeakerResolver(BaseVadSpeakerResolver):
-    """Класс для определения спикера на базе менеджера спикеров"""
-    def __init__(self, pl_conf: PipelineConfig):
-        super().__init__(pl_conf = pl_conf)
-
-        # Загружаем базу спикеров в менеджер
-        for index, spk in enumerate(self._speakers):
-            emb = spk.get_embedding(model_name = self._pl_conf.embed.model_short_name)
-            if emb is None: # Если у спикера нет эмбединга для текущей модели, пропускаем его
-                continue
-            self._manager.add(
-                str(index + 1),
-                spk.get_embedding(model_name = self._pl_conf.embed.model_short_name)
-            )
-
-    def _search_or_create_speaker_manager(self, emb: numpy.ndarray) -> ResolveResult:
-        """Пытается найти подходящего спикера или создает нового"""
-        matched_id = self._manager.search(emb, threshold = self._spk_threshold)
-        if not matched_id:
-            # Создает пустого спикера и добавляем к нему эмбеддинг с именем модели
-            spk = Speaker()
-            spk.add_embedding(model_name = self._pl_conf.embed.model_short_name, embedding = emb)
-            # При сохранении пустого спикера в репо, ему будут присвоены ИД и имя по умолчанию
-            self._spk_repo.save_speakers(speakers = [spk])
-            # Добавляем нового спикера в локальный список
-            self._speakers.append(spk)
-
-            matched_id = str((len(self._speakers)))
-            if not self._manager.add(matched_id, emb):
-                raise RuntimeError(f"Failed to register speaker {matched_id}")
-
-        spk = self._speakers[int(matched_id) - 1]
-        curr_emb = spk.get_embedding(model_name = self._pl_conf.embed.model_short_name)
-        if curr_emb is None: # У спикера нет эмбеддинга для текущей модели, это ошибка
-            raise ValueError("Ошибка логики: объект curr_emb is None, чего не должно быть")
-        score = numpy.dot(
-            curr_emb,
-            emb
-        ) # Косинусное сходство для нормированных векторов
-
-        return ResolveResult(speaker = spk, cos_similarity = float(score))
-
-    def resolve(self, seg: numpy.ndarray, t_start: float = 0, t_end: float = 0) -> ResolveResult:
-        """
-            Вычисляет эмбеддинг голоса из фразы.
-            Пытается найти соответствие в базе голосов, если находит, то возвращает id спикера.
-            Если голос не найден, то создается, сохраняется в базе и возвращается новый спикер.
-        """
-        # ToDo: сделать более похожим алгоритм для обоих способов определения спикеров
-        # Расчет эмбеддинга спикера и поиск спикера по эмбеддингам
-        emb = self._normalize_vector(compute_embedding(self._extractor, seg))
-        resolve_result = self._search_or_create_speaker_manager(emb)
-        if resolve_result.speaker is not None:
-            resolve_result.speaker.session_count += 1
-            resolve_result.speaker.session_time += len(seg) / SR
-            resolve_result.speaker.total_count += 1
-            resolve_result.speaker.total_time += len(seg) / SR
+        # Расширяем матрицу кэша новой строкой
+        if self._matrix.shape[1] == 0:
+            # ЛЕНИВАЯ ИНИЦИАЛИЗАЦИЯ: если матрица пустая по второй оси, 
+            # задаем её размерность на основе пришедшего вектора
+            self._matrix = emb.reshape(1, -1)  # Делаем из вектора (D,) матрицу (1, D)
         else:
-            raise ValueError("Объект resolve_result.speaker не дожен быть None")
+            self._matrix = numpy.vstack([self._matrix, emb])
 
-        return resolve_result
+        # Запоминаем, какой строке матрицы соответствует этот спикер
+        self._active_ids.append(spk_id)
 
-
-class CentriodSpeakerResolver(BaseVadSpeakerResolver):
-    """Класс для определения спикера на базе центроидов"""
-    # def __init__(self, pl_conf: PipelineConfig):
-    #     super().__init__(pl_conf = pl_conf)
+        return spk
 
     def _update_speaker_profile(
-        self, speaker: Speaker, new_emb: numpy.ndarray, alpha: float =0.1
+        self,
+        speaker: Speaker,
+        new_emb: numpy.ndarray,
+        matrix_row_idx: int
     ) -> None:
-        """Мягкое обновление центроида спикера"""
-        old_centroid = speaker.get_embedding(model_name = self._pl_conf.embed.model_short_name)
+        """Мягкое обновление центроида с точечной перезаписью в кэш-матрице."""
+        old_centroid = speaker.get_embedding(model_name = self._model_name)
         if old_centroid is None:
-            raise ValueError("Эмбеддинг не может иметь значение None")
-        # Формула экспоненциального сглаживания
-        updated_centroid = (1 - alpha) * old_centroid + alpha * new_emb
-        # Нормализуем вектор обратно (важно для косинусного сходства)
-        speaker.add_embedding(
-            model_name = self._pl_conf.embed.model_short_name,
-            embedding = self._normalize_vector(updated_centroid)
-        )
+            raise ValueError(
+                f"Эмбеддинг спикера с ID: {speaker.id} для модели {self._model_name} "
+                "не может иметь значение None"
+            )
 
-    def _search_or_create_speaker_centriod(
-        self, seg: numpy.ndarray, emb: numpy.ndarray
-    ) -> ResolveResult:
+        # Динамический рассчет alpha
+        alpha = self._pl_conf.diar_vad.min_alfa
+        updated_centroid = (1.0 - alpha) * old_centroid + alpha * new_emb
+        normalized_emb = self._normalize_vector(updated_centroid)
+
+        # Обновляем объект спикера
+        speaker.add_embedding(model_name = self._model_name, embedding = normalized_emb)
+
+        # ОПТИМИЗАЦИЯ: Точечно меняем строку в существующей матрице без пересборки!
+        self._matrix[matrix_row_idx] = normalized_emb
+
+    def _search_or_create_speaker(self, seg: numpy.ndarray, emb: numpy.ndarray) -> ResolveResult:
         """
         Делает:
             - поиск эмбеддинга фразы спикера среди центроидов
-            - если спикер не найден, а фраза качественная, то добавляет новый центроид
+            - если спикер не найден, а фраза качественная, то добавляет нового спикера
             - если фраза качественная, и спикер найден, то ообновляет его центроид
         """
-        # Ищем в нашей базе через косинусное сходство
-        best_spk = None
-        best_score = -1.0
-        for curr_spk in self._speakers:
-            curr_emb = curr_spk.get_embedding(model_name = self._pl_conf.embed.model_short_name)
-            if curr_emb is None: # У спикера нет эмбеддинга для текущей модели, пропускаем его
-                continue
-            score = numpy.dot(
-                curr_emb,
-                emb
-            ) # Косинусное сходство для нормированных векторов
-            if score > best_score:
-                best_score = score
-                best_spk = curr_spk
+        # Если база пуста — создаем первого спикера и возвращаем его
+        if not self._active_ids:
+            spk = self._create_and_register_speaker(emb)
+            return ResolveResult(speaker=spk, cos_similarity=1.0)
+
+        # Умножаем готовую матрицу из кэша на эмбединг, вместо перебора по строкам в цикле
+        scores = numpy.dot(self._matrix, emb)
+
+        best_index = int(numpy.argmax(scores))
+        best_score = float(scores[best_index])
+        best_spk_id = self._active_ids[best_index]
+        best_spk = self._speakers_dict[best_spk_id]
 
         if best_score > self._spk_threshold:
-            spk = best_spk
-            if spk is None:
-                raise ValueError("Ошибка логики: объект spk is None, чего не должно быть")
-            # Обновляем профиль только если фраза длинная (> 2 сек) = качественная
-            if len(seg) > 2.0 * SR:
-                self._update_speaker_profile(spk, emb)
-        else:
-            # Создает пустого спикера и добавляем к нему эмбеддинг с именем модели
-            spk = Speaker()
-            spk.add_embedding(model_name = self._pl_conf.embed.model_short_name, embedding = emb)
-            # При сохранении пустого спикера в репо, ему будут присвоены ИД и имя по умолчанию
-            self._spk_repo.save_speakers(speakers = [spk])
-            # Добавляем нового спикера в локальный список
-            self._speakers.append(spk)
+            # Передаем best_index (номер строки в матрице), чтобы обновить её точечно
+            if len(seg) > 2.5 * SR:  # Подняли порог длины до вашего нового значения
+                self._update_speaker_profile(best_spk, emb, matrix_row_idx = best_index)
+            return ResolveResult(speaker = best_spk, cos_similarity = best_score)
 
-            best_score = 1.0
+        # Создаем нового спикера
+        spk = self._create_and_register_speaker(emb)
+        return ResolveResult(speaker = spk, cos_similarity = 1.0)
 
-        return ResolveResult(speaker = spk, cos_similarity = float(best_score))
+    def get_speakers(self) -> list[Speaker]:
+        """Возвращает копию списка спикеров"""
+        return list(self._speakers_dict.values())
+
+    def save_all_speakers(self) -> None:
+        """Сохраняет в репозиторий обновленные данные всех локальных спикеров"""
+        self._spk_repo.save_speakers(self.get_speakers())
 
     def resolve(self, seg: numpy.ndarray, t_start: float = 0, t_end: float = 0) -> ResolveResult:
         """
@@ -295,7 +286,6 @@ class CentriodSpeakerResolver(BaseVadSpeakerResolver):
             Пытается найти соответствие в базе голосов, если находит, то возвращает id спикера.
             Если голос не найден, то создается, сохраняется в базе и возвращается новый спикер.
         """
-        # ToDo: сделать более похожим алгоритм для обоих способов определения спикеров
         # Расчет эмбеддинга спикера и поиск спикера по центроидам эмбеддингов
         # 1. Обрезка правого края с тишиной для коротких фраз
         if len(seg) <= int(1.5 * SR):
@@ -307,7 +297,7 @@ class CentriodSpeakerResolver(BaseVadSpeakerResolver):
         # 2. Логика определения спикера (только для качественных сегментов)
         if len(vad_seg) >= int(MIN_SEARCH_SEG_LEN * SR):
             emb = self._normalize_vector(compute_embedding(self._extractor, vad_seg))
-            resolve_result = self._search_or_create_speaker_centriod(vad_seg, emb)
+            resolve_result = self._search_or_create_speaker(vad_seg, emb)
             if resolve_result.speaker is not None:
                 resolve_result.speaker.session_count += 1
                 resolve_result.speaker.session_time += len(seg) / SR
@@ -316,7 +306,7 @@ class CentriodSpeakerResolver(BaseVadSpeakerResolver):
             else:
                 raise ValueError("Объект resolve_result.speaker не дожен быть None")
         else:
-            # Сегмент короткий: берем последнего или Unknown
+            # Сегмент короткий: создаем результат без спикера
             resolve_result = ResolveResult(
                 speaker = None,
                 cos_similarity = -1,
@@ -330,9 +320,7 @@ def get_speaker_resolver(pl_conf: PipelineConfig) -> SpeakerResolver:
         return OracleSpeakerResolver(pl_conf = pl_conf)
     if pl_conf.diar_vad.resolving_mode is SpeakerResolvingMode.NONE:
         return NoneSpeakerResolver()
-    if pl_conf.diar_vad.resolving_mode is SpeakerResolvingMode.VAD_SPEAKER_MANAGER:
-        return ManagerSpeakerResolver(pl_conf = pl_conf)
     if pl_conf.diar_vad.resolving_mode is SpeakerResolvingMode.VAD_SIMPLE_CENTROID:
-        return CentriodSpeakerResolver(pl_conf = pl_conf)
+        return VadSpeakerResolver(pl_conf = pl_conf)
 
     raise ValueError(f"Тип диаризации {pl_conf.diar_vad.resolving_mode} пока не поддерживается")

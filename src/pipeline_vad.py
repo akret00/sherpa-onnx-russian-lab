@@ -214,17 +214,6 @@ class AsrPipeline(BaseVadPipeline):
         #Инициализируем распознаватель голоса в холостом режиме SpeakerResolvingMode.NONE
         self._speaker_resolver = get_speaker_resolver(pl_conf = self._pl_config)
 
-class ManagerDiarizationPipeline(BaseVadPipeline):
-    """Пайплайн для распознавания и диаризации при помощи VAD и менеджера спикеров"""
-    def _init_models(self) -> None:
-        """Инициализация моделей"""
-        # Запуск инициализации моделей в родительском классе
-        super()._init_models()
-
-        #Инициализируем распознаватель голоса
-        self._pl_config.diar_vad.resolving_mode = SpeakerResolvingMode.VAD_SPEAKER_MANAGER
-        self._speaker_resolver = get_speaker_resolver(pl_conf = self._pl_config)
-
 class CentroidDiarizationPipeline(BaseVadPipeline):
     """Пайплайн для распознавания и диаризации при помощи VAD и центроидов"""
     def _init_models(self) -> None:

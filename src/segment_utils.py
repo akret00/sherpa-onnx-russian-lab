@@ -169,7 +169,7 @@ def trim_silence_fix_end(
     audio_segment: numpy.ndarray,
 ) -> numpy.ndarray:
     """
-    Обрезает 0.5 секунд тишины спава.
+    Обрезает 0.5 секунд тишины справа.
     """
     # 0.5 секунды умножаем на частоту дискретизации
     samples_to_cut = int(config.SR * 0.5)

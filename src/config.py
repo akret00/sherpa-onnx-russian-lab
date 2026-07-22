@@ -40,14 +40,12 @@ AUDIO_PATH_ORACLE_EMPTY = "oracle:empty"
 class PipelineType(Enum):
     """Содержит типы пайплайнов"""
     ASR_PIPELINE = "asr"
-    MANAGER_DIARIZ_PIPELINE = "dman"
     CENTRIOD_DIARIZ_PIPELINE = "dcentr"
 
 class SpeakerResolvingMode(Enum):
     """Возможные способы диаризации"""
     NONE = auto()       # Без диаризации
     ORACLE = auto()     # Режим Оракула
-    VAD_SPEAKER_MANAGER = auto()   # С использованием менеджера и базы
     VAD_SIMPLE_CENTROID = auto()   # Cравнение эмбеддингов с центроидами по порогу
 
 class SpeakerRepoType(Enum):
