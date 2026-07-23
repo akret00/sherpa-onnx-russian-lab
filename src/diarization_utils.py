@@ -102,11 +102,8 @@ class OracleSpeakerResolver(BasePassiveSpeakerResolver):
             resolve_result = ResolveResult(speaker = collected_speakers[0], cos_similarity = 1)
         else:
             resolve_result = ResolveResult(
-                speaker = Speaker(
-                    id = -1000,
-                    name = "SPK_BAD"
-                ),
-                cos_similarity = 1
+                speaker = None,
+                cos_similarity = -1
             )
 
         return resolve_result
@@ -206,7 +203,7 @@ class VadSpeakerResolver(SpeakerResolver):
 
         # Расширяем матрицу кэша новой строкой
         if self._matrix.shape[1] == 0:
-            # ЛЕНИВАЯ ИНИЦИАЛИЗАЦИЯ: если матрица пустая по второй оси, 
+            # ЛЕНИВАЯ ИНИЦИАЛИЗАЦИЯ: если матрица пустая по второй оси,
             # задаем её размерность на основе пришедшего вектора
             self._matrix = emb.reshape(1, -1)  # Делаем из вектора (D,) матрицу (1, D)
         else:
@@ -221,7 +218,8 @@ class VadSpeakerResolver(SpeakerResolver):
         self,
         speaker: Speaker,
         new_emb: numpy.ndarray,
-        matrix_row_idx: int
+        matrix_row_idx: int,
+        len_seg_sec: float
     ) -> None:
         """Мягкое обновление центроида с точечной перезаписью в кэш-матрице."""
         old_centroid = speaker.get_embedding(model_name = self._model_name)
@@ -232,7 +230,8 @@ class VadSpeakerResolver(SpeakerResolver):
             )
 
         # Динамический рассчет alpha
-        alpha = self._pl_conf.diar_vad.min_alfa
+        alpha = len_seg_sec / (speaker.total_time + len_seg_sec)
+        alpha = max(self._pl_conf.diar_vad.min_alfa, min(self._pl_conf.diar_vad.max_alfa, alpha))
         updated_centroid = (1.0 - alpha) * old_centroid + alpha * new_emb
         normalized_emb = self._normalize_vector(updated_centroid)
 
@@ -249,8 +248,14 @@ class VadSpeakerResolver(SpeakerResolver):
             - если спикер не найден, а фраза качественная, то добавляет нового спикера
             - если фраза качественная, и спикер найден, то ообновляет его центроид
         """
-        # Если база пуста — создаем первого спикера и возвращаем его
+        len_seg_sec = len(seg) / SR
+
         if not self._active_ids:
+            # Если база пуста — создаем первого спикера и возвращаем его
+            if len_seg_sec < self._pl_conf.diar_vad.create_speaker_above_sec:
+                # Сегмент слишком короткий для создания нового спикера
+                return ResolveResult(speaker=None, cos_similarity=-1.0)
+            # Сегмент достаточной длины, создаем нового спикера
             spk = self._create_and_register_speaker(emb)
             return ResolveResult(speaker=spk, cos_similarity=1.0)
 
@@ -262,15 +267,33 @@ class VadSpeakerResolver(SpeakerResolver):
         best_spk_id = self._active_ids[best_index]
         best_spk = self._speakers_dict[best_spk_id]
 
-        if best_score > self._spk_threshold:
-            # Передаем best_index (номер строки в матрице), чтобы обновить её точечно
-            if len(seg) > 2.5 * SR:  # Подняли порог длины до вашего нового значения
-                self._update_speaker_profile(best_spk, emb, matrix_row_idx = best_index)
+        if len_seg_sec < self._pl_conf.diar_vad.boost_threshold_below_sec:
+            # Сегмент короткий, повышаем threshold и строгость поиска
+            adaptive_threshold = (
+                self._spk_threshold + self._pl_conf.diar_vad.boost_threshold_value
+            )
+        else:
+            adaptive_threshold = self._spk_threshold
+        if best_score > adaptive_threshold:
+            # Если best_score превысил минимальный порог, то спикер найден
+            if len_seg_sec > self._pl_conf.diar_vad.adapt_centriod_above_sec:
+                # Если длина сегмента выше порога для обновления центроидов, но обновляем его
+                # Передаем best_index (номер строки в матрице), чтобы обновить её точечно
+                self._update_speaker_profile(
+                    speaker = best_spk,
+                    new_emb = emb,
+                    matrix_row_idx = best_index,
+                    len_seg_sec = len_seg_sec
+                )
             return ResolveResult(speaker = best_spk, cos_similarity = best_score)
 
         # Создаем нового спикера
+        if len_seg_sec < self._pl_conf.diar_vad.create_speaker_above_sec:
+            # Сегмент слишком короткий для создания нового спикера
+            return ResolveResult(speaker=None, cos_similarity=-1.0)
+        # Сегмент достаточной длины, создаем нового спикера
         spk = self._create_and_register_speaker(emb)
-        return ResolveResult(speaker = spk, cos_similarity = 1.0)
+        return ResolveResult(speaker=spk, cos_similarity=1.0)
 
     def get_speakers(self) -> list[Speaker]:
         """Возвращает копию списка спикеров"""
@@ -287,22 +310,25 @@ class VadSpeakerResolver(SpeakerResolver):
             Если голос не найден, то создается, сохраняется в базе и возвращается новый спикер.
         """
         # Расчет эмбеддинга спикера и поиск спикера по центроидам эмбеддингов
+        len_seg_sec = len(seg) / SR
         # 1. Обрезка правого края с тишиной для коротких фраз
-        if len(seg) <= int(1.5 * SR):
+        if len_seg_sec <= self._pl_conf.diar_vad.trim_threshold_below_sec:
             vad_seg = segment_utils.trim_silence_fix_end(seg)
             # segment_utils.visualize_segment_energy(vad_seg)
         else:
             vad_seg = seg
 
-        # 2. Логика определения спикера (только для качественных сегментов)
-        if len(vad_seg) >= int(MIN_SEARCH_SEG_LEN * SR):
+        # 2. Логика определения спикера
+        len_vad_seg_sec = len(vad_seg) / SR
+        if len_vad_seg_sec >= self._pl_conf.diar_vad.skip_diariz_below_sec:
+            # Длина сегмента выше минимального порога
             emb = self._normalize_vector(compute_embedding(self._extractor, vad_seg))
             resolve_result = self._search_or_create_speaker(vad_seg, emb)
             if resolve_result.speaker is not None:
                 resolve_result.speaker.session_count += 1
-                resolve_result.speaker.session_time += len(seg) / SR
+                resolve_result.speaker.session_time += len_seg_sec
                 resolve_result.speaker.total_count += 1
-                resolve_result.speaker.total_time += len(seg) / SR
+                resolve_result.speaker.total_time += len_seg_sec
             else:
                 raise ValueError("Объект resolve_result.speaker не дожен быть None")
         else:

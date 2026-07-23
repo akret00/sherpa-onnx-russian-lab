@@ -21,8 +21,7 @@ def main() -> None:
     # Инициализация пайплайна
     pl_conf = config.get_new_pipeline_config()
     pl_conf.runtime.pipeline_type = PipelineType.CENTRIOD_DIARIZ_PIPELINE
-    # pl_conf.diar_vad.speaker_repo_type = SpeakerRepoType.DB_SQLITE # Хранение спикеров в БД
-    pl_conf.diar_vad.speaker_repo_type = SpeakerRepoType.IN_MEMORY # Хранение спикеров в памяти
+    pl_conf.diar_vad.speaker_repo_type = SpeakerRepoType.DB_SQLITE # Хранение спикеров в БД
     pl = CentroidDiarizationPipeline(pl_config = pl_conf)
 
     # Определяем путь к аудио файлу
