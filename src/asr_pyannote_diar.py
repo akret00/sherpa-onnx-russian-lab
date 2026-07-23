@@ -87,7 +87,7 @@ def main() -> None:
     sd = model_utils.load_pyannote_diarization()
 
     # 2) Create ASR recognizer once (hot instance).
-    recognizer = model_utils.load_asr()
+    recognizer = asr_utils.SherpaASRAdapter(pl_config = pl_conf)
 
     # Засекаем время окончания инициализации
     init_end_time = time.perf_counter()
@@ -139,7 +139,7 @@ def main() -> None:
             continue
 
         seg_audio = audio[i0:i1]
-        text = asr_utils.decode_asr(recognizer, seg_audio)
+        text = recognizer.decode_asr(samples_f32 = seg_audio)
 
         if text:
             print(f"[{fmt_ts(t.start)} - {fmt_ts(t.end)}] SPK_{t.speaker:02d}: {text}")
