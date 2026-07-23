@@ -63,12 +63,16 @@ def calculate_speaker_confusion(pl_res_exp: PipelineResultExperiment) -> MetricE
     Высчитывает процент ошибочно определенного времени спикеров.
     Расчет производится посегментно и игнорирует ошибки VAD
     """
+    if pl_res_exp.markup_segments is None or pl_res_exp.segments is None:
+        raise ValueError(
+            "Необходимо наличие обоих объектов: pl_res_exp.markup_segments и pl_res_exp.segments"
+        )
     # Получаем маппинг спикеров з эталона и гипотезы
     speaker_mapping: dict[int, int] = get_speaker_mapping(
         reference = pl_res_exp.markup_segments, hypothesis = pl_res_exp.segments
     )
     total_ref_speech_time = 0.0
-    confusion_time = 0.0
+    speaker_mismatch_time = 0.0
 
     for ref_seg in pl_res_exp.markup_segments:
         if ref_seg.speaker_id is None:
@@ -92,22 +96,28 @@ def calculate_speaker_confusion(pl_res_exp: PipelineResultExperiment) -> MetricE
 
                 # Если спикер не определен (Unknown) или определен неверно — это ошибка
                 if mapped_hyp_speaker != ref_seg.speaker_id:
-                    confusion_time += overlap_duration
+                    speaker_mismatch_time += overlap_duration
 
-    scr = (confusion_time / total_ref_speech_time) if total_ref_speech_time != 0 else None
+    speaker_mismatch_rate = (
+        (speaker_mismatch_time / total_ref_speech_time) if total_ref_speech_time != 0
+        else None
+    )
+
+    if pl_res_exp.exp_spec is None:
+        raise ValueError("Необходимо наличие объекта pl_res_exp.exp_spec")
     if pl_res_exp.exp_spec.use_oracle_vad:
-        scr_oracle_vad = scr
-        scr_evaluated_vad = None
+        smr_oracle_vad = speaker_mismatch_rate
+        smr_evaluated_vad = None
     else:
-        scr_oracle_vad = None
-        scr_evaluated_vad = scr
+        smr_oracle_vad = None
+        smr_evaluated_vad = speaker_mismatch_rate
 
     total_der = MetricExpDER(
-        obj_id = pl_res_exp.exp_id,
-        confusion_time = confusion_time,
-        total_ref_speech_time = total_ref_speech_time,
-        scr_evaluated_vad = scr_evaluated_vad,
-        scr_oracle_vad = scr_oracle_vad,
+        obj_id = str(pl_res_exp.exp_id),
+        speaker_mismatch_time = speaker_mismatch_time,
+        total_ref_speech_time_segments = total_ref_speech_time,
+        smr_evaluated_vad = smr_evaluated_vad,
+        smr_oracle_vad = smr_oracle_vad,
     )
 
     return total_der
@@ -119,6 +129,10 @@ def calculate_frame_based_der(
     detailed_errors: bool = False
 ) -> MetricExpDER:
     """Расчитывает покадровый DER (включая FA, MS и Confusion)."""
+    if pl_res_exp.markup_segments is None or pl_res_exp.segments is None:
+        raise ValueError(
+            "Необходимо наличие обоих объектов: pl_res_exp.markup_segments и pl_res_exp.segments"
+        )
     # 1. Получаем маппинг спикеров из эталона и гипотезы
     speaker_mapping: dict[int, int] = get_speaker_mapping(
         reference=pl_res_exp.markup_segments,
@@ -134,9 +148,9 @@ def calculate_frame_based_der(
 
     total_frames = int(max_time / frame_step) + 1
 
-    # Инициализируем массивы для кадров (None означает тишину)
-    ref_frames = [None] * total_frames
-    hyp_frames = [None] * total_frames
+    # Инициализируем массивы для фреймов (None означает тишину)
+    ref_frames: list[str | None] = [None] * total_frames
+    hyp_frames: list[str | None] = [None] * total_frames
 
     # 3. Заполняем сетку эталона (Reference)
     for ref_seg in pl_res_exp.markup_segments:
@@ -147,7 +161,7 @@ def calculate_frame_based_der(
         end_idx = int(ref_seg.end_time / frame_step)
         for i in range(start_idx, end_idx):
             if 0 <= i < total_frames:
-                ref_frames[i] = ref_seg.speaker_id
+                ref_frames[i] = str(ref_seg.speaker_id)
 
     # 4. Заполняем сетку гипотезы (Hypothesis) с учетом уникальных технических ID для None
     # Каждому физическому сегменту с None присваиваем уникальный маркер "UNKNOWN_{idx}"
@@ -160,7 +174,7 @@ def calculate_frame_based_der(
             hyp_speaker = f"UNKNOWN_{idx}"
         else:
             # Сразу применяем маппинг, переводя гипотетический ID в эталонный
-            hyp_speaker = speaker_mapping.get(hyp_seg.speaker_id)
+            hyp_speaker = str(speaker_mapping.get(hyp_seg.speaker_id))
 
         for i in range(start_idx, end_idx):
             if 0 <= i < total_frames:
@@ -211,34 +225,62 @@ def calculate_frame_based_der(
 
     total_error_time = missed_speech_time + false_alarm_time + confusion_time
 
+    # Speaker Confusion Rate
     scr = (confusion_time / total_ref_speech_time) if total_ref_speech_time != 0 else None
+    # Missed Speech Rate
+    msr = (missed_speech_time / total_ref_speech_time) if total_ref_speech_time != 0 else None
+    # False Alarm Rate
+    far = (false_alarm_time / total_ref_speech_time) if total_ref_speech_time != 0 else None
+    # Diarixation Error Rate
     der = (total_error_time / total_ref_speech_time) if total_ref_speech_time != 0 else None
-    if pl_res_exp.exp_spec.use_oracle_vad:
-        scr_oracle_vad = scr
-        scr_evaluated_vad = None
-        der_oracle_vad = der
-        der_evaluated_vad = None
-    else:
-        scr_oracle_vad = None
-        scr_evaluated_vad = scr
-        der_oracle_vad = None
-        der_evaluated_vad = der
 
-    return MetricExpDER(
-        obj_id = pl_res_exp.exp_id,
-        confusion_time = confusion_time,
-        missed_speech_time = missed_speech_time,
-        false_alarm_time = false_alarm_time,
-        total_error_time = total_error_time,
-        total_ref_speech_time = total_ref_speech_time,
-        # SCR в рамках этой функции — это посекундная путаница к общему времени речи
-        scr_evaluated_vad = scr_evaluated_vad,
-        scr_oracle_vad = scr_oracle_vad,
-        # Классический DER
-        der_evaluated_vad = der_evaluated_vad,
-        der_oracle_vad = der_oracle_vad,
-        error_types = error_types,
-    )
+    # Рассчет Speaker Mismach Rate на базе сегментов
+    smr = calculate_speaker_confusion(pl_res_exp = pl_res_exp)
+
+    if pl_res_exp.exp_spec is None:
+        raise ValueError("Необходимо наличие объекта pl_res_exp.exp_spec")
+    if pl_res_exp.exp_spec.use_oracle_vad:
+        return MetricExpDER(
+            obj_id = str(pl_res_exp.exp_id),
+            # Метрики SMR на основе сравнения эталонной разметки сегментов и гипотезы
+            speaker_mismatch_time = smr.speaker_mismatch_time,
+            total_ref_speech_time_segments = smr.total_ref_speech_time_segments,
+            smr_oracle_vad = smr.smr_oracle_vad,
+            # Исходные метрики для расчета DER на основе фреймов
+            confusion_time = confusion_time,
+            missed_speech_time = missed_speech_time,
+            false_alarm_time = false_alarm_time,
+            total_error_time = total_error_time,
+            total_ref_speech_time_frames = total_ref_speech_frames,
+            scr_oracle_vad = scr,
+            msr_oracle_vad = msr,
+            far_oracle_vad = far,
+            # Метрика DER
+            der_oracle_vad = der,
+            # Пофреймовый список типов ошибок
+            error_types = error_types
+        )
+    else:
+        return MetricExpDER(
+            obj_id = str(pl_res_exp.exp_id),
+            # Метрики SMR на основе сравнения эталонной разметки сегментов и гипотезы
+            speaker_mismatch_time = smr.speaker_mismatch_time,
+            total_ref_speech_time_segments = smr.total_ref_speech_time_segments,
+            smr_evaluated_vad = smr.smr_evaluated_vad,
+            # Исходные метрики для расчета DER на основе фреймов
+            confusion_time = confusion_time,
+            missed_speech_time = missed_speech_time,
+            false_alarm_time = false_alarm_time,
+            total_error_time = total_error_time,
+            total_ref_speech_time_frames = total_ref_speech_frames,
+            scr_evaluated_vad = scr,
+            msr_evaluated_vad = msr,
+            far_evaluated_vad = far,
+            # Метрика DER
+            der_evaluated_vad = der,
+            # Пофреймовый список типов ошибок
+            error_types = error_types
+        )
 
 
 def print_grouped_error_timeline(
@@ -250,10 +292,15 @@ def print_grouped_error_timeline(
     print("=== СГРУППИРОВАННЫЙ ТАЙМЛАЙН ОШИБОК ===")
 
     current_ref_idx = 0
+
+    if pl_res_exp.markup_segments is None:
+        raise ValueError(
+            "Необходимо наличие обоих объектов: pl_res_exp.markup_segments и pl_res_exp.segments"
+        )
     total_ref_segments = len(pl_res_exp.markup_segments)
 
     # Переменные для хранения текущего открытого интервала
-    current_error = None
+    current_error = "OK"
     current_seg_idx = None
     current_seg_obj = None
 
@@ -262,7 +309,11 @@ def print_grouped_error_timeline(
 
     # Вспомогательная функция для красивой печати закрытого интервала
     def flush_interval(
-        err: str, seg_idx: int, seg_obj: AudioSegment, start_t: float, count: int
+        err: str,
+        seg_idx: int | None,
+        seg_obj: AudioSegment | None,
+        start_t: float,
+        count: int
     ) -> None:
         if err == "OK" or count == 0:
             return
@@ -289,19 +340,19 @@ def print_grouped_error_timeline(
         frame_time = frame_idx * frame_step
 
         # 1. Двигаем указатель эталона (двух указателей)
-        while (current_ref_idx < total_ref_segments and 
+        while (current_ref_idx < total_ref_segments and
                pl_res_exp.markup_segments[current_ref_idx].end_time <= frame_time):
             current_ref_idx += 1
 
         # 2. Определяем контекст текущего фрейма
-        in_segment = False
+        # in_segment = False
         seg_idx = None
         seg_obj = None
 
         if current_ref_idx < total_ref_segments:
             possible_seg = pl_res_exp.markup_segments[current_ref_idx]
             if possible_seg.start_time <= frame_time < possible_seg.end_time:
-                in_segment = True
+                # in_segment = True
                 seg_idx = current_ref_idx
                 seg_obj = possible_seg
 
@@ -312,8 +363,11 @@ def print_grouped_error_timeline(
         else:
             # Контекст изменился! Сначала сбрасываем старый накопленный интервал
             flush_interval(
-                current_error, current_seg_idx, current_seg_obj, 
-                interval_start_time, interval_frames_count
+                current_error,
+                current_seg_idx,
+                current_seg_obj,
+                interval_start_time,
+                interval_frames_count
             )
 
             # Открываем новый интервал
@@ -325,6 +379,9 @@ def print_grouped_error_timeline(
 
     # Не забываем сбросить самый последний интервал после выхода из цикла
     flush_interval(
-        current_error, current_seg_idx, current_seg_obj,
-        interval_start_time, interval_frames_count
+        current_error,
+        current_seg_idx,
+        current_seg_obj,
+        interval_start_time,
+        interval_frames_count
     )

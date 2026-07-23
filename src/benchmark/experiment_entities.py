@@ -85,15 +85,23 @@ class MetricExpWER:
 class MetricExpDER:
     """Содержит метрику DER эксперимента"""
     obj_id: str = ""         # ИД метрики внутри эксперимента, может быть ИД или номер сегмента
-    # Метрики ошибочного определения спикера
+    # Метрики SMR на основе сравнения эталонной разметки сегментов и гипотезы
+    speaker_mismatch_time: float | None = None  # Время ошибочного определения спикера
+    total_ref_speech_time_segments: float | None = None # Общее время референса на базе разметки
+    smr_oracle_vad: float | None = None    # Speaker Confusion Rate при включенном Oracle VAD
+    smr_evaluated_vad: float | None = None
+    # Исходные метрики для расчета DER на основе фреймов
     confusion_time: float | None = None
     missed_speech_time: float | None = None
     false_alarm_time: float | None = None
     total_error_time: float | None = None
-    total_ref_speech_time: float | None = None
-    # Метрики SCR
-    scr_oracle_vad: float | None = None    # Speaker Confusion Rate при включенном Oracle VAD
+    total_ref_speech_time_frames: float | None = None # Общее время референса на базе фреймов
+    scr_oracle_vad: float | None = None
     scr_evaluated_vad: float | None = None
+    msr_oracle_vad: float | None = None
+    msr_evaluated_vad: float | None = None
+    far_oracle_vad: float | None = None
+    far_evaluated_vad: float | None = None
     # Метрика DER
     der_oracle_vad: float | None = None     # DER при включенном Oracle VAD
     der_evaluated_vad: float | None = None
